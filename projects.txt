@@ -2,4 +2,3 @@ blank
 test
 image
 video
-research
