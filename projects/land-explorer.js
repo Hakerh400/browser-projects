@@ -246,8 +246,8 @@ function Entity(x, y, z, size, r, g, b){
 
   B.push(
     r, g, b,
-    r * .7, g * .7, b * .7,
-    r * .5, g * .5, b * .5
+    (r + g) / 2, (g + b) / 2, (b + r) / 2,
+    g, r, b,
   );
 }
 
