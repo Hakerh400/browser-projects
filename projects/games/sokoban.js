@@ -195,7 +195,7 @@ function updatePlacedNum(diff){
   placedNum += diff;
 
   if(placedNum == boxesNum){
-    setTimeout(game.onSolved.bind(game));
+    window.setTimeout(game.onSolved.bind(game));
   }
 }
 
