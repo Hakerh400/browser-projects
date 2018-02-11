@@ -57,8 +57,10 @@ function drawFunc(x, y, d, g){
 
   grid.drawFrame(x, y, (d1, dir) => {
     if(!gdir(x, y, dir)) return false;
+
     if(d.internal || (d1 && d1.internal)) g.strokeStyle = cols.markedLines;
     else g.strokeStyle = '#ff0000';
+
     return true;
   });
 }

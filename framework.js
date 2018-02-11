@@ -160,6 +160,7 @@ var O = {
       this.y = +y;
     }
   },
+
   Grid: class{
     constructor(w, h, func){
       var grid = O.ca(w, x => O.ca(h, y => new O.PathTile(func(x, y))));
@@ -174,6 +175,7 @@ var O = {
       for(y = 0; y < h; y++) for(x = 0; x < w; x++) func(x, y, this[x][y]);
     }
   },
+
   PathTile: class{
     constructor(wall){
       this.wall = wall;
@@ -184,6 +186,7 @@ var O = {
       this.dir = -1;
     }
   },
+
   TilesGrid: class{
     constructor(){
       this.w = 1;
@@ -350,6 +353,7 @@ var O = {
       func(this.get(x + 1, y), 3);
     }
   },
+
   EnhancedRenderingContext: class{
     constructor(g){
       this.g = g;
@@ -367,9 +371,14 @@ var O = {
       this.fontSize = 32;
       this.fontScale = 1;
 
+      this.pointsQueue = [];
+
       [
-        'fillStyle', 'strokeStyle', 'textAlign', 'textBaseline',
-        'lineWidth'
+        'fillStyle',
+        'strokeStyle',
+        'textAlign',
+        'textBaseline',
+        'lineWidth',
       ].forEach(prop => {
         Object.defineProperty(this, prop, {
           set: val => g[prop] = val
@@ -377,8 +386,8 @@ var O = {
       });
 
       [
-        'beginPath', 'closePath', 'clearRect', 'fill',
-        'stroke', 'measureText'
+        'clearRect',
+        'measureText',
       ].forEach(prop => this[prop] = g[prop].bind(g));
 
       this.fillStyle = 'white';
@@ -386,18 +395,68 @@ var O = {
       this.textAlign = 'center';
       this.textBaseline = 'middle';
     }
+
+    beginPath(){
+      this.pointsQueue.length = 0;
+      this.g.beginPath();
+    }
+
+    closePath(){
+      var q = this.pointsQueue;
+      q.push(1, q[1], q[2]);
+    }
+
+    fill(){
+      if(this.pointsQueue.length) this.finishLine();
+      this.g.fill();
+    }
+
+    stroke(){
+      if(this.pointsQueue.length) this.finishLine();
+      this.g.stroke();
+    }
+
+    finishLine(){
+      var g = this.g;
+      var q = this.pointsQueue;
+
+      var x1 = q[1];
+      var y1 = q[2];
+
+      for(var i = 3; i < q.length; i += 3){
+        var type = q[i];
+        if(!type) continue;
+
+        var x2 = q[i + 1];
+        var y2 = q[i + 2];
+        var dx = y1 != y2 ? .5 : 0;
+        var dy = x1 != x2 ? .5 : 0;
+
+        g.moveTo(x1 + dx, y1 + dy);
+        g.lineTo(x2 + dx, y2 + dy);
+
+        x1 = x2;
+        y1 = y2;
+      }
+
+      q.length = 0;
+    }
+
     resetTransform(){
       this.s = 1;
       this.tx = 0;
       this.ty = 0;
     }
+
     scale(s){
       this.s *= s;
     }
+
     translate(x, y){
       this.tx += this.s * x;
       this.ty += this.s * y;
     }
+
     rotate(x, y, angle){
       this.rot = angle;
 
@@ -408,6 +467,7 @@ var O = {
         this.rsin = -Math.sin(angle);
       }
     }
+
     rect(x, y, w, h){
       this.moveTo(x, y);
       this.lineTo(x + w, y);
@@ -415,6 +475,7 @@ var O = {
       this.lineTo(x, y + h);
       this.closePath();
     }
+
     fillRect(x, y, w, h){
       if(this.rot){
         this.g.beginPath();
@@ -425,6 +486,7 @@ var O = {
 
       this.g.fillRect(x * this.s + this.tx | 0, y * this.s + this.ty | 0, w * this.s | 0, h * this.s | 0);
     }
+
     moveTo(x, y){
       if(this.rot){
         var xx = x - this.rtx;
@@ -434,8 +496,9 @@ var O = {
         y = this.rty + yy * this.rcos + xx * this.rsin;
       }
 
-      this.g.moveTo((x * this.s + this.tx | 0) - .5, (y * this.s + this.ty | 0) - .5);
+      this.pointsQueue.push(0, x * this.s + this.tx | 0, y * this.s + this.ty | 0);
     }
+
     lineTo(x, y){
       if(this.rot){
         var xx = x - this.rtx;
@@ -445,8 +508,9 @@ var O = {
         y = this.rty + yy * this.rcos + xx * this.rsin;
       }
 
-      this.g.lineTo((x * this.s + this.tx | 0) - .5, (y * this.s + this.ty | 0) - .5);
+      this.pointsQueue.push(1, x * this.s + this.tx | 0, y * this.s + this.ty | 0);
     }
+
     arc(x, y, r, a1, a2, acw){
       if(this.rot){
         var xx = x - this.rtx;
@@ -461,6 +525,7 @@ var O = {
 
       this.g.arc(x * this.s + this.tx - 1, y * this.s + this.ty - 1, r * this.s, a1, a2, acw);
     }
+
     fillText(text, x, y){
       if(this.rot){
         var xx = x - this.rtx;
@@ -472,18 +537,22 @@ var O = {
 
       this.g.fillText(text, x * this.s + this.tx | 0, y * this.s + this.ty | 0);
     }
+
     updateFont(){
       this.g.font = `${this.fontSize * this.fontScale}px arial`;
     }
+
     font(size){
       this.fontSize = size;
       this.updateFont();
     }
+
     scaleFont(scale){
       this.fontScale = scale;
       this.updateFont();
     }
   },
+  
   BitStream: class{
     constructor(arr = null, checksum = false){
       this.arr = new Uint8Array(0);
