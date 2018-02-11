@@ -217,6 +217,8 @@ var O = {
     setWH(w, h){
       this.w = w;
       this.h = h;
+      this.wh = w / 2;
+      this.hh = h / 2;
       this.resize();
     }
 
@@ -241,6 +243,8 @@ var O = {
 
       this.iw = iw;
       this.ih = ih;
+      this.iwh = iw / 2;
+      this.ihh = ih / 2;
 
       var canvas = this.g.g.canvas;
       canvas.width = iw;
@@ -303,9 +307,12 @@ var O = {
 
     drawFrame(x, y, func = null){
       var g = this.g;
+      var s1 = 1 / this.s + 1;
 
       if(func === null){
+        g.beginPath();
         g.rect(x, y, 1, 1);
+        g.stroke();
       }else{
         this.adjacent(x, y, (d1, dir) => {
           if(func(d1, dir)){
@@ -313,25 +320,25 @@ var O = {
               case 0:
                 g.beginPath();
                 g.moveTo(x, y);
-                g.lineTo(x + 1, y);
+                g.lineTo(x + s1, y);
                 g.stroke();
                 break;
               case 1:
                 g.beginPath();
                 g.moveTo(x, y);
-                g.lineTo(x, y + 1);
+                g.lineTo(x, y + s1);
                 g.stroke();
                 break;
               case 2:
                 g.beginPath();
                 g.moveTo(x, y + 1);
-                g.lineTo(x + 1, y + 1);
+                g.lineTo(x + s1, y + 1);
                 g.stroke();
                 break;
               case 3:
                 g.beginPath();
                 g.moveTo(x + 1, y);
-                g.lineTo(x + 1, y + 1);
+                g.lineTo(x + 1, y + s1);
                 g.stroke();
                 break;
             }
@@ -379,9 +386,11 @@ var O = {
         'textAlign',
         'textBaseline',
         'lineWidth',
+        'globalCompositeOperation',
       ].forEach(prop => {
         Object.defineProperty(this, prop, {
-          set: val => g[prop] = val
+          set: val => g[prop] = val,
+          get: () => g[prop],
         });
       });
 
@@ -425,10 +434,16 @@ var O = {
 
       for(var i = 3; i < q.length; i += 3){
         var type = q[i];
-        if(!type) continue;
 
         var x2 = q[i + 1];
         var y2 = q[i + 2];
+
+        if(!type){
+          x1 = x2;
+          y1 = y2;
+          continue;
+        }
+        
         var dx = y1 != y2 ? .5 : 0;
         var dy = x1 != x2 ? .5 : 0;
 
@@ -469,11 +484,19 @@ var O = {
     }
 
     rect(x, y, w, h){
+      var s1 = 1 / this.s;
+
       this.moveTo(x, y);
-      this.lineTo(x + w, y);
-      this.lineTo(x + w, y + h);
+      this.lineTo(x + w + s1, y);
+
+      this.moveTo(x + w, y);
+      this.lineTo(x + w, y + h + s1);
+
+      this.moveTo(x + w + s1, y + h);
       this.lineTo(x, y + h);
-      this.closePath();
+
+      this.moveTo(x, y + h + s1);
+      this.lineTo(x, y);
     }
 
     fillRect(x, y, w, h){
@@ -484,7 +507,7 @@ var O = {
         return;
       }
 
-      this.g.fillRect(x * this.s + this.tx | 0, y * this.s + this.ty | 0, w * this.s | 0, h * this.s | 0);
+      this.g.fillRect(Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty), Math.round(w * this.s) | 0, Math.round(h * this.s) | 0);
     }
 
     moveTo(x, y){
@@ -496,7 +519,7 @@ var O = {
         y = this.rty + yy * this.rcos + xx * this.rsin;
       }
 
-      this.pointsQueue.push(0, x * this.s + this.tx | 0, y * this.s + this.ty | 0);
+      this.pointsQueue.push(0, Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty));
     }
 
     lineTo(x, y){
@@ -508,7 +531,7 @@ var O = {
         y = this.rty + yy * this.rcos + xx * this.rsin;
       }
 
-      this.pointsQueue.push(1, x * this.s + this.tx | 0, y * this.s + this.ty | 0);
+      this.pointsQueue.push(1, Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty));
     }
 
     arc(x, y, r, a1, a2, acw){
@@ -535,7 +558,7 @@ var O = {
         y = this.rty + yy * this.rcos + xx * this.rsin;
       }
 
-      this.g.fillText(text, x * this.s + this.tx | 0, y * this.s + this.ty | 0);
+      this.g.fillText(Math.round(text, x * this.s + this.tx), Math.round(y * this.s + this.ty));
     }
 
     updateFont(){
@@ -552,7 +575,7 @@ var O = {
       this.updateFont();
     }
   },
-  
+
   BitStream: class{
     constructor(arr = null, checksum = false){
       this.arr = new Uint8Array(0);

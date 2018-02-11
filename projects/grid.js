@@ -25,12 +25,122 @@ function main(){
   grid.setWH(w, h);
   grid.setSize(size);
   grid.setTileParams(tileParams);
-  grid.setDrawFunc(drawFunc);
 
-  clearGrid();
+  createGrid();
+  addEventListeners();
 }
 
-function drawFunc(x, y, d, g){
+function addEventListeners(){
+  window.addEventListener('keydown', evt => {
+    switch(evt.code){
+      case 'Enter':
+        calcInternalCells();
+        drawGrid();
+        break;
+
+      case 'KeyR':
+        resetGrid();
+        break;
+    }
+  });
+
+  window.addEventListener('mousedown', evt => {
+    switch(evt.button){
+      case 0:
+        markLine(evt);
+        break;
+
+      case 2:
+        unmarkLine(evt);
+        break;
+    }
+  });
+
+  window.addEventListener('contextmenu', evt => {
+    evt.preventDefault();
+  });
+
+  function markLine(evt){
+    var [x, y, dir] = getCoords(evt);
+    sdir(x, y, dir);
+    drawGrid();
+  }
+
+  function unmarkLine(evt){
+    var [x, y, dir] = getCoords(evt);
+    cdir(x, y, dir);
+    drawGrid();
+  }
+
+  function getCoords(evt){
+    var cx = (evt.clientX - grid.iwh) / grid.s + grid.wh;
+    var cy = (evt.clientY - grid.ihh) / grid.s + grid.hh;
+
+    var x = cx | 0;
+    var y = cy | 0;
+
+    var d = grid.get(x, y);
+    if(d === null) return null;
+
+    cx %= 1;
+    cy %= 1;
+
+    var a1 = cx <= cy;
+    var a2 = 1 - cx < cy;
+    var dir = (a2 << 1) | (a1 ^ a2);
+
+    return [x, y, dir];
+  }
+}
+
+function createGrid(){
+  grid.create(() => {
+    return [0, 0, 0];
+  });
+
+  resetGrid();
+}
+
+function resetGrid(){
+  grid.iterate((x, y, d) => {
+    d.dir = 0;
+    d.circ = 0;
+    d.wall = 0;
+
+    d.internal = 0;
+  });
+
+  drawGrid();
+}
+
+function clearGrid(){
+  var g = grid.g;
+
+  g.fillStyle = cols.bg;
+  g.fillRect(0, 0, w, h);
+}
+
+function drawGrid(){
+  clearGrid();
+
+  grid.setDrawFunc(drawGridLines);
+  grid.draw();
+
+  grid.setDrawFunc(drawTiles);
+  grid.draw();
+
+  grid.setDrawFunc(drawLines);
+  grid.draw();
+}
+
+function drawGridLines(x, y, d, g){
+  g.strokeStyle = cols.nonMarkedLines;
+  g.beginPath();
+  g.rect(x, y, 1, 1);
+  g.stroke();
+}
+
+function drawTiles(x, y, d, g){
   if(d.wall){
     g.fillStyle = cols.wall;
     g.fillRect(x, y, 1, 1);
@@ -38,14 +148,10 @@ function drawFunc(x, y, d, g){
     return;
   }
 
-  g.fillStyle = [cols.bg, '#e0e0ff'][d.internal];
-  g.fillRect(x, y, 1, 1);
-
-  g.strokeStyle = cols.nonMarkedLines;
-  g.beginPath();
-  g.rect(x, y, 1, 1);
-  g.stroke();
-  g.strokeStyle = cols.markedLines;
+  if(d.internal){
+    g.fillStyle = '#e0e0ff';
+    g.fillRect(x, y, 1, 1);
+  }
 
   if(d.circ){
     g.fillStyle = [cols.darkCirc, cols.lightCirs][d.circ - 1];
@@ -54,32 +160,19 @@ function drawFunc(x, y, d, g){
     g.fill();
     g.stroke();
   }
+}
+
+function drawLines(x, y, d, g){
+  drawFrame(x, y);
+}
+
+function drawFrame(x, y){
+  grid.g.strokeStyle = cols.markedLines;
 
   grid.drawFrame(x, y, (d1, dir) => {
     if(!gdir(x, y, dir)) return false;
-
-    if(d.internal || (d1 && d1.internal)) g.strokeStyle = cols.markedLines;
-    else g.strokeStyle = '#ff0000';
-
     return true;
   });
-}
-
-function clearGrid(){
-  grid.create(() => {
-    return [0, 0, 0];
-  });
-
-  grid.iterate((x, y, d) => {
-    if(Math.random() > 1 / Math.sqrt(2)) sdir(x, y, 0);
-    if(Math.random() > 1 / Math.sqrt(2)) sdir(x, y, 1);
-    if(Math.random() > 1 / Math.sqrt(2)) sdir(x, y, 2);
-    if(Math.random() > 1 / Math.sqrt(2)) sdir(x, y, 3);
-  });
-
-  calcInternalCells();
-
-  drawGrid();
 }
 
 function calcInternalCells(){
@@ -136,8 +229,4 @@ function ndir(x, y, dir){
     x, y,
     d: grid.get(x, y),
   };
-}
-
-function drawGrid(){
-  grid.draw();
 }
