@@ -120,10 +120,14 @@ var O = {
 
     canvas.width = w;
     canvas.height = h;
+
     g.fillStyle = 'white';
     g.strokeStyle = 'black';
     g.fillRect(0, 0, w, h);
-    if(enhanced) g = new O.EnhancedRenderingContext(g);
+
+    if(enhanced){
+      g = new O.EnhancedRenderingContext(g);
+    }
 
     return {w, h, g};
   },
@@ -379,6 +383,7 @@ var O = {
       this.fontScale = 1;
 
       this.pointsQueue = [];
+      this.arcsQueue = [];
 
       [
         'fillStyle',
@@ -407,7 +412,7 @@ var O = {
 
     beginPath(){
       this.pointsQueue.length = 0;
-      this.g.beginPath();
+      this.arcsQueue.length = 0;
     }
 
     closePath(){
@@ -416,45 +421,65 @@ var O = {
     }
 
     fill(){
-      if(this.pointsQueue.length) this.finishLine();
+      this.finishLine(true);
       this.g.fill();
     }
 
     stroke(){
-      if(this.pointsQueue.length) this.finishLine();
+      this.finishLine(false);
       this.g.stroke();
     }
 
-    finishLine(){
+    finishLine(fillMode = false){
       var g = this.g;
       var q = this.pointsQueue;
+      var aq = this.arcsQueue;
 
       var x1 = q[1];
       var y1 = q[2];
 
-      for(var i = 3; i < q.length; i += 3){
+      var i = 0;
+      var j = 0;
+
+      g.beginPath();
+
+      do{
+        while(j < aq.length && aq[j] == i){
+          g.arc(aq[1], aq[2], aq[3], aq[4], aq[5], aq[6]);
+          j += 7;
+        }
+
+        i += 3;
+
         var type = q[i];
 
         var x2 = q[i + 1];
         var y2 = q[i + 2];
+
+        if(fillMode){
+          if(Math.abs(x1 - x2) == 1) x2 = x1;
+          if(Math.abs(y1 - y2) == 1) y2 = y1;
+        }
 
         if(!type){
           x1 = x2;
           y1 = y2;
           continue;
         }
-        
-        var dx = y1 != y2 ? .5 : 0;
-        var dy = x1 != x2 ? .5 : 0;
 
-        g.moveTo(x1 + dx, y1 + dy);
-        g.lineTo(x2 + dx, y2 + dy);
+        if(fillMode){
+          g.lineTo(x2, y2);
+        }else{
+          var dx = y1 != y2 ? .5 : 0;
+          var dy = x1 != x2 ? .5 : 0;
+
+          g.moveTo(x1 + dx, y1 + dy);
+          g.lineTo(x2 + dx, y2 + dy);
+        }
 
         x1 = x2;
         y1 = y2;
-      }
-
-      q.length = 0;
+      }while(i < q.length);
     }
 
     resetTransform(){
@@ -546,7 +571,7 @@ var O = {
         a2 = (a2 - this.rot) % O.pi2;
       }
 
-      this.g.arc(x * this.s + this.tx - 1, y * this.s + this.ty - 1, r * this.s, a1, a2, acw);
+      this.arcsQueue.push(this.pointsQueue.length, x * this.s + this.tx + .5, y * this.s + this.ty + .5, r * this.s, a1, a2, acw);
     }
 
     fillText(text, x, y){

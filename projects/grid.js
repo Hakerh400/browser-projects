@@ -31,11 +31,26 @@ function main(){
 }
 
 function addEventListeners(){
+  var clientX = grid.iw >> 1;
+  var clientY = grid.ih >> 1;
+
   window.addEventListener('keydown', evt => {
     switch(evt.code){
       case 'Enter':
         calcInternalCells();
         drawGrid();
+        break;
+
+      case 'KeyB':
+        toggleCirc(1);
+        break;
+
+      case 'KeyW':
+        toggleCirc(2);
+        break;
+
+      case 'KeyX':
+        toggleWall();
         break;
 
       case 'KeyR':
@@ -56,28 +71,74 @@ function addEventListeners(){
     }
   });
 
+  window.addEventListener('mousemove', evt => {
+    clientX = evt.clientX;
+    clientY = evt.clientY;
+  });
+
   window.addEventListener('contextmenu', evt => {
     evt.preventDefault();
   });
 
   function markLine(evt){
-    var [x, y, dir] = getCoords(evt);
+    var coords = getCoords(evt);
+    if(coords === null) return;
+
+    var [x, y, dir] = coords;
     sdir(x, y, dir);
+
     drawGrid();
   }
 
   function unmarkLine(evt){
-    var [x, y, dir] = getCoords(evt);
+    var coords = getCoords(evt);
+    if(coords === null) return;
+
+    var [x, y, dir] = coords;
     cdir(x, y, dir);
+    
     drawGrid();
   }
 
-  function getCoords(evt){
-    var cx = (evt.clientX - grid.iwh) / grid.s + grid.wh;
-    var cy = (evt.clientY - grid.ihh) / grid.s + grid.hh;
+  function toggleCirc(type){
+    var coords = getCoords();
+    if(coords === null) return;
 
-    var x = cx | 0;
-    var y = cy | 0;
+    var [x, y] = coords;
+    var d = grid.get(x, y);
+
+    if(d.wall) cwall(x, y);
+    
+    if(d.circ == type) d.circ = 0;
+    else d.circ = type;
+
+    drawGrid();
+  }
+
+  function toggleWall(){
+    var coords = getCoords();
+    if(coords === null) return;
+
+    var [x, y] = coords;
+    var d = grid.get(x, y);
+
+    if(d.wall) cwall(x, y);
+    else swall(x, y);
+
+    drawGrid();
+  }
+
+  function getCoords(evt = null){
+    if(evt !== null){
+      clientX = evt.clientX;
+      clientY = evt.clientY;
+    }
+
+    var cx = (clientX - grid.iwh) / grid.s + grid.wh;
+    var cy = (clientY - grid.ihh) / grid.s + grid.hh;
+
+    var x = Math.floor(cx);
+    var y = Math.floor(cy);
 
     var d = grid.get(x, y);
     if(d === null) return null;
@@ -126,10 +187,10 @@ function drawGrid(){
   grid.setDrawFunc(drawGridLines);
   grid.draw();
 
-  grid.setDrawFunc(drawTiles);
+  grid.setDrawFunc(drawTile);
   grid.draw();
 
-  grid.setDrawFunc(drawLines);
+  grid.setDrawFunc(drawFrameLines);
   grid.draw();
 }
 
@@ -140,21 +201,23 @@ function drawGridLines(x, y, d, g){
   g.stroke();
 }
 
-function drawTiles(x, y, d, g){
-  if(d.wall){
-    g.fillStyle = cols.wall;
-    g.fillRect(x, y, 1, 1);
-    grid.drawFrame(x, y);
-    return;
-  }
+function drawTile(x, y, d, g){
+  g.strokeStyle = 'black';
 
   if(d.internal){
     g.fillStyle = '#e0e0ff';
     g.fillRect(x, y, 1, 1);
   }
 
+  if(d.wall){
+    g.fillStyle = cols.wall;
+    g.fillRect(x + .2, y + .2, .6, .6);
+    grid.drawFrame(x, y, drawWallFrame);
+    return;
+  }
+
   if(d.circ){
-    g.fillStyle = [cols.darkCirc, cols.lightCirs][d.circ - 1];
+    g.fillStyle = [cols.darkCirc, cols.lightCirc][d.circ - 1];
     g.beginPath();
     g.arc(x + .5, y + .5, .4, 0, O.pi2);
     g.fill();
@@ -162,18 +225,88 @@ function drawTiles(x, y, d, g){
   }
 }
 
-function drawLines(x, y, d, g){
-  drawFrame(x, y);
-}
-
-function drawFrame(x, y){
-  grid.g.strokeStyle = cols.markedLines;
+function drawFrameLines(x, y, d, g){
+  g.strokeStyle = cols.markedLines;
 
   grid.drawFrame(x, y, (d1, dir) => {
+    if(d.wall && d1 && d1.wall) return false;
     if(!gdir(x, y, dir)) return false;
     return true;
   });
 }
+
+function drawWallFrame(d, dir){
+  if(d === null) return true;
+  return !d.wall;
+}
+
+function gdir(x, y, dir){
+  var d = grid.get(x, y);
+
+  if(d === null){
+    var obj = ndir(x, y, dir);
+    if((d = obj.d) === null) return 1;
+
+    x = obj.x;
+    y = obj.y;
+
+    dir = dir + 2 & 3;
+  }
+
+  if(d.wall || (d.dir & (1 << dir))) return 1;
+  if((d = ndir(x, y, dir).d) && d.wall) return 1;
+  return 0;
+}
+
+function sdir(x, y, dir){
+  var d = grid.get(x, y);
+  if(d !== null) d.dir |= 1 << dir;
+  if((d = ndir(x, y, dir).d) !== null) d.dir |= 1 << (dir + 2 & 3);
+}
+
+function sdirs(x, y){
+  O.repeat(4, dir => sdir(x, y, dir));
+}
+
+function cdirs(x, y){
+  O.repeat(4, dir => cdir(x, y, dir));
+}
+
+function cdir(x, y, dir){
+  var d = grid.get(x, y);
+  if(d !== null) d.dir &= ~(1 << dir);
+  if((d = ndir(x, y, dir).d) !== null) d.dir &= ~(1 << (dir + 2 & 3));
+}
+
+function ndir(x, y, dir){
+  x += (dir == 3) - (dir == 1) | 0;
+  y += (dir == 2) - (dir == 0) | 0;
+
+  return {
+    x, y,
+    d: grid.get(x, y),
+  };
+}
+
+function swall(x, y){
+  var d = grid.get(x, y);
+  if(d === null || d.wall) return;
+
+  if(d.circ) d.circ = 0;
+  d.wall = 1;
+}
+
+function cwall(x, y){
+  var d = grid.get(x, y);
+  if(d === null || !d.wall) return;
+
+  d.wall = 0;
+  cdirs(x, y);
+}
+
+/*
+  Algorithms
+*/
 
 function calcInternalCells(){
   var arr = [];
@@ -200,33 +333,4 @@ function calcInternalCells(){
       }
     });
   }
-}
-
-function gdir(x, y, dir){
-  var d = grid.get(x, y);
-  if(d === null) d = ndir(x, y, dir).d, dir = dir + 2 & 3;
-  if(d === null) return 1;
-  return !!(d.dir & (1 << dir)) | 0;
-}
-
-function sdir(x, y, dir){
-  var d = grid.get(x, y);
-  if(d !== null) d.dir |= 1 << dir;
-  if((d = ndir(x, y, dir).d) !== null) d.dir |= 1 << (dir + 2 & 3);
-}
-
-function cdir(x, y, dir){
-  var d = grid.get(x, y);
-  if(d !== null) d.dir &= ~(1 << dir);
-  if((d = ndir(x, y, dir).d) !== null) d.dir &= ~(1 << (dir + 2 & 3));
-}
-
-function ndir(x, y, dir){
-  x += (dir == 3) - (dir == 1) | 0;
-  y += (dir == 2) - (dir == 0) | 0;
-
-  return {
-    x, y,
-    d: grid.get(x, y),
-  };
 }
