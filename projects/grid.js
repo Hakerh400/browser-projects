@@ -1,7 +1,7 @@
 'use strict';
 
-var w = 30;
-var h = 12;
+var w = 48;
+var h = 27;
 var size = 40;
 
 var tileParams = ['dir', 'circ', 'wall'];
@@ -37,7 +37,7 @@ function addEventListeners(){
   window.addEventListener('keydown', evt => {
     switch(evt.code){
       case 'Enter':
-        calcInternalCells();
+        applyAlgorithms();
         drawGrid();
         break;
 
@@ -211,7 +211,7 @@ function drawTile(x, y, d, g){
 
   if(d.wall){
     g.fillStyle = cols.wall;
-    g.fillRect(x + .2, y + .2, .6, .6);
+    g.fillRect(x, y, 1, 1);
     grid.drawFrame(x, y, drawWallFrame);
     return;
   }
@@ -294,6 +294,7 @@ function swall(x, y){
 
   if(d.circ) d.circ = 0;
   d.wall = 1;
+  sdirs(x, y);
 }
 
 function cwall(x, y){
@@ -301,12 +302,16 @@ function cwall(x, y){
   if(d === null || !d.wall) return;
 
   d.wall = 0;
-  cdirs(x, y);
+  sdirs(x, y);
 }
 
 /*
   Algorithms
 */
+
+function applyAlgorithms(){
+  calcInternalCells();
+}
 
 function calcInternalCells(){
   var arr = [];

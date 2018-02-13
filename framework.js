@@ -430,7 +430,7 @@ var O = {
       this.g.stroke();
     }
 
-    finishLine(fillMode = false){
+    finishLine(fillMode){
       var g = this.g;
       var q = this.pointsQueue;
       var aq = this.arcsQueue;
