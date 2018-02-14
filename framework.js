@@ -121,6 +121,7 @@ var O = {
     canvas.width = w;
     canvas.height = h;
 
+    g.lineWidth = 1;
     g.fillStyle = 'white';
     g.strokeStyle = 'black';
     g.fillRect(0, 0, w, h);
@@ -141,7 +142,7 @@ var O = {
     return `${url}${char}_=${Date.now()}`;
   },
   rf(file, cb){
-    var xhr = new XMLHttpRequest();
+    var xhr = new window.XMLHttpRequest();
     xhr.onreadystatechange = () => {
       if(xhr.readyState == 4){
         cb(xhr.status, xhr.responseText);
@@ -250,9 +251,12 @@ var O = {
       this.iwh = iw / 2;
       this.ihh = ih / 2;
 
-      var canvas = this.g.g.canvas;
+      var g = this.g.g;
+      var canvas = g.canvas;
+
       canvas.width = iw;
       canvas.height = ih;
+      g.lineWidth = 1;
     }
 
     create(func = this.emptyFunc){
@@ -318,7 +322,7 @@ var O = {
         g.rect(x, y, 1, 1);
         g.stroke();
       }else{
-        this.adjacent(x, y, (d1, dir) => {
+        this.adjacent(x, y, (px, py, d1, dir) => {
           if(func(d1, dir)){
             switch(dir){
               case 0:
@@ -358,10 +362,10 @@ var O = {
     }
 
     adjacent(x, y, func){
-      func(this.get(x, y - 1), 0);
-      func(this.get(x - 1, y), 1);
-      func(this.get(x, y + 1), 2);
-      func(this.get(x + 1, y), 3);
+      func(x, y - 1, this.get(x, y - 1), 0);
+      func(x - 1, y, this.get(x - 1, y), 1);
+      func(x, y + 1, this.get(x, y + 1), 2);
+      func(x + 1, y, this.get(x + 1, y), 3);
     }
   },
 

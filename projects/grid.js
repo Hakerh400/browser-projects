@@ -1,8 +1,11 @@
 'use strict';
 
-var w = 48;
-var h = 27;
 var size = 40;
+var diameter = .7;
+
+var w = 1920 / size | 0;
+var h = 1080 / size | 0;
+var radius = diameter / 2;
 
 var tileParams = ['dir', 'circ', 'wall'];
 
@@ -14,6 +17,12 @@ var cols = {
   lightCirc: '#ffffff',
   wall: '#808080',
 };
+
+var drawFuncs = [
+  drawGridLines,
+  drawTile,
+  drawFrameLines,
+];
 
 var grid = null;
 
@@ -36,26 +45,17 @@ function addEventListeners(){
 
   window.addEventListener('keydown', evt => {
     switch(evt.code){
-      case 'Enter':
-        applyAlgorithms();
-        drawGrid();
-        break;
-
-      case 'KeyB':
-        toggleCirc(1);
-        break;
-
-      case 'KeyW':
-        toggleCirc(2);
-        break;
-
-      case 'KeyX':
-        toggleWall();
-        break;
-
-      case 'KeyR':
-        resetGrid();
-        break;
+      case 'Enter': applyAlgorithms(); break;
+      case 'KeyB': toggleCirc(1); break;
+      case 'KeyW': toggleCirc(2); break;
+      case 'KeyX': toggleWall(); break;
+      case 'KeyR': resetGrid(); break;
+      case 'KeyS': solve(); break;
+      case 'KeyG': generate(); break;
+      case 'ArrowUp': move(0); break;
+      case 'ArrowLeft': move(1); break;
+      case 'ArrowDown': move(2); break;
+      case 'ArrowRight': move(3); break;
     }
   });
 
@@ -152,6 +152,179 @@ function addEventListeners(){
 
     return [x, y, dir];
   }
+
+  function move(dir){
+    var collected = 0;
+
+    grid.iterate((x, y, d) => d.moved = 0);
+
+    grid.iterate((x, y, d) => {
+      if(d.moved != 2 && d.circ == 1 && !gdir(x, y, dir)){
+        var d1 = ndir(x, y, dir).d;
+        if(d1 === null) return;
+
+        if(!d.moved){
+          d.circ = 0;
+        }
+
+        if(d1.circ != 1){
+          if(d.circ == 2) collected++;
+          d1.circ = 1;
+          d1.moved = 2;
+        }else{
+          d1.moved = 1;
+        }
+      }
+    });
+
+    drawGrid();
+
+    return collected;
+  }
+
+  function solve(){
+    var dirPrev = -1;
+    var p = [];
+
+    grid.iterate((x, y, d) => {
+      d.solvingDir1 = d.dir ^ 15;
+      d.solvingDir2 = d.solvingDir1;
+
+      if(d.circ == 1){
+        p.push(new O.Point(x, y));
+      }
+    });
+
+    if(p.length != 1) return;
+
+    var {x, y} = p[0];
+    var [xPrev, yPrev] = [x, y];
+    var d = grid.get(x, y);
+
+    window.requestAnimationFrame(performMove);
+
+    function performMove(){
+      var dir = -1;
+
+      xPrev = x;
+      yPrev = y;
+
+      O.repeat(4, ddir => {
+        if(dir == -1 && ddir != dirPrev && (d.solvingDir1 & (1 << ddir))){
+          dir = ddir;
+        }
+      });
+
+      if(dir == -1){
+        O.repeat(4, ddir => {
+          if(dir == -1 && ddir != dirPrev && (d.solvingDir2 & (1 << ddir))){
+            dir = ddir;
+          }
+        });
+      }
+
+      if(dir == -1) return;
+
+      if(d.solvingDir1 & (1 << dir)) d.solvingDir1 &= ~(1 << dir);
+      else d.solvingDir2 &= ~(1 << dir);
+
+      dirPrev = dir + 2 & 3;
+      d.circ = 0;
+
+      var obj = ndir(x, y, dir);
+
+      x = obj.x;
+      y = obj.y;
+      d = obj.d;
+
+      if(d.circ) dirPrev = -1;
+      d.circ = 1;
+
+      if(d.solvingDir1 & (1 << dirPrev)) d.solvingDir1 &= ~(1 << dirPrev);
+      else d.solvingDir2 &= ~(1 << dirPrev);
+
+      drawAdjacentTiles(0);
+      drawAdjacentTiles(1);
+
+      window.requestAnimationFrame(performMove);
+    }
+
+    function drawAdjacentTiles(mode){
+      var px = mode ? x : xPrev;
+      var py = mode ? y : yPrev;
+
+      drawFuncs.forEach(func => {
+        func(px, py, d, grid.g);
+        
+        grid.adjacent(px, py, (x, y, d, dir) => {
+          if(!(d === null || d.wall)){
+            func(x, y, d, grid.g);
+          }
+        });
+      });
+    }
+  }
+
+  function generate(){
+    do{
+      resetGrid();
+
+      grid.iterate((x, y, d) => {
+        d.visited = 0;
+        if(Math.random() < .1) swall(x, y);
+      });
+
+      var x = O.rand(w);
+      var y = O.rand(h);
+      var dir = -1;
+
+      var queue = [[x, y, -1]];
+      var d = grid.get(x, y);
+
+      if(d.wall) cwall(x, y);
+      d.circ = 1;
+
+      while(queue.length){
+        [x, y, dir] = queue.splice(O.rand(queue.length), 1)[0];
+
+        d = grid.get(x, y);
+        if(d.visited) continue;
+
+        O.repeat(4, dir => {
+          if(!gdir(x, y, dir)){
+            var obj = ndir(x, y, dir);
+
+            if(obj.d !== null){
+              queue.push([obj.x, obj.y, dir + 2 & 3]);
+            }
+          }
+        });
+
+        sdirs(x, y);
+        if(dir != -1) cdir(x, y, dir);
+
+        d.visited = 1;
+        d.dirs = 15 & ~(1 << dir);
+      }
+
+      grid.iterate((x, y, d) => {
+        if(!d.visited && !d.wall){
+          swall(x, y);
+        }
+      });
+
+      var freeSpace = 0;
+
+      grid.iterate((x, y, d) => {
+        if(!d.wall) freeSpace++;
+      });
+    }while(freeSpace < 100);
+
+    findInternalCells();
+    placeWhiteCircs();
+
+    drawGrid();
+  }
 }
 
 function createGrid(){
@@ -184,14 +357,10 @@ function clearGrid(){
 function drawGrid(){
   clearGrid();
 
-  grid.setDrawFunc(drawGridLines);
-  grid.draw();
-
-  grid.setDrawFunc(drawTile);
-  grid.draw();
-
-  grid.setDrawFunc(drawFrameLines);
-  grid.draw();
+  drawFuncs.forEach(func => {
+    grid.setDrawFunc(func);
+    grid.draw();
+  });
 }
 
 function drawGridLines(x, y, d, g){
@@ -219,7 +388,7 @@ function drawTile(x, y, d, g){
   if(d.circ){
     g.fillStyle = [cols.darkCirc, cols.lightCirc][d.circ - 1];
     g.beginPath();
-    g.arc(x + .5, y + .5, .4, 0, O.pi2);
+    g.arc(x + .5, y + .5, radius, 0, O.pi2);
     g.fill();
     g.stroke();
   }
@@ -310,10 +479,13 @@ function cwall(x, y){
 */
 
 function applyAlgorithms(){
-  calcInternalCells();
+  findInternalCells();
+  placeWhiteCircs();
+
+  drawGrid();
 }
 
-function calcInternalCells(){
+function findInternalCells(){
   var arr = [];
   var queue = [];
 
@@ -338,4 +510,17 @@ function calcInternalCells(){
       }
     });
   }
+}
+
+function placeWhiteCircs(){
+  grid.iterate((x, y, d) => {
+    if(!(d.circ == 1 || d.wall)){
+      if(d.internal && dirsNum(x, y) == 3) d.circ = 2;
+      else d.circ = 0;
+    }
+  });
+}
+
+function dirsNum(x, y){
+  return gdir(x, y, 0) + gdir(x, y, 1) + gdir(x, y, 2) + gdir(x, y, 3);
 }
