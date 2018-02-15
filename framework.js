@@ -60,7 +60,7 @@ var O = {
     Project function
   */
 
-  nonCapWords: 'a,an,the,at,by,for,in,of,on,to,up,and,as,but,or,nor'.split(','),
+  nonCapWords: 'a,an,and,as,at,but,by,for,in,nor,of,on,or,the,to,up'.split`,`,
   projectTest(project){
     return /^[a-z0-9]+(?:\-[a-z0-9]+)*$/.test(project);
   },
@@ -302,7 +302,7 @@ var O = {
 
       g.textAlign = 'center';
       g.textBaseline = 'middle';
-      g.font(this.s * .9);
+      g.font(this.s * .8);
     }
 
     draw(){
@@ -587,7 +587,7 @@ var O = {
         y = this.rty + yy * this.rcos + xx * this.rsin;
       }
 
-      this.g.fillText(Math.round(text, x * this.s + this.tx), Math.round(y * this.s + this.ty));
+      this.g.fillText(text, Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty));
     }
 
     updateFont(){

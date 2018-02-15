@@ -7,8 +7,6 @@ var w = 1920 / size | 0;
 var h = 1080 / size | 0;
 var radius = diameter / 2;
 
-var tileParams = ['dir', 'circ', 'wall'];
-
 var cols = {
   bg: '#ffffff',
   nonMarkedLines: '#e0e0e0',
@@ -25,6 +23,7 @@ var drawFuncs = [
 ];
 
 var grid = null;
+var blackCirc = null;
 
 window.setTimeout(main);
 
@@ -33,7 +32,7 @@ function main(){
 
   grid.setWH(w, h);
   grid.setSize(size);
-  grid.setTileParams(tileParams);
+  grid.setTileParams(['dir', 'circ', 'wall']);
 
   createGrid();
   addEventListeners();
@@ -321,7 +320,7 @@ function addEventListeners(){
     }while(freeSpace < 100);
 
     findInternalCells();
-    placeWhiteCircs();
+    putWhiteCircs();
 
     drawGrid();
   }
@@ -336,6 +335,8 @@ function createGrid(){
 }
 
 function resetGrid(){
+  blackCirc = null;
+
   grid.iterate((x, y, d) => {
     d.dir = 0;
     d.circ = 0;
@@ -346,6 +347,10 @@ function resetGrid(){
 
   drawGrid();
 }
+
+/*
+  Drawing functions
+*/
 
 function clearGrid(){
   var g = grid.g;
@@ -373,16 +378,16 @@ function drawGridLines(x, y, d, g){
 function drawTile(x, y, d, g){
   g.strokeStyle = 'black';
 
-  if(d.internal){
-    g.fillStyle = '#e0e0ff';
-    g.fillRect(x, y, 1, 1);
-  }
-
   if(d.wall){
     g.fillStyle = cols.wall;
     g.fillRect(x, y, 1, 1);
     grid.drawFrame(x, y, drawWallFrame);
     return;
+  }
+
+  if(d.internal){
+    g.fillStyle = d.containsCircs ? '#e0e0ff' : '#ffff80';
+    g.fillRect(x, y, 1, 1);
   }
 
   if(d.circ){
@@ -409,6 +414,252 @@ function drawWallFrame(d, dir){
   return !d.wall;
 }
 
+/*
+  Shape functions
+*/
+
+function iterateShape(x, y, func){
+  var id = getId();
+  var queue = [{x, y, d: grid.get(x, y)}];
+
+  while(queue.length){
+    var {x, y, d} = queue.shift();
+    if(d.id === id) continue;
+    d.id = id;
+
+    func(x, y, d);
+
+    O.repeat(4, dir => {
+      if(!gdir(x, y, dir)) queue.push(ndir(x, y, dir));
+    });
+  }
+}
+
+function traverseShape(x, y, func){
+  var id = getId();
+  var d = grid.get(x, y);
+  var dir1 = null;
+  var dir2;
+
+  var xp, yp, dp;
+
+  do{
+    xp = x;
+    yp = y;
+    dp = d;
+
+    if(!gdir(xp, yp, 0) && ({x, y, d} = ndir(xp, yp, 0), d.id !== id)) dir2 = 0;
+    else if(!gdir(xp, yp, 1) && ({x, y, d} = ndir(xp, yp, 1), d.id !== id)) dir2 = 1;
+    else if(!gdir(xp, yp, 3) && ({x, y, d} = ndir(xp, yp, 3), d.id !== id)) dir2 = 3;
+    else if(!gdir(xp, yp, 2) && ({x, y, d} = ndir(xp, yp, 2), d.id !== id)) dir2 = 2;
+    else dir2 = null;
+
+    func(xp, yp, dp, dir1, dir2);
+
+    if(dir2 !== null){
+      dp.id = id;
+      dp = d;
+      dir1 = dir2 + 2 & 3;
+    }
+  }while(dir2 !== null);
+}
+
+/*
+  Algorithms
+*/
+
+function applyAlgorithms(){
+  findInternalCells();
+  putExternalLines();
+  
+  findInternalCells();
+  findShapes();
+
+  putBlackCirc();
+  fillShapes();
+
+  putWhiteCircs();
+
+  drawGrid();
+}
+
+function findInternalCells(){
+  var arr = [];
+  var queue = [];
+
+  grid.iterate((x, y, d) => d.internal = 1);
+
+  O.repeat(w, x => queue.push([x, -1], [x, h]));
+  O.repeat(h, y => queue.push([-1, y], [w, y]));
+
+  while(queue.length){
+    var [x, y] = queue.shift();
+    var d = grid.get(x, y);
+
+    if(d !== null){
+      if(!d.internal) continue;
+      d.internal = 0;
+    }
+
+    O.repeat(4, dir => {
+      if(!gdir(x, y, dir)){
+        var obj = ndir(x, y, dir);
+        queue.push([obj.x, obj.y]);
+      }
+    });
+  }
+}
+
+function putExternalLines(){
+  var d1;
+
+  grid.iterate((x, y, d) => {
+    d.ext = 0;
+    d.extLines = 0;
+  });
+
+  grid.iterate((x, y, d) => {
+    if(d.internal) return;
+
+    var found = false;
+
+    O.repeat(4, dir => {
+      if(!gdir(x, y, dir)) return;
+
+      if(!(d1 = ndir(x, y, dir).d) || d1.wall || !d1.internal){
+        found = true;
+
+        if(dir === 0 || dir === 2){
+          if((d1 = ndir(x, y, 1).d) && !d1.internal) d1.ext = 1;
+          if((d1 = ndir(x, y, 3).d) && !d1.internal) d1.ext = 1;
+        }else{
+          if((d1 = ndir(x, y, 0).d) && !d1.internal) d1.ext = 1;
+          if((d1 = ndir(x, y, 2).d) && !d1.internal) d1.ext = 1;
+        }
+      }
+    });
+
+    if(d.circ || found) d.ext = 1;
+  });
+
+  grid.iterate((x, y, d) => {
+    if(!d.ext) return;
+
+    O.repeat(4, dir => {
+      var ddir = 1 << dir;
+
+      d1 = ndir(x, y, dir).d;
+
+      if(!(d1 && d1.ext)) return d.extLines |= ddir;
+      if(d.circ || (d1 && d1.circ) || isLineTouching(x, y, dir)) return;
+
+      d.extLines |= ddir;
+    });
+  });
+
+  grid.iterate((x, y, d) => {
+    if(d.ext){
+      O.repeat(4, dir => {
+        if(d.extLines & (1 << dir)) sdir(x, y, dir);
+      });
+    }
+  });
+}
+
+function findShapes(){
+  grid.iterate((x, y, d) => d.containsCircs = 0);
+
+  grid.iterate((x, y, d) => {
+    if(!d.internal || d.containsCircs) return;
+
+    if(d.circ){
+      iterateShape(x, y, (x, y, d) => d.containsCircs = 1);
+    }
+  });
+}
+
+function putBlackCirc(){
+  var firstInternalCell = null;
+  var firstBlackCirc = null;
+  var d1;
+
+  grid.iterate((x, y, d) => {
+    if(d.internal && !d.wall){
+      if(firstInternalCell === null) firstInternalCell = new O.Point(x, y);
+      if(d.circ === 1 && firstBlackCirc === null) firstBlackCirc = new O.Point(x, y);
+    }
+
+    if(d.circ === 1) d.circ = 0;
+  });
+
+  if(firstInternalCell === null) setBlackCirc(0, 0);
+  if(firstBlackCirc === null) setBlackCirc(firstInternalCell.x, firstInternalCell.y);
+  else setBlackCirc(firstBlackCirc.x, firstBlackCirc.y);
+}
+
+function fillShapes(){
+  grid.iterate((x, y, d) => d.visited = 0);
+
+  grid.iterate((x, y, d) => {
+    if(!d.internal || d.visited) return;
+
+    if(!d.containsCircs){
+      traverseShape(x, y, (x, y, d, dir1, dir2) => {
+        O.repeat(4, dir => {
+          if(dir !== dir1 && dir !== dir2) sdir(x, y, dir);
+        });
+        d.visited = 1;
+      });
+    }
+  });
+}
+
+function putWhiteCircs(){
+  grid.iterate((x, y, d) => {
+    if(!(d.circ == 1 || d.wall)){
+      if(d.internal && dirsNum(x, y) == 3) d.circ = 2;
+      else d.circ = 0;
+    }
+  });
+}
+
+/*
+  Other functions
+*/
+
+function getId(){
+  return getId.id = -~getId.id;
+}
+
+function setBlackCirc(x, y){
+  var d = grid.get(x, y);
+  if(d.wall) cwall(x, y);
+  blackCirc = new O.Point(x, y);
+  d.circ = 1;
+}
+
+function isLineTouching(x, y, dir){
+  if(gdire(x, y, dir) || gdire(x, y, dir - 1 & 3) || gdire(x, y, dir + 1 & 3)) return true;
+
+  var xx = x, yy = y;
+  var d;
+
+  ({x, y, d} = ndir(xx, yy, dir));
+  if(d && (gdire(x, y, dir - 1 & 3) || gdire(x, y, dir + 1 & 3))) return true;
+
+  ({x, y, d} = ndir(xx, yy, dir - 1 & 3));
+  if(d && gdire(x, y, dir)) return true;
+
+  ({x, y, d} = ndir(xx, yy, dir + 1 & 3));
+  if(d && gdire(x, y, dir)) return true;
+
+  return false;
+}
+
+function dirsNum(x, y){
+  return gdir(x, y, 0) + gdir(x, y, 1) + gdir(x, y, 2) + gdir(x, y, 3);
+}
+
 function gdir(x, y, dir){
   var d = grid.get(x, y);
 
@@ -425,6 +676,12 @@ function gdir(x, y, dir){
   if(d.wall || (d.dir & (1 << dir))) return 1;
   if((d = ndir(x, y, dir).d) && d.wall) return 1;
   return 0;
+}
+
+function gdire(x, y, dir){
+  var d = ndir(x, y, dir).d;
+  if(d !== null && !(d.wall || d.ext)) return false;
+  return gdir(x, y, dir);
 }
 
 function sdir(x, y, dir){
@@ -472,55 +729,4 @@ function cwall(x, y){
 
   d.wall = 0;
   sdirs(x, y);
-}
-
-/*
-  Algorithms
-*/
-
-function applyAlgorithms(){
-  findInternalCells();
-  placeWhiteCircs();
-
-  drawGrid();
-}
-
-function findInternalCells(){
-  var arr = [];
-  var queue = [];
-
-  grid.iterate((x, y, d) => d.internal = 1);
-
-  O.repeat(w, x => queue.push([x, -1], [x, h]));
-  O.repeat(h, y => queue.push([-1, y], [w, y]));
-
-  while(queue.length){
-    var [x, y] = queue.shift();
-    var d = grid.get(x, y);
-
-    if(d !== null){
-      if(!d.internal) continue;
-      d.internal = 0;
-    }
-
-    O.repeat(4, dir => {
-      if(!gdir(x, y, dir)){
-        var obj = ndir(x, y, dir);
-        queue.push([obj.x, obj.y]);
-      }
-    });
-  }
-}
-
-function placeWhiteCircs(){
-  grid.iterate((x, y, d) => {
-    if(!(d.circ == 1 || d.wall)){
-      if(d.internal && dirsNum(x, y) == 3) d.circ = 2;
-      else d.circ = 0;
-    }
-  });
-}
-
-function dirsNum(x, y){
-  return gdir(x, y, 0) + gdir(x, y, 1) + gdir(x, y, 2) + gdir(x, y, 3);
 }
