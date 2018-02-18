@@ -121,7 +121,6 @@ var O = {
     canvas.width = w;
     canvas.height = h;
 
-    g.lineWidth = 1;
     g.fillStyle = 'white';
     g.strokeStyle = 'black';
     g.fillRect(0, 0, w, h);
@@ -256,7 +255,6 @@ var O = {
 
       canvas.width = iw;
       canvas.height = ih;
-      g.lineWidth = 1;
     }
 
     create(func = this.emptyFunc){
@@ -294,7 +292,9 @@ var O = {
       g.fillStyle = 'darkgray';
       g.fillRect(0, 0, this.iw, this.ih);
 
-      g.translate(this.iw - this.w * this. s >> 1, this.ih - this.h * this. s >> 1);
+      var tx = this.iw - this.w * this.s >> 1;
+      var ty = this.ih - this.h * this.s >> 1;
+      g.translate(Math.max(tx, 0), Math.max(ty, 0));
       g.scale(this.s);
 
       g.fillStyle = 'white';

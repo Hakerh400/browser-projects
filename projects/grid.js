@@ -133,8 +133,10 @@ function addEventListeners(){
       clientY = evt.clientY;
     }
 
-    var cx = (clientX - grid.iwh) / grid.s + grid.wh;
-    var cy = (clientY - grid.ihh) / grid.s + grid.hh;
+    var g = grid.g;
+
+    var cx = clientX / g.s - g.tx;
+    var cy = clientY / g.s - g.ty;
 
     var x = Math.floor(cx);
     var y = Math.floor(cy);
@@ -592,9 +594,15 @@ function putBlackCirc(){
     if(d.circ === 1) d.circ = 0;
   });
 
-  if(firstInternalCell === null) setBlackCirc(0, 0);
-  if(firstBlackCirc === null) setBlackCirc(firstInternalCell.x, firstInternalCell.y);
-  else setBlackCirc(firstBlackCirc.x, firstBlackCirc.y);
+  if(firstInternalCell === null){
+    setBlackCirc(0, 0);
+    sdirs(0, 0);
+    grid.get(0, 0).internal = 1;
+  }else if(firstBlackCirc === null){
+    setBlackCirc(firstInternalCell.x, firstInternalCell.y);
+  }else{
+    setBlackCirc(firstBlackCirc.x, firstBlackCirc.y);
+  }
 }
 
 function fillShapes(){
