@@ -595,9 +595,9 @@ function putBlackCirc(){
   });
 
   if(firstInternalCell === null){
-    setBlackCirc(0, 0);
     sdirs(0, 0);
     grid.get(0, 0).internal = 1;
+    setBlackCirc(0, 0);
   }else if(firstBlackCirc === null){
     setBlackCirc(firstInternalCell.x, firstInternalCell.y);
   }else{

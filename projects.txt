@@ -1,6 +1,5 @@
 image
 video
-webgl
 land-explorer
 games
 grid

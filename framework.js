@@ -38,7 +38,7 @@ var O = {
         });
       });
     }else{
-      O.rf(`/projects/${O.project}.js`, (status, script) => {
+      O.rf(`/projects/${O.project}/main.js`, (status, script) => {
         if(status != 200) return O.error(`Failed to load script for project "${O.project}". Status code: ${status}.`);
         new Function('O', script)(O);
       });
