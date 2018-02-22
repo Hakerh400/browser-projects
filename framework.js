@@ -590,6 +590,18 @@ var O = {
       this.g.fillText(text, Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty));
     }
 
+    strokeText(text, x, y){
+      if(this.rot){
+        var xx = x - this.rtx;
+        var yy = y - this.rty;
+
+        x = this.rtx + xx * this.rcos - yy * this.rsin;
+        y = this.rty + yy * this.rcos + xx * this.rsin;
+      }
+
+      this.g.strokeText(text, Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty));
+    }
+
     updateFont(){
       this.g.font = `${this.fontSize * this.fontScale}px arial`;
     }
