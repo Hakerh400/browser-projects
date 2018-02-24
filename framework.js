@@ -50,6 +50,8 @@ var O = {
     O.ceText(h1, title);
   },
   error(msg){
+    O.body.classList.remove('has-canvas');
+
     O.title('Error Occured');
     O.ceText(O.body, msg);
     O.ceBr(O.body, 2);
@@ -111,7 +113,7 @@ var O = {
     return a;
   },
   ceCanvas(enhanced = false){
-    O.body.style.margin = '0px';
+    O.body.classList.add('has-canvas');
 
     var w = window.innerWidth;
     var h = window.innerHeight;
@@ -140,18 +142,40 @@ var O = {
     var char = url.indexOf('?') != -1 ? '&' : '?';
     return `${url}${char}_=${Date.now()}`;
   },
-  rf(file, cb){
+
+  rf(file, isBinary, cb = null){
+    if(cb === null){
+      cb = isBinary;
+      isBinary = false;
+    }
+
     var xhr = new window.XMLHttpRequest();
+
+    if(isBinary){
+      xhr.responseType = 'arraybuffer';
+    }
+
     xhr.onreadystatechange = () => {
       if(xhr.readyState == 4){
-        cb(xhr.status, xhr.responseText);
+        if(isBinary){
+          cb(xhr.status, new O.Buffer(xhr.response));
+        }else{
+          cb(xhr.status, xhr.responseText);
+        }
       }
     };
+
     xhr.open('GET', O.urlTime(file));
-    xhr.send();
+    xhr.send(null);
   },
-  rfLocal(file, cb){
-    O.rf(`/projects/${O.project}/${file}`, cb);
+
+  rfLocal(file, isBinary, cb = null){
+    if(cb === null){
+      cb = isBinary;
+      isBinary = false;
+    }
+
+    O.rf(`/projects/${O.project}/${file}`, isBinary, cb);
   },
 
   /*
@@ -784,6 +808,70 @@ var O = {
       }).join``;
     }
   },
+  Buffer: class extends Uint8Array{
+    constructor(...params){
+      if(params.length === 1 && typeof params[0] === 'string'){
+        params[0] = [...params[0]].map(a => a.charCodeAt(0));
+      }
+
+      super(...params);
+    }
+
+    static alloc(size){
+      return new O.Buffer(size);
+    }
+
+    static from(arr){
+      return new O.Buffer(arr);
+    }
+
+    static concat(arr){
+      arr = arr.reduce((concatenated, buff) => {
+        return [...concatenated, ...buff];
+      }, []);
+
+      return new O.Buffer(arr);
+    }
+
+    toString(type){
+      var arr = [...this];
+
+      switch(type){
+        case 'hex':
+          return arr.map(a => a.toString(16).padStart(2, '0')).join``;
+          break;
+
+        default:
+          return arr.map(a => String.fromCharCode(a)).join``;
+          break;
+      }
+    }
+
+    readUInt32BE(offset){
+      var value;
+
+      value = this[offset] * 2 ** 24;
+      value += this[offset + 1] * 2 ** 16;
+      value += this[offset + 2] * 2 ** 8;
+      value += this[offset + 3];
+
+      return value;
+    }
+
+    writeUInt32BE(value, offset){
+      this[offset] = value / 2 ** 24;
+      this[offset + 1] = value / 2 ** 16;
+      this[offset + 2] = value / 2 ** 8;
+      this[offset + 3] = value;
+    }
+
+    writeInt32BE(value, offset){
+      this[offset] = value >> 24;
+      this[offset + 1] = value >> 16;
+      this[offset + 2] = value >> 8;
+      this[offset + 3] = value;
+    }
+  },
 
   /*
     String functions
@@ -848,6 +936,24 @@ var O = {
   },
   binLen(a){
     return a && (Math.log2(a) | 0) + 1;
+  },
+  raf(func){
+    return window.requestAnimationFrame(func);
+  },
+
+  /*
+    Events
+  */
+
+  ael(type, func){
+    return window.addEventListener(type, func);
+  },
+  rel(type, func){
+    return window.removeEventListener(type, func);
+  },
+  pd(evt, stopPropagation = false){
+    evt.preventDefault();
+    if(stopPropagation) evt.stopPropagation();
   },
 
   /*
@@ -918,53 +1024,6 @@ var O = {
   },
   sha256: (() => {
     var MAX_UINT = 2 ** 32;
-
-    class Buffer extends Uint8Array{
-      constructor(...params){
-        super(...params);
-      }
-
-      static alloc(size){
-        return new Buffer(size);
-      }
-
-      static from(arr){
-        return new Buffer(arr);
-      }
-
-      static concat(arr){
-        arr = arr.reduce((concatenated, buff) => {
-          return [...concatenated, ...buff];
-        }, []);
-
-        return new Buffer(arr);
-      }
-
-      readUInt32BE(offset){
-        var value;
-
-        value = this[offset] * 2 ** 24;
-        value += this[offset + 1] * 2 ** 16;
-        value += this[offset + 2] * 2 ** 8;
-        value += this[offset + 3];
-
-        return value;
-      }
-
-      writeUInt32BE(value, offset){
-        this[offset] = value / 2 ** 24;
-        this[offset + 1] = value / 2 ** 16;
-        this[offset + 2] = value / 2 ** 8;
-        this[offset + 3] = value;
-      }
-
-      writeInt32BE(value, offset){
-        this[offset] = value >> 24;
-        this[offset + 1] = value >> 16;
-        this[offset + 2] = value >> 8;
-        this[offset + 3] = value;
-      }
-    };
 
     return sha256;
 
@@ -1043,7 +1102,7 @@ var O = {
 
       bits += '1' + '0'.repeat(k);
 
-      var buffL = Buffer.alloc(8);
+      var buffL = O.Buffer.alloc(8);
       buffL.writeUInt32BE(len / MAX_UINT, 0);
       buffL.writeUInt32BE(len % MAX_UINT, 4);
 
@@ -1063,8 +1122,8 @@ var O = {
     }
 
     function computeDigest(a){
-      return Buffer.concat([...a].map(a => {
-        var buff = Buffer.alloc(4);
+      return O.Buffer.concat([...a].map(a => {
+        var buff = O.Buffer.alloc(4);
         buff.writeUInt32BE(a, 0);
         return buff;
       }));
@@ -1094,7 +1153,7 @@ var O = {
     }
 
     function toUint32(a){
-      var buff = Buffer.alloc(4);
+      var buff = O.Buffer.alloc(4);
       buff.writeInt32BE(a | 0, 0);
       return buff.readUInt32BE(0);
     }
@@ -1127,7 +1186,7 @@ var O = {
     }
 
     function bitsToBuff(bits){
-      return Buffer.from((bits.match(/\d{8}/g) || []).map(a => {
+      return O.Buffer.from((bits.match(/\d{8}/g) || []).map(a => {
         return parseInt(a, 2);
       }));
     }
