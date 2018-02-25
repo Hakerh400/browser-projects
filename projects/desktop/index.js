@@ -578,7 +578,7 @@ function createDiv(w, h, coords = null){
   var div = O.doc.createElement('div');
 
   O.body.appendChild(div);
-  translateElem(div, coords)
+  translateElem(div, coords);
   div.classList.add('window');
 
   div.style.width = `${Math.round(w)}px`;
@@ -591,7 +591,7 @@ function createG(div, w, h, coords = null){
   var canvas = O.doc.createElement('canvas');
 
   div.appendChild(canvas);
-  translateElem(canvas, coords)
+  translateElem(canvas, coords);
   canvas.classList.add('canvas');
 
   canvas.width = w;
