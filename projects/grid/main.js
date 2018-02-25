@@ -7,6 +7,8 @@ var w = 1920 / size | 0;
 var h = 1080 / size | 0;
 var radius = diameter / 2;
 
+var tileParams = ['dir', 'circ', 'wall'];
+
 var cols = {
   bg: '#ffffff',
   nonMarkedLines: '#e0e0e0',
@@ -32,7 +34,7 @@ function main(){
 
   grid.setWH(w, h);
   grid.setSize(size);
-  grid.setTileParams(['dir', 'circ', 'wall']);
+  grid.setTileParams(tileParams);
 
   createGrid();
   addEventListeners();
@@ -727,11 +729,9 @@ function connectExternalShapes(){
     }
 
     findInternalCells();
-    findShapes();
   };
 
   findInternalCells();
-  findShapes();
 }
 
 function fillShapes(){

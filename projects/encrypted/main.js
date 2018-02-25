@@ -18,9 +18,10 @@ var cols = {
 };
 
 function main(){
+  O.body.style.backgroundColor = cols.bg;
   addEventListeners();
 
-  getScript('1', func => {
+  getScript('main', func => {
     func(O);
   });
 }
@@ -94,7 +95,7 @@ function askForPassword(failed, cb = O.nop){
   render();
 
   function render(){
-    clearCanvas();
+    g.clearCanvas(cols.bg);
 
     g.translate(wh, hh);
     g.scale(fontSize);
@@ -139,7 +140,7 @@ function loadScript(file, password, cb = O.nop){
 }
 
 function loadFile(dir, file, password, cb = O.nop){
-  O.rfLocal(`${dir}_/${file}.js`, true, (status, data) => {
+  O.rfLocal(`${dir}/${file}.js`, true, (status, data) => {
     if(status !== 200) return O.error('Cannot load script.');
 
     var decrypted = decrypt(data, password);
@@ -189,12 +190,6 @@ function decrypt(buff, password){
   function computeHash(buff){
     return O.sha256(buff);
   }
-}
-
-function clearCanvas(){
-  g.resetTransform();
-  g.fillStyle = cols.bg;
-  g.fillRect(0, 0, w, h);
 }
 
 function preventDefault(evt){

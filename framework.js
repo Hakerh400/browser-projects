@@ -44,13 +44,16 @@ var O = {
       });
     }
   },
+
   title(title){
     O.body.innerHTML = '';
     var h1 = O.ce(O.body, 'h1');
     O.ceText(h1, title);
   },
+
   error(msg){
     O.body.classList.remove('has-canvas');
+    O.body.style.backgroundColor = '#ffffff';
 
     O.title('Error Occured');
     O.ceText(O.body, msg);
@@ -63,9 +66,11 @@ var O = {
   */
 
   nonCapWords: 'a,an,and,as,at,but,by,for,in,nor,of,on,or,the,to,up'.split`,`,
+
   projectTest(project){
     return /^[a-z0-9]+(?:\-[a-z0-9]+)*$/.test(project);
   },
+
   projectToName(project){
     return project.replace(/\-/g, ' ').replace(/[a-z0-9]+/g, word => {
       if(O.nonCapWords.indexOf(word) == -1) return word[0].toUpperCase() + word.substring(1);
@@ -96,14 +101,17 @@ var O = {
     parent.appendChild(elem);
     return elem;
   },
+
   ceBr(elem, num = 1){
     while(num--) O.ce(elem, 'br');
   },
+
   ceText(elem, text){
     var t = document.createTextNode(text);
     elem.appendChild(t);
     return t;
   },
+
   ceLink(elem, text, href){
     var a = O.ce(elem, 'a');
     
@@ -112,6 +120,7 @@ var O = {
 
     return a;
   },
+
   ceCanvas(enhanced = false){
     O.body.classList.add('has-canvas');
 
@@ -176,6 +185,21 @@ var O = {
     }
 
     O.rf(`/projects/${O.project}/${file}`, isBinary, cb);
+  },
+
+  require(project, cb = O.nop){
+    O.rf(`/projects/${project}/index.js`, false, (status, data) => {
+      if(status !== 200) return O.error('Cannot load project.');
+
+      var module = {
+        exports: {}
+      };
+
+      var func = new Function('O', 'module', data);
+      func(O, module);
+
+      cb(module.exports);
+    });
   },
 
   /*
@@ -396,6 +420,7 @@ var O = {
   EnhancedRenderingContext: class{
     constructor(g){
       this.g = g;
+      this.canvas = g.canvas;
 
       this.s = 1;
       this.tx = 0;
@@ -409,6 +434,7 @@ var O = {
 
       this.fontSize = 32;
       this.fontScale = 1;
+      this.fontModifiers = '';
 
       this.pointsQueue = [];
       this.arcsQueue = [];
@@ -436,6 +462,19 @@ var O = {
       this.strokeStyle = 'black';
       this.textAlign = 'center';
       this.textBaseline = 'middle';
+
+      this.clearCanvas();
+    }
+
+    clearCanvas(col = null){
+      if(col !== null) this.fillStyle = col;
+      
+      this.resetTransform();
+      this.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    createLinearGradient(...params){
+      return this.g.createLinearGradient(...params);
     }
 
     beginPath(){
@@ -473,7 +512,7 @@ var O = {
 
       do{
         while(j < aq.length && aq[j] == i){
-          g.arc(aq[1], aq[2], aq[3], aq[4], aq[5], aq[6]);
+          g.arc(aq[j + 1], aq[j + 2], aq[j + 3], aq[j + 4], aq[j + 5], aq[j + 6]);
           j += 7;
         }
 
@@ -627,7 +666,10 @@ var O = {
     }
 
     updateFont(){
-      this.g.font = `${this.fontSize * this.fontScale}px arial`;
+      var modifiers = this.fontModifiers;
+      var strDelimiter = modifiers.length !== 0 ? ' ' : '';
+
+      this.g.font = `${modifiers}${strDelimiter}${this.fontSize * this.fontScale}px arial`;
     }
 
     font(size){
@@ -637,6 +679,16 @@ var O = {
 
     scaleFont(scale){
       this.fontScale = scale;
+      this.updateFont();
+    }
+
+    setFontModifiers(modifiers){
+      this.fontModifiers = modifiers;
+      this.updateFont();
+    }
+
+    removeFontModifiers(){
+      this.fontModifiers = '';
       this.updateFont();
     }
   },
@@ -848,28 +900,28 @@ var O = {
     }
 
     readUInt32BE(offset){
-      var value;
+      var val;
 
-      value = this[offset] * 2 ** 24;
-      value += this[offset + 1] * 2 ** 16;
-      value += this[offset + 2] * 2 ** 8;
-      value += this[offset + 3];
+      val = this[offset] * 2 ** 24;
+      val += this[offset + 1] * 2 ** 16;
+      val += this[offset + 2] * 2 ** 8;
+      val += this[offset + 3];
 
-      return value;
+      return val;
     }
 
-    writeUInt32BE(value, offset){
-      this[offset] = value / 2 ** 24;
-      this[offset + 1] = value / 2 ** 16;
-      this[offset + 2] = value / 2 ** 8;
-      this[offset + 3] = value;
+    writeUInt32BE(val, offset){
+      this[offset] = val / 2 ** 24;
+      this[offset + 1] = val / 2 ** 16;
+      this[offset + 2] = val / 2 ** 8;
+      this[offset + 3] = val;
     }
 
-    writeInt32BE(value, offset){
-      this[offset] = value >> 24;
-      this[offset + 1] = value >> 16;
-      this[offset + 2] = value >> 8;
-      this[offset + 3] = value;
+    writeInt32BE(val, offset){
+      this[offset] = val >> 24;
+      this[offset + 1] = val >> 16;
+      this[offset + 2] = val >> 8;
+      this[offset + 3] = val;
     }
   },
 
