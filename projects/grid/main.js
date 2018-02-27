@@ -435,7 +435,11 @@ function iterateExternalShape(x, y, func){
 
     iterateDirs(dir => {
       var obj = ndir(x, y, dir);
-      if(obj.d !== null && obj.d.internal) queue.push(obj);
+      var d = obj.d;
+
+      if(d !== null && d.internal && d .id !== id){
+        queue.push(obj);
+      }
     });
   }
 }
@@ -452,7 +456,12 @@ function iterateInternalShape(x, y, func){
     func(x, y, d);
 
     iterateDirs(dir => {
-      if(!gdir(x, y, dir)) queue.push(ndir(x, y, dir));
+      if(gdir(x, y, dir)) return;
+
+      var obj = ndir(x, y, dir);
+      if(obj.d.id === id) return;
+
+      queue.push(obj);
     });
   }
 }
@@ -577,25 +586,37 @@ function putExternalLines(){
   });
 
   grid.iterate((x, y, d) => {
-    if(d.internal) return;
-
     var found = false;
 
-    iterateDirs(dir => {
-      if(!gdir(x, y, dir)) return;
+    if(d.internal){
+      if(!d.wall) return;
 
-      if(!(d1 = ndir(x, y, dir).d) || d1.wall || !d1.internal){
-        found = true;
-
-        if(dir === 0 || dir === 2){
-          if((d1 = ndir(x, y, 1).d) && !d1.internal) d1.ext = 1;
-          if((d1 = ndir(x, y, 3).d) && !d1.internal) d1.ext = 1;
-        }else{
-          if((d1 = ndir(x, y, 0).d) && !d1.internal) d1.ext = 1;
-          if((d1 = ndir(x, y, 2).d) && !d1.internal) d1.ext = 1;
+      for(var j = y - 1; j <= y + 1; j++){
+        for(var i = x - 1; i <= x + 1; i++){
+          d1 = grid.get(i, j);
+          if(d1 === null || d1.internal) continue;
+          d1.ext = 1;
         }
       }
-    });
+
+      return;
+    }else{
+      iterateDirs(dir => {
+        if(!gdir(x, y, dir)) return;
+
+        if((d1 = ndir(x, y, dir).d) === null || d1.wall || !d1.internal){
+          found = true;
+
+          if(dir === 0 || dir === 2){
+            if((d1 = ndir(x, y, 1).d) && !d1.internal) d1.ext = 1;
+            if((d1 = ndir(x, y, 3).d) && !d1.internal) d1.ext = 1;
+          }else{
+            if((d1 = ndir(x, y, 0).d) && !d1.internal) d1.ext = 1;
+            if((d1 = ndir(x, y, 2).d) && !d1.internal) d1.ext = 1;
+          }
+        }
+      });
+    }
 
     if(d.circ || found) d.ext = 1;
   });
@@ -745,8 +766,11 @@ function fillShapes(){
         iterateDirs(dir => {
           if(dir !== dir1 && dir !== dir2) sdir(x, y, dir);
         });
+
         d.visited = 1;
       });
+    }else{
+      /* The shape contains circles */
     }
   });
 }
