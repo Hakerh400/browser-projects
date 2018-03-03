@@ -479,11 +479,20 @@ function traverseShape(x, y, func){
     yp = y;
     dp = d;
 
-    if(!gdir(xp, yp, 0) && ({x, y, d} = ndir(xp, yp, 0), d.id !== id)) dir2 = 0;
-    else if(!gdir(xp, yp, 1) && ({x, y, d} = ndir(xp, yp, 1), d.id !== id)) dir2 = 1;
-    else if(!gdir(xp, yp, 3) && ({x, y, d} = ndir(xp, yp, 3), d.id !== id)) dir2 = 3;
-    else if(!gdir(xp, yp, 2) && ({x, y, d} = ndir(xp, yp, 2), d.id !== id)) dir2 = 2;
-    else dir2 = null;
+    var foundDir = false;
+
+    iterateDirs(dir => {
+      if(foundDir) return;
+
+      if(!gdir(xp, yp, dir) && ({x, y, d} = ndir(xp, yp, dir), d.id !== id)){
+        foundDir = true;
+        dir2 = dir;
+      }
+    });
+
+    if(!foundDir){
+      dir2 = null;
+    }
 
     func(xp, yp, dp, dir1, dir2);
 
@@ -496,14 +505,19 @@ function traverseShape(x, y, func){
 }
 
 function someAdjacent(x, y, func){
-  var obj;
+  var found = false;
 
-  obj = ndir(x, y, 0); if(func(obj.x, obj.y, obj.d, 0)) return true;
-  obj = ndir(x, y, 1); if(func(obj.x, obj.y, obj.d, 1)) return true;
-  obj = ndir(x, y, 3); if(func(obj.x, obj.y, obj.d, 3)) return true;
-  obj = ndir(x, y, 2); if(func(obj.x, obj.y, obj.d, 2)) return true;
+  iterateDirs(dir => {
+    if(found) return;
 
-  return false;
+    var obj = ndir(x, y, dir);
+
+    if(func(obj.x, obj.y, obj.d, dir)){
+      found = true;
+    }
+  });
+
+  return found;
 }
 
 function iterateDirs(func){
@@ -742,11 +756,13 @@ function connectExternalShapes(){
         break;
       }
 
-      var obj;
-      if((obj = ndir(x, y, 0)).d !== null && obj.d.id !== id) queue.push([obj.x, obj.y, obj.d, [...path, 0]]);
-      if((obj = ndir(x, y, 1)).d !== null && obj.d.id !== id) queue.push([obj.x, obj.y, obj.d, [...path, 1]]);
-      if((obj = ndir(x, y, 3)).d !== null && obj.d.id !== id) queue.push([obj.x, obj.y, obj.d, [...path, 3]]);
-      if((obj = ndir(x, y, 2)).d !== null && obj.d.id !== id) queue.push([obj.x, obj.y, obj.d, [...path, 2]]);
+      iterateDirs(dir => {
+        var obj;
+
+        if((obj = ndir(x, y, dir)).d !== null && obj.d.id !== id){
+          queue.push([obj.x, obj.y, obj.d, [...path, dir]]);
+        }
+      });
     }
 
     findInternalCells();
@@ -762,16 +778,108 @@ function fillShapes(){
     if(!d.internal || d.visited) return;
 
     if(!d.containsCircs){
-      traverseShape(x, y, (x, y, d, dir1, dir2) => {
-        iterateDirs(dir => {
-          if(dir !== dir1 && dir !== dir2) sdir(x, y, dir);
+      fillShapeWhichHasNoCircs(x, y);
+    }else{
+      fillShapeWhichHasCircs(x, y);
+    }
+  });
+}
+
+function fillShapeWhichHasNoCircs(x, y){
+  traverseShape(x, y, (x, y, d, dir1, dir2) => {
+    iterateDirs(dir => {
+      if(dir !== dir1 && dir !== dir2) sdir(x, y, dir);
+    });
+
+    d.visited = 1;
+  });
+}
+
+function fillShapeWhichHasCircs(xStart, yStart){
+  do{
+    var id = getId();
+
+    var foundLoop = false;
+    var queue = [[xStart, yStart, null]];
+
+    while(queue.length){
+      var [x, y, lastDir] = queue.shift();
+      var d = grid.get(x, y);
+      var reversedLastDir = lastDir !== null ? lastDir + 2 & 3 : null;
+
+      if(d.id !== id){
+        d.id = id;
+        d.dirToStart = reversedLastDir;
+      }else{
+        foundLoop = true;
+
+        id = getId();
+        d.id = id;
+
+        var xLoop = x;
+        var yLoop = y;
+
+        do{
+          ({x, y, d} = ndir(x, y, d.dirToStart));
+          d.id = id;
+        }while(d.dirToStart !== null);
+
+        var xMin = xLoop;
+        var yMin = yLoop;
+
+        O.repeat(2, stage => {
+          var found = false;
+
+          x = xLoop;
+          y = yLoop;
+
+          if(stage === 0) ({x, y, d} = ndir(x, y, reversedLastDir));
+          else d = grid.get(x, y);
+
+          do{
+            if(y < yMin){
+              xMin = x;
+              yMin = y;
+            }else if(y === yMin && x < xMin){
+              xMin = x;
+            }
+
+            if(found) break;
+
+            ({x, y, d} = ndir(x, y, d.dirToStart));
+
+            if(stage === 0){
+              if(d.id === id){
+                found = true;
+                id = getId();
+                d.firstCommonTile = id;
+              }
+            }else{
+              if(d.firstCommonTile === id){
+                found = true;
+              }
+            }
+          }while(1);
         });
 
-        d.visited = 1;
+        sdir(xMin, yMin, 3);
+
+        break;
+      }
+
+      iterateDirs(dir => {
+        if(gdir(x, y, dir)) return;
+
+        var obj = ndir(x, y, dir);
+        if(obj.d === null || obj.d.id === id) return;
+
+        queue.push([obj.x, obj.y, dir]);
       });
-    }else{
-      /* The shape contains circles */
     }
+  }while(foundLoop);
+
+  iterateInternalShape(xStart, yStart, (x, y, d) => {
+    d.visited = 1;
   });
 }
 

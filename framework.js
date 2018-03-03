@@ -107,7 +107,7 @@ var O = {
   },
 
   ceText(elem, text){
-    var t = document.createTextNode(text);
+    var t = O.doc.createTextNode(text);
     elem.appendChild(t);
     return t;
   },
@@ -442,6 +442,7 @@ var O = {
       [
         'fillStyle',
         'strokeStyle',
+        'globalAlpha',
         'textAlign',
         'textBaseline',
         'lineWidth',
