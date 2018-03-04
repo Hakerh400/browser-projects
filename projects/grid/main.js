@@ -552,7 +552,7 @@ function transformGrid(){
   fillShapes();
   //connectInternalShapes();
 
-  //connectDirShapes();
+  connectDirShapes();
   putWhiteCircs();
 }
 
@@ -775,7 +775,7 @@ function fillShapes(){
   grid.iterate((x, y, d) => d.visited = 0);
 
   grid.iterate((x, y, d) => {
-    if(!d.internal || d.visited) return;
+    if(d.visited || !d.internal || d.wall) return;
 
     if(!d.containsCircs){
       fillShapeWhichHasNoCircs(x, y);
@@ -800,12 +800,12 @@ function fillShapeWhichHasCircs(xStart, yStart){
     var id = getId();
 
     var foundLoop = false;
-    var queue = [[xStart, yStart, null]];
+    var queue = [[xStart, yStart, -1]];
 
     while(queue.length){
       var [x, y, lastDir] = queue.shift();
       var d = grid.get(x, y);
-      var reversedLastDir = lastDir !== null ? lastDir + 2 & 3 : null;
+      var reversedLastDir = lastDir !== -1 ? lastDir + 2 & 3 : -1;
 
       if(d.id !== id){
         d.id = id;
@@ -822,7 +822,7 @@ function fillShapeWhichHasCircs(xStart, yStart){
         do{
           ({x, y, d} = ndir(x, y, d.dirToStart));
           d.id = id;
-        }while(d.dirToStart !== null);
+        }while(d.dirToStart !== -1);
 
         var xMin = xLoop;
         var yMin = yLoop;
@@ -837,12 +837,7 @@ function fillShapeWhichHasCircs(xStart, yStart){
           else d = grid.get(x, y);
 
           do{
-            if(y < yMin){
-              xMin = x;
-              yMin = y;
-            }else if(y === yMin && x < xMin){
-              xMin = x;
-            }
+            [xMin, yMin] = findMinCoords(xMin, yMin, x, y);
 
             if(found) break;
 
@@ -883,6 +878,46 @@ function fillShapeWhichHasCircs(xStart, yStart){
   });
 }
 
+function connectDirShapes(){
+  do{
+    var found = false;
+
+    var shapeId = getId();
+    var {x, y} = blackCirc;
+
+    iterateInternalShape(x, y, (x, y, d) => {
+      d.shapeId = shapeId;
+    });
+
+    var xMin, yMin;
+    var dirMin = -1;
+
+    iterateInternalShape(x, y, (x, y, d) => {
+      iterateDirs(dir => {
+        if(!gdir(x, y, dir)) return;
+
+        var obj = ndir(x, y, dir);
+        var d1 = obj.d;
+
+        if(d1 === null || d1.wall || !d1.internal || d1.shapeId === shapeId) return;
+
+        if(dirMin === -1){
+          xMin = x;
+          yMin = y;
+          dirMin = dir;
+        }else{
+          [xMin, yMin, dirMin] = findMinCoordsAndDir(xMin, yMin, dirMin, x, y, dir);
+        }
+      });
+    });
+
+    if(dirMin !== -1){
+      found = true;
+      cdir(xMin, yMin, dirMin);
+    }
+  }while(found);
+}
+
 function putWhiteCircs(){
   grid.iterate((x, y, d) => {
     if(!(d.circ == 1 || d.wall)){
@@ -920,7 +955,7 @@ function checkSnapshot(){
 */
 
 function getId(){
-  return getId.id = -~getId.id;
+  return Object.create(null);
 }
 
 function setBlackCirc(x, y){
@@ -946,6 +981,65 @@ function isLineTouching(x, y, dir){
   if(d && gdire(x, y, dir)) return true;
 
   return false;
+}
+
+function findMinCoords(xMin, yMin, x, y){
+  if(y < yMin){
+    xMin = x;
+    yMin = y;
+  }else if(y === yMin && x < xMin){
+    xMin = x;
+  }
+
+  return [xMin, yMin];
+}
+
+function findMinCoordsAndDir(xMin, yMin, dirMin, x, y, dir){
+  var x1 = xMin;
+  var y1 = yMin;
+  var dir1 = dirMin & 1;
+  
+  var x2 = x;
+  var y2 = y;
+  var dir2 = dir & 1;
+
+  if(dirMin === 3) x1++;
+  else if(dirMin === 2) y1++;
+
+  if(dir === 3) x2++;
+  else if(dir === 2) y2++;
+
+  var paramsMin = [xMin, yMin, dirMin];
+  var params = [x, y, dir];
+
+  if(y2 < y1) return params;
+  if(y2 > y1) return paramsMin;
+
+  if(x2 < x1) return params;
+  if(x2 > x1) return paramsMin;
+
+  if(dir2 < dir1) return params;
+  return paramsMin;
+}
+
+function dirGt(dir1, dir2){
+  return dirIndex(dir1) > dirIndex(dir2);
+}
+
+function dirLt(dir1, dir2){
+  return dirIndex(dir1) < dirIndex(dir2);
+}
+
+function dirGe(dir1, dir2){
+  return dirIndex(dir1) >= dirIndex(dir2);
+}
+
+function dirLe(dir1, dir2){
+  return dirIndex(dir1) <= dirIndex(dir2);
+}
+
+function dirIndex(dir){
+  return dir ^ (dir >> 1);
 }
 
 function dirsNum(x, y){
