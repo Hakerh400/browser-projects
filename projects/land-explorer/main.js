@@ -27,11 +27,8 @@ var speed = .1;
 var [tx, ty, tz] = [0, 0, 0];
 var dir = 0;
 
-var A = [];
-var B = [];
-var ents = O.ca(1e4, a => new Entity(Math.random() * 20, Math.random() * 20, Math.random() * 20, 1 + Math.random() * 2, Math.random(), Math.random(), Math.random()));
-A = new Float32Array(A);
-B = new Float32Array(B);
+var A = new Float32Array(O.ca(1e3, () => -Math.random() * 20));
+var B = new Float32Array(O.ca(A.length * 3, () => Math.random()));
 
 addEventListener('mousedown', event => {
   if(event.button == 0){
@@ -226,7 +223,7 @@ function render(){
     0, 0, 0, 1
   ]));
 
-  gl.drawArrays(gl.TRIANGLES, 0, ents.length * 3);
+  gl.drawArrays(gl.TRIANGLES, 0, A.length / 3);
 
   window.requestAnimationFrame(render);
 }

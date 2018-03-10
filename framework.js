@@ -23,6 +23,16 @@ var O = {
   */
 
   init(){
+    var global = new Function('return this')();
+    var globalStringified = `${global}`;
+    var env = globalStringified.substring(globalStringified.indexOf(' ') + 1, globalStringified.length - 1);
+
+    switch(env){
+      case 'Window': O.env = 'browser'; break;
+      case 'global': O.env = 'node'; break;
+      default: O.env = 'unknown'; break;
+    }
+
     O.project = O.urlParam('project');
 
     if(!O.projectTest(O.project)) return O.error(`Illegal project name "${O.ascii(O.project).replace(/\"/gm, '\\"')}".`);
@@ -937,13 +947,19 @@ var O = {
       else return '?';
     }).join('');
   },
+
   sanl(str){
     return str.split(/\r\n|\r|\n/gm);
   },
+
   pad(str, len, char = '0'){
     str += '';
     if(str.length >= len) return str;
     return char.repeat(len - str.length) + str;
+  },
+
+  capitalize(str){
+    return `${str[0].toUpperCase()}${str.substring(1)}`;
   },
 
   /*

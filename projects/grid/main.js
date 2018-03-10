@@ -1,6 +1,6 @@
 'use strict';
 
-var size = 40;
+var size = 20;
 var diameter = .7;
 
 var w = 1920 / size | 0;
@@ -23,6 +23,8 @@ var drawFuncs = [
   drawTile,
   drawFrameLines,
 ];
+
+var autoDraw = O.env !== 'node';
 
 var grid = null;
 var blackCirc = null;
@@ -53,6 +55,7 @@ function addEventListeners(){
       case 'KeyR': resetGrid(); break;
       case 'KeyS': solve(); break;
       case 'KeyG': generate(); break;
+      case 'KeyD': drawGrid(true); break;
       case 'ArrowUp': move(0); break;
       case 'ArrowLeft': move(1); break;
       case 'ArrowDown': move(2); break;
@@ -363,7 +366,9 @@ function clearGrid(){
   g.fillRect(0, 0, w, h);
 }
 
-function drawGrid(){
+function drawGrid(important = false){
+  if(!(autoDraw || important)) return;
+
   clearGrid();
 
   drawFuncs.forEach(func => {

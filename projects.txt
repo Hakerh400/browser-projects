@@ -5,3 +5,4 @@ games
 grid
 encrypted
 desktop
+hyper
