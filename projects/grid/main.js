@@ -249,8 +249,11 @@ function addEventListeners(){
       if(d.solvingDir1 & (1 << dirPrev)) d.solvingDir1 &= ~(1 << dirPrev);
       else d.solvingDir2 &= ~(1 << dirPrev);
 
-      drawAdjacentTiles(0);
-      drawAdjacentTiles(1);
+      calcCols(x, y);
+      drawGrid();
+
+      /*drawAdjacentTiles(0);
+      drawAdjacentTiles(1);*/
 
       window.requestAnimationFrame(performMove);
     }
@@ -272,17 +275,22 @@ function addEventListeners(){
   }
 
   function generate(){
+    var x0, y0;
+
     do{
       resetGrid();
 
       grid.iterate((x, y, d) => {
         d.visited = 0;
-        if(Math.random() < .1) swall(x, y);
+        if(Math.random() < 0) swall(x, y);
       });
 
       var x = O.rand(w);
       var y = O.rand(h);
       var dir = -1;
+
+      x0 = x;
+      y0 = y;
 
       var queue = [[x, y, -1]];
       var d = grid.get(x, y);
@@ -329,6 +337,7 @@ function addEventListeners(){
     findInternalCells();
     putWhiteCircs();
 
+    calcCols(x0, y0);
     drawGrid();
   }
 }
@@ -395,7 +404,7 @@ function drawTile(x, y, d, g){
   }
 
   if(d.internal){
-    g.fillStyle = '#e0e0ff';
+    g.fillStyle = d.col;
     g.fillRect(x, y, 1, 1);
   }
 
@@ -451,14 +460,14 @@ function iterateExternalShape(x, y, func){
 
 function iterateInternalShape(x, y, func){
   var id = getId();
-  var queue = [{x, y, d: grid.get(x, y)}];
+  var queue = [{x, y, d: grid.get(x, y), dist: 0}];
 
   while(queue.length){
-    var {x, y, d} = queue.shift();
+    var {x, y, d, dist} = queue.shift();
     if(d.id === id) continue;
     d.id = id;
 
-    func(x, y, d);
+    func(x, y, d, dist);
 
     iterateDirs(dir => {
       if(gdir(x, y, dir)) return;
@@ -466,6 +475,7 @@ function iterateInternalShape(x, y, func){
       var obj = ndir(x, y, dir);
       if(obj.d.id === id) return;
 
+      obj.dist = dist + 1;
       queue.push(obj);
     });
   }
@@ -541,6 +551,7 @@ function applyAlgorithms(){
   transformGrid();
   checkSnapshot();
 
+  calcCols();
   drawGrid();
 }
 
@@ -953,6 +964,20 @@ function checkSnapshot(){
     sdirs(freeTile.x, freeTile.y);
     transformGrid();
   }
+}
+
+function calcCols(x = null, y = null){
+  if(x === null || y === null)
+    ({x, y} = blackCirc);
+
+  iterateInternalShape(x, y, (x, y, d, dist) => {
+    var val = dist / 256 % 1;
+    var hsvCol = O.hsv(val);
+    var rgb = hsvCol.map(a => (a + 255) >> 1);
+    var col = O.rgb(...rgb);
+
+    d.col = col;
+  });
 }
 
 /*

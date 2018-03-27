@@ -1,7 +1,10 @@
 'use strict';
 
+const TIME_INCREMENT = 5;
+
 var format = 'mp4';
-var videoFile = `/projects/${O.project}/1.${format}`;
+var videoName = getVideoName();
+var videoFile = `/projects/${O.project}/${videoName}.${format}`;
 
 var video = null;
 var source = null;
@@ -11,11 +14,19 @@ var playing = false;
 addEventListener('keydown', evt => {
   if(!loaded) return;
 
-  switch(evt.key){
-    case ' ':
+  switch(evt.code){
+    case 'Space':
       if(playing) video.pause();
       else video.play();
       playing = !playing;
+      break;
+
+    case 'ArrowLeft':
+      video.currentTime -= TIME_INCREMENT;
+      break;
+
+    case 'ArrowRight':
+      video.currentTime += TIME_INCREMENT;
       break;
 
     case 'F5':
@@ -29,7 +40,7 @@ addEventListener('keydown', evt => {
   }
 });
 
-main();
+window.setTimeout(main);
 
 function main(){
   O.body.style.margin = '0px';
@@ -41,9 +52,17 @@ function main(){
   video.style.top = '50%';
   video.style.left = '50%';
   video.style.transform = 'translate(-50%, -50%)';
-  video.loop = true;
+  video.loop = false;
   video.addEventListener('canplay', () => { loaded = true; });
   
   source = O.ce(video, 'source');
   source.src = O.urlTime(videoFile);
+}
+
+function getVideoName(){
+  var name = O.urlParam('name');
+  if(name === null)
+    return '1';
+
+  return name;
 }

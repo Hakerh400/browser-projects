@@ -19,6 +19,12 @@ var O = {
   pih: Math.PI / 2,
 
   /*
+    Symbols
+  */
+
+  static: Symbol('static'),
+
+  /*
     Main functions
   */
 
@@ -94,11 +100,14 @@ var O = {
 
   urlParam(param){
     var match = O.href.match(new RegExp(`[\\?\\&]${param}=([^\\&]*)`));
-    if(match == null){
-      if(new RegExp(`[\\?\\&]${param}(?:\\&|$)`).test(O.href)) match = '';
+
+    if(match === null){
+      if(new RegExp(`[\\?\\&]${param}(?:\\&|$)`).test(O.href))
+        match = '';
     }else{
       match = window.unescape(match[1]);
     }
+
     return match;
   },
 
@@ -223,6 +232,118 @@ var O = {
     }
   },
 
+  Vector: class{
+    constructor(x = 0, y = 0){
+      this.x = +x;
+      this.y = +y;
+    }
+
+    fromAngle(len, angle){
+      var x = Math.cos(angle) * len;
+      var y = Math.sin(angle) * len;
+
+      return new O.Vector(x, y);
+    }
+
+    clone(){
+      return new O.Vector(this.x, this.y);
+    }
+
+    add(x, y){
+      if(x instanceof O.Vector)
+        ({x, y} = x);
+
+      this.x += x;
+      this.y += y;
+
+      return this;
+    }
+
+    sub(x, y){
+      if(x instanceof O.Vector)
+        ({x, y} = x);
+
+      this.x -= x;
+      this.y -= y;
+
+      return this;
+    }
+
+    mul(val){
+      this.x *= val;
+      this.y *= val;
+
+      return this;
+    }
+
+    div(val){
+      this.x /= val;
+      this.y /= val;
+
+      return this;
+    }
+
+    combine(len, angle){
+      this.x += Math.cos(angle) * len;
+      this.y += Math.sin(angle) * len;
+
+      return this;
+    }
+
+    len(){
+      return Math.sqrt(this.x * this.x + this.y * this.y);
+    }
+
+    setLen(len){
+      var angle = this.angle();
+
+      this.x = Math.cos(angle) * len;
+      this.y = Math.sin(angle) * len;
+    }
+
+    angle(){
+      return Math.atan2(this.y, this.x);
+    }
+
+    setAngle(angle){
+      var len = this.len();
+
+      this.x = Math.cos(angle) * len;
+      this.y = Math.sin(angle) * len;
+    }
+
+    norm(){
+      this.div(this.len());
+    }
+
+    dist(x, y){
+      if(x instanceof O.Vector)
+        ({x, y} = x);
+
+      var dx = this.x - x;
+      var dy = this.y - y;
+      
+      return Math.sqrt(dx * dx + dy * dy);;
+    }
+
+    maxLen(maxLen){
+      if(this.len() > maxLen)
+        this.setLen(maxLen);
+    }
+
+    rotate(angle){
+      var sin = Math.sin(angle);
+      var cos = Math.cos(angle);
+      var x = this.x * cos - this.y * sin;
+      var y = this.x * sin + this.y * cos;
+
+      this.x = x;
+      this.y = y;
+
+      return this;
+    }
+  },
+
   Grid: class{
     constructor(w, h, func){
       var grid = O.ca(w, x => O.ca(h, y => new O.PathTile(func(x, y))));
@@ -250,7 +371,10 @@ var O = {
   },
 
   TilesGrid: class{
-    constructor(){
+    constructor(g = null){
+      this.isNode = O.env === 'node';
+      this.bgEnabled = true;
+
       this.w = 1;
       this.h = 1;
       this.s = 32;
@@ -258,7 +382,13 @@ var O = {
       this.tileParams = [];
       this.drawFunc = O.nop;
 
-      this.g = O.ceCanvas(true).g;
+      this.g = g === null ? O.ceCanvas(true).g : g;
+
+      this.iw = this.g.g.width;
+      this.ih = this.g.g.height;
+      this.iwh = this.iw / 2;
+      this.ihh = this.ih / 2;
+
       this.resize();
 
       var tileParams = this.tileParams;
@@ -299,6 +429,9 @@ var O = {
     }
 
     updateIWH(){
+      if(this.isNode)
+        return;
+
       var iw = window.innerWidth;
       var ih = window.innerHeight;
       if(this.iw == iw && this.ih == ih) return;
@@ -346,17 +479,21 @@ var O = {
       var g = this.g;
 
       g.resetTransform();
+      g.lineWidth = 1;
 
       g.fillStyle = 'darkgray';
       g.fillRect(0, 0, this.iw, this.ih);
 
       var tx = this.iw - this.w * this.s >> 1;
       var ty = this.ih - this.h * this.s >> 1;
+
       g.translate(Math.max(tx, 0), Math.max(ty, 0));
       g.scale(this.s);
 
-      g.fillStyle = 'white';
-      g.fillRect(0, 0, this.w, this.h);
+      if(this.bgEnabled){
+        g.fillStyle = 'white';
+        g.fillRect(0, 0, this.w, this.h);
+      }
 
       g.textAlign = 'center';
       g.textBaseline = 'middle';
@@ -564,6 +701,8 @@ var O = {
       this.s = 1;
       this.tx = 0;
       this.ty = 0;
+
+      this.g.resetTransform();
     }
 
     scale(s){
@@ -967,7 +1106,7 @@ var O = {
   */
 
   ca(len, func){
-    return [...new Array(len)].map((elem, index) => func(index));
+    return new Array(len).fill().map((elem, index) => func(index));
   },
 
   /*
@@ -977,35 +1116,72 @@ var O = {
   repeat(num, func){
     for(var i = 0; i < num; i++) func(i);
   },
+
   rand(a){
     return Math.random() * a | 0;
   },
+
+  randf(a){
+    return Math.random() * a;
+  },
+
   bound(val, min, max){
     if(val < min) return min;
     if(val > max) return max;
     return val;
   },
+
   int(val, min = null, max = null){
     if(typeof val == 'object') val = 0;
     else val |= 0;
     if(min != null) val = O.bound(val, min, max);
     return val;
   },
+
   bool(val){
     return Boolean(O.int(val));
   },
+
   sortAsc(arr){
     return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0);
   },
+
   sortDesc(arr){
     return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0);
   },
+
   rgb(...col){
     return `#${col.map(val => O.pad((val | 0).toString(16), 2)).join('')}`;
   },
+
+  hsv(val){
+    var col = [0, 0, 0];
+    var v = Math.round(val * 256 * 6);
+
+    if(v < 256) col[0] = 255, col[1] = v % 256;
+    else if(v < 256 * 2) col[1] = 255, col[0] = 255 - v % 256;
+    else if(v < 256 * 3) col[1] = 255, col[2] = v % 256;
+    else if(v < 256 * 4) col[2] = 255, col[1] = 255 - v % 256;
+    else if(v < 256 * 5) col[2] = 255, col[0] = v % 256;
+    else col[0] = 255, col[2] = 255 - v % 256;
+
+    return col;
+  },
+
+  hsvx(val){
+    if(val === 0)
+      return O.hsv(0);
+
+    while(val < 1 / 49)
+      val *= 49;
+
+    return O.hsv(val - 1 / 64);
+  },
+
   binLen(a){
     return a && (Math.log2(a) | 0) + 1;
   },
+
   raf(func){
     return window.requestAnimationFrame(func);
   },
