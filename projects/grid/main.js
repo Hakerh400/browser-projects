@@ -1,5 +1,7 @@
 'use strict';
 
+const RAINBOW_ENABLED = 0;
+
 var size = 20;
 var diameter = .7;
 
@@ -16,6 +18,7 @@ var cols = {
   darkCirc: '#000000',
   lightCirc: '#ffffff',
   wall: '#808080',
+  internal: '#00ffff',
 };
 
 var drawFuncs = [
@@ -46,16 +49,19 @@ function addEventListeners(){
   var clientX = grid.iw >> 1;
   var clientY = grid.ih >> 1;
 
+  var keys = Object.create(null);
+  var mouse = Object.create(null);
+
   window.addEventListener('keydown', evt => {
+    keys[evt.code] = 1;
+
     switch(evt.code){
       case 'Enter': applyAlgorithms(); break;
-      case 'KeyB': toggleCirc(1); break;
-      case 'KeyW': toggleCirc(2); break;
-      case 'KeyX': toggleWall(); break;
-      case 'KeyR': resetGrid(); break;
       case 'KeyS': solve(); break;
       case 'KeyG': generate(); break;
-      case 'KeyD': drawGrid(true); break;
+      case 'KeyR': resetGrid(); break;
+      case 'KeyC': closeGrid(); break;
+      case 'KeyD': divideGrid(); break;
       case 'ArrowUp': move(0); break;
       case 'ArrowLeft': move(1); break;
       case 'ArrowDown': move(2); break;
@@ -63,7 +69,23 @@ function addEventListeners(){
     }
   });
 
+  window.addEventListener('keyup', evt => {
+    keys[evt.code] = 0;
+  });
+
   window.addEventListener('mousedown', evt => {
+    mouse[evt.button] = 1;
+
+    var type = getInputType();
+    var mode = mouse[0] ? 1 : 0;
+
+    if(type !== 0){
+      clientX = evt.clientX;
+      clientY = evt.clientY;
+      setOrRemoveObjects(evt, type, evt.button);
+      return;
+    }
+
     switch(evt.button){
       case 0:
         markLine(evt);
@@ -75,14 +97,68 @@ function addEventListeners(){
     }
   });
 
+  window.addEventListener('mouseup', evt => {
+    mouse[evt.button] = 0;
+  });
+
   window.addEventListener('mousemove', evt => {
+    if(!(mouse[0] || mouse[2]))
+      return;
+
+    var g = grid.g;
+    var type = getInputType();
+    var mode = mouse[0] ? 1 : 0;
+
+    if(type !== 0){
+      setOrRemoveObjects(evt, type, mode);
+      return;
+    }
+
+    if(mode === 0){
+      unmarkLine(evt);
+      return;
+    }
+
+    var x1 = Math.round(clientX / g.s - g.tx);
+    var y1 = Math.round(clientY / g.s - g.ty);
+    var x2 = Math.round(evt.clientX / g.s - g.tx);
+    var y2 = Math.round(evt.clientY / g.s - g.ty);
+
+    var xs = x2 > x1 ? 1 : x2 < x1 ? -1 : 0;
+    var ys = y2 > y1 ? 1 : y2 < y1 ? -1 : 0;
+
+    var dir1 = ys !== -1 ? 0 : 2;
+    var dir2 = xs !== -1 ? 1 : 3;
+
+    if(xs === -1) x1--, x2--;
+    if(ys === -1) y1--, y2--;
+
+    while(x1 !== x2){
+      sdir(x1, y1, dir1);
+      x1 += xs;
+    }
+
+    while(y1 !== y2){
+      sdir(x1, y1, dir2);
+      y1 += ys;
+    }
+
     clientX = evt.clientX;
     clientY = evt.clientY;
+
+    drawGrid();
   });
 
   window.addEventListener('contextmenu', evt => {
     evt.preventDefault();
   });
+
+  function getInputType(){
+    if(keys['KeyB']) return 1;
+    if(keys['KeyW']) return 2;
+    if(keys['KeyX']) return 3;
+    return 0;
+  }
 
   function markLine(evt){
     var coords = getCoords(evt);
@@ -104,32 +180,39 @@ function addEventListeners(){
     drawGrid();
   }
 
-  function toggleCirc(type){
-    var coords = getCoords();
-    if(coords === null) return;
+  function setOrRemoveObjects(evt, type, mode){
+    var g = grid.g;
 
-    var [x, y] = coords;
-    var d = grid.get(x, y);
+    var x1 = Math.floor(clientX / g.s - g.tx);
+    var y1 = Math.floor(clientY / g.s - g.ty);
+    var x2 = Math.floor(evt.clientX / g.s - g.tx);
+    var y2 = Math.floor(evt.clientY / g.s - g.ty);
 
-    if(d.wall) cwall(x, y);
-    
-    if(d.circ == type) d.circ = 0;
-    else d.circ = type;
+    var xs = x2 > x1 ? 1 : x2 < x1 ? -1 : 0;
+    var ys = y2 > y1 ? 1 : y2 < y1 ? -1 : 0;
+
+    do{
+      setOrRemoveObject(x1, y1, type, mode);
+      x1 += xs;
+    }while(x1 !== x2);
+
+    do{
+      setOrRemoveObject(x1, y1, type, mode);
+      y1 += ys;
+    }while(y1 !== y2);
+
+    clientX = evt.clientX;
+    clientY = evt.clientY;
 
     drawGrid();
   }
 
-  function toggleWall(){
-    var coords = getCoords();
-    if(coords === null) return;
-
-    var [x, y] = coords;
-    var d = grid.get(x, y);
-
-    if(d.wall) cwall(x, y);
-    else swall(x, y);
-
-    drawGrid();
+  function setOrRemoveObject(x, y, type, mode){
+    switch(type){
+      case 1: mode ? scirc(x, y, 1) : ccirc(x, y, 1); break;
+      case 2: mode ? scirc(x, y, 2) : ccirc(x, y, 2); break;
+      case 3: mode ? swall(x, y) : cwall(x, y); break;
+    }
   }
 
   function getCoords(evt = null){
@@ -165,7 +248,7 @@ function addEventListeners(){
     grid.iterate((x, y, d) => d.moved = 0);
 
     grid.iterate((x, y, d) => {
-      if(d.moved != 2 && d.circ == 1 && !gdir(x, y, dir)){
+      if(d.moved !== 2 && d.circ === 1 && !gdir(x, y, dir)){
         var d1 = ndir(x, y, dir).d;
         if(d1 === null) return;
 
@@ -173,8 +256,8 @@ function addEventListeners(){
           d.circ = 0;
         }
 
-        if(d1.circ != 1){
-          if(d.circ == 2) collected++;
+        if(d1.circ !== 1){
+          if(d.circ === 2) collected++;
           d1.circ = 1;
           d1.moved = 2;
         }else{
@@ -196,12 +279,12 @@ function addEventListeners(){
       d.solvingDir1 = d.dir ^ 15;
       d.solvingDir2 = d.solvingDir1;
 
-      if(d.circ == 1){
+      if(d.circ === 1){
         p.push(new O.Point(x, y));
       }
     });
 
-    if(p.length != 1) return;
+    if(p.length !== 1) return;
 
     var {x, y} = p[0];
     var [xPrev, yPrev] = [x, y];
@@ -216,20 +299,20 @@ function addEventListeners(){
       yPrev = y;
 
       iterateDirs(ddir => {
-        if(dir == -1 && ddir != dirPrev && (d.solvingDir1 & (1 << ddir))){
+        if(dir === -1 && ddir !== dirPrev && (d.solvingDir1 & (1 << ddir))){
           dir = ddir;
         }
       });
 
-      if(dir == -1){
+      if(dir === -1){
         iterateDirs(ddir => {
-          if(dir == -1 && ddir != dirPrev && (d.solvingDir2 & (1 << ddir))){
+          if(dir === -1 && ddir !== dirPrev && (d.solvingDir2 & (1 << ddir))){
             dir = ddir;
           }
         });
       }
 
-      if(dir == -1) return;
+      if(dir === -1) return;
 
       if(d.solvingDir1 & (1 << dir)) d.solvingDir1 &= ~(1 << dir);
       else d.solvingDir2 &= ~(1 << dir);
@@ -315,7 +398,7 @@ function addEventListeners(){
         });
 
         sdirs(x, y);
-        if(dir != -1) cdir(x, y, dir);
+        if(dir !== -1) cdir(x, y, dir);
 
         d.visited = 1;
         d.dirs = 15 & ~(1 << dir);
@@ -364,6 +447,30 @@ function resetGrid(){
   drawGrid();
 }
 
+function closeGrid(){
+  for(var x = 0; x < w; x++){
+    sdir(x, 0, 0);
+    sdir(x, h - 1, 2);
+  }
+
+  for(var y = 0; y < h; y++){
+    sdir(0, y, 1);
+    sdir(w - 1, y, 3);
+  }
+
+  drawGrid();
+}
+
+function divideGrid(){
+  for(var y = 0; y < h; y++){
+    for(var x = 0; x < w; x++){
+      sdirs(x, y);
+    }
+  }
+
+  drawGrid();
+}
+
 /*
   Drawing functions
 */
@@ -376,7 +483,8 @@ function clearGrid(){
 }
 
 function drawGrid(important = false){
-  if(!(autoDraw || important)) return;
+  if(!(autoDraw || important))
+    return;
 
   clearGrid();
 
@@ -404,7 +512,7 @@ function drawTile(x, y, d, g){
   }
 
   if(d.internal){
-    g.fillStyle = d.col;
+    g.fillStyle = RAINBOW_ENABLED ? d.col : cols.internal;
     g.fillRect(x, y, 1, 1);
   }
 
@@ -936,8 +1044,8 @@ function connectDirShapes(){
 
 function putWhiteCircs(){
   grid.iterate((x, y, d) => {
-    if(!(d.circ == 1 || d.wall)){
-      if(d.internal && dirsNum(x, y) == 3) d.circ = 2;
+    if(!(d.circ === 1 || d.wall)){
+      if(d.internal && dirsNum(x, y) === 3) d.circ = 2;
       else d.circ = 0;
     }
   });
@@ -967,6 +1075,9 @@ function checkSnapshot(){
 }
 
 function calcCols(x = null, y = null){
+  if(!RAINBOW_ENABLED)
+    return;
+
   if(x === null || y === null)
     ({x, y} = blackCirc);
 
@@ -1125,8 +1236,8 @@ function cdir(x, y, dir){
 }
 
 function ndir(x, y, dir){
-  x += (dir == 3) - (dir == 1) | 0;
-  y += (dir == 2) - (dir == 0) | 0;
+  x += (dir === 3) - (dir === 1) | 0;
+  y += (dir === 2) - (dir === 0) | 0;
 
   return {
     x, y,
@@ -1149,4 +1260,19 @@ function cwall(x, y){
 
   d.wall = 0;
   sdirs(x, y);
+}
+
+function scirc(x, y, type){
+  var d = grid.get(x, y);
+  if(d === null || d.circ === type) return;
+
+  if(d.wall) cwall(x, y);
+  d.circ = type;
+}
+
+function ccirc(x, y, type){
+  var d = grid.get(x, y);
+  if(d === null || d.circ !== type) return;
+
+  d.circ = 0;
 }
