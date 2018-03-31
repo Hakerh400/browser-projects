@@ -1,7 +1,10 @@
 'use strict';
 
-const RAINBOW_ENABLED = 0;
 const IS_BROWSER = O.env !== 'node';
+const MAX_COORD = (1 << 16) - 1;
+const RAINBOW_ENABLED = 0;
+const CHECKSUM_ENABLED = 0;
+const ARE_COORDS_ENABLED = 0;
 
 var size = IS_BROWSER ? 40 : 20;
 var diameter = .7;
@@ -32,15 +35,19 @@ var drawFuncs = [
 var autoDraw = IS_BROWSER;
 
 var grid = null;
+var canvas = null;
 var blackCirc = null;
 
 var fragments = [];
 var activeFragment = null;
 
+var isCanvasVisible = true;
+
 window.setTimeout(main);
 
 function main(){
   grid = new O.TilesGrid();
+  canvas = grid.g.canvas;
 
   grid.setWH(w, h);
   grid.setSize(size);
@@ -57,7 +64,7 @@ function addEventListeners(){
   var keys = Object.create(null);
   var mouse = Object.create(null);
 
-  window.addEventListener('keydown', evt => {
+  ael('keydown', evt => {
     keys[evt.code] = 1;
 
     switch(evt.code){
@@ -68,6 +75,7 @@ function addEventListeners(){
       case 'KeyC': closeGrid(); break;
       case 'KeyD': divideGrid(); break;
       case 'KeyI': updateInternals(); break;
+      case 'Escape': showTextArea(evt); break;
       case 'Digit1': drawGrid(1); break;
       case 'ArrowUp': move(0); break;
       case 'ArrowLeft': move(1); break;
@@ -76,11 +84,11 @@ function addEventListeners(){
     }
   });
 
-  window.addEventListener('keyup', evt => {
+  ael('keyup', evt => {
     keys[evt.code] = 0;
   });
 
-  window.addEventListener('mousedown', evt => {
+  ael('mousedown', evt => {
     mouse[evt.button] = 1;
 
     var type = getInputType();
@@ -104,11 +112,11 @@ function addEventListeners(){
     }
   });
 
-  window.addEventListener('mouseup', evt => {
+  ael('mouseup', evt => {
     mouse[evt.button] = 0;
   });
 
-  window.addEventListener('mousemove', evt => {
+  ael('mousemove', evt => {
     if(!(mouse[0] || mouse[2]))
       return;
 
@@ -156,7 +164,7 @@ function addEventListeners(){
     drawGrid();
   });
 
-  window.addEventListener('contextmenu', evt => {
+  ael('contextmenu', evt => {
     evt.preventDefault();
   });
 
@@ -285,7 +293,7 @@ function addEventListeners(){
     var p = [];
 
     iterate((x, y, d) => {
-      d.solvingDir1 = d.dir ^ 15;
+      d.solvingDir1 = gdirs(x, y) ^ 15;
       d.solvingDir2 = d.solvingDir1;
 
       if(d.circ === 1){
@@ -407,7 +415,6 @@ function addEventListeners(){
         if(dir !== -1) cdir(x, y, dir);
 
         d.visited = 1;
-        d.dirs = 15 & ~(1 << dir);
       }
 
       iterate((x, y, d) => {
@@ -428,6 +435,15 @@ function addEventListeners(){
 
     calcCols(x0, y0);
     drawGrid();
+  }
+
+  function ael(type, func){
+    window.addEventListener(type, evt => {
+      if(!isCanvasVisible)
+        return;
+
+      func(evt);
+    });
   }
 }
 
@@ -791,6 +807,129 @@ class Fragment{
     return `${x},${y}`;
   }
 };
+
+/*
+  Import and export function
+*/
+
+function showTextArea(evt = null){
+  if(!(O.static in showTextArea)){
+    var obj = Object.create(null);
+    showTextArea[O.static] = obj;
+
+    var div = O.ce(O.body, 'div');
+    obj.div = div;
+    div.style.margin = '8px';
+
+    var ta = O.ce(div, 'textarea');
+    obj.ta = ta;
+    ta.style.width = '75%';
+    ta.style.height = '75%';
+
+    window.addEventListener('keydown', evt => {
+      if(isCanvasVisible || evt.disabled)
+        return;
+
+      switch(evt.code){
+        case 'Escape':
+          div.style.display = 'none';
+          canvas.style.display = 'block';
+          importGrid(ta.value);
+          isCanvasVisible = true;
+          evt.disabled = true;
+          break;
+      }
+    });
+  }
+
+  var obj = showTextArea[O.static];
+  var {div, ta} = obj;
+
+  canvas.style.display = 'none';
+  div.style.display = 'block';
+  ta.value = exportGrid();
+  isCanvasVisible = false;
+
+  if(evt !== null)
+    evt.disabled = true;
+}
+
+function exportGrid(){
+  var bs = new O.BitStream();
+
+  if(ARE_COORDS_ENABLED){
+    bs.write(w, MAX_COORD);
+    bs.write(h, MAX_COORD);
+  }
+
+  iterate(1, (x, y, d) => {
+    var dirs = gdirs(x, y, 1);
+
+    if(y === 0) bs.write(dirs & 1 ? 1 : 0, 1);
+    if(x === 0) bs.write(dirs & 2 ? 1 : 0, 1);
+
+    bs.write(dirs & 8 ? 1 : 0, 1);
+    bs.write(dirs & 4 ? 1 : 0, 1);
+
+    if(!(((dirs & 1) && isVoid(x, y - 1, 1)) || ((dirs & 2) && isVoid(x - 1, y, 1)))){
+      bs.write(d.void | 0, 1);
+      if(d.void) return;
+    }
+
+    if(dirs === 15){
+      bs.write(d.wall | 0, 1);
+      if(d.wall) return;
+    }
+
+    bs.write(d.circ | 0, 2);
+  });
+
+  bs.pack();
+
+  return bs.stringify(CHECKSUM_ENABLED);
+}
+
+function importGrid(str){
+  var arr = (str.match(/[0-9A-F]{1,2}/gi) || []).map(a => parseInt(a, 16));
+  var bs = new O.BitStream(arr, CHECKSUM_ENABLED);
+
+  if(ARE_COORDS_ENABLED){
+    w = bs.read(MAX_COORD);
+    h = bs.read(MAX_COORD);
+  }
+
+  resetGrid();
+
+  iterate(1, (x, y, d) => {
+    var dirs = gdirs(x, y, 1);
+
+    if(y === 0) dirs |= bs.read(1);
+    if(x === 0) dirs |= bs.read(1) << 1;
+
+    dirs |= bs.read(1) << 3;
+    dirs |= bs.read(1) << 2;
+
+    iterateDirs(dir => {
+      if(dirs & (1 << dir))
+        sdir(x, y, dir);
+    });
+
+    if(!(((dirs & 1) && isVoid(x, y - 1, 1)) || ((dirs & 2) && isVoid(x - 1, y, 1)))){
+      d.void = bs.read(1);
+      if(d.void) return;
+    }
+
+    if(dirs === 15){
+      d.wall = bs.read(1);
+      if(d.wall) return;
+    }
+
+    d.circ = bs.read(2);
+  });
+
+  updateInternals();
+  drawGrid();
+}
 
 /*
   Algorithms
@@ -1306,22 +1445,20 @@ function setBlackCirc(x, y){
 }
 
 function isLineTouching(x, y, dir){
-  var advanced = 1;
-
-  if(gdire(x, y, dir, advanced) || gdire(x, y, dir - 1 & 3, advanced) || gdire(x, y, dir + 1 & 3, advanced))
+  if(gdire(x, y, dir, 1) || gdire(x, y, dir - 1 & 3, 1) || gdire(x, y, dir + 1 & 3, 1))
     return true;
 
   var xx = x, yy = y;
   var d;
 
-  ({x, y, d} = ndir(xx, yy, dir, advanced));
-  if(d && (gdire(x, y, dir - 1 & 3, advanced) || gdire(x, y, dir + 1 & 3, advanced))) return true;
+  ({x, y, d} = ndir(xx, yy, dir, 1));
+  if(d && (gdire(x, y, dir - 1 & 3, 1) || gdire(x, y, dir + 1 & 3, 1))) return true;
 
-  ({x, y, d} = ndir(xx, yy, dir - 1 & 3, advanced));
-  if(d && gdire(x, y, dir, advanced)) return true;
+  ({x, y, d} = ndir(xx, yy, dir - 1 & 3, 1));
+  if(d && gdire(x, y, dir, 1)) return true;
 
-  ({x, y, d} = ndir(xx, yy, dir + 1 & 3, advanced));
-  if(d && gdire(x, y, dir, advanced)) return true;
+  ({x, y, d} = ndir(xx, yy, dir + 1 & 3, 1));
+  if(d && gdire(x, y, dir, 1)) return true;
 
   return false;
 }
@@ -1358,10 +1495,11 @@ function findMinCoordsAndDir(xMin, yMin, dirMin, x, y, dir){
   if(y2 < y1) return params;
   if(y2 > y1) return paramsMin;
 
+  if(dir2 < dir1) return params;
+
   if(x2 < x1) return params;
   if(x2 > x1) return paramsMin;
 
-  if(dir2 < dir1) return params;
   return paramsMin;
 }
 
@@ -1396,6 +1534,11 @@ function dirIndex(dir){
 
 function dirsNum(x, y){
   return gdir(x, y, 0) + gdir(x, y, 1) + gdir(x, y, 2) + gdir(x, y, 3);
+}
+
+function isVoid(x, y, advanced){
+  var d = get(x, y, advanced);
+  return d === null || d.void;
 }
 
 function gdir(x, y, dir, advanced){
