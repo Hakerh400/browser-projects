@@ -4,7 +4,7 @@ const IS_BROWSER = O.env !== 'node';
 const MAX_COORD = (1 << 16) - 1;
 const RAINBOW_ENABLED = 0;
 const CHECKSUM_ENABLED = 0;
-const ARE_COORDS_ENABLED = 0;
+const COORDS_ENABLED = 0;
 
 var size = IS_BROWSER ? 40 : 20;
 var diameter = .7;
@@ -809,7 +809,7 @@ class Fragment{
 };
 
 /*
-  Import and export function
+  Import and export functions
 */
 
 function showTextArea(evt = null){
@@ -823,8 +823,8 @@ function showTextArea(evt = null){
 
     var ta = O.ce(div, 'textarea');
     obj.ta = ta;
-    ta.style.width = '75%';
-    ta.style.height = '75%';
+    ta.style.width = `${grid.iw * .75}px`;
+    ta.style.height = `${grid.ih * .75}px`;
 
     window.addEventListener('keydown', evt => {
       if(isCanvasVisible || evt.disabled)
@@ -857,7 +857,7 @@ function showTextArea(evt = null){
 function exportGrid(){
   var bs = new O.BitStream();
 
-  if(ARE_COORDS_ENABLED){
+  if(COORDS_ENABLED){
     bs.write(w, MAX_COORD);
     bs.write(h, MAX_COORD);
   }
@@ -893,7 +893,7 @@ function importGrid(str){
   var arr = (str.match(/[0-9A-F]{1,2}/gi) || []).map(a => parseInt(a, 16));
   var bs = new O.BitStream(arr, CHECKSUM_ENABLED);
 
-  if(ARE_COORDS_ENABLED){
+  if(COORDS_ENABLED){
     w = bs.read(MAX_COORD);
     h = bs.read(MAX_COORD);
   }
