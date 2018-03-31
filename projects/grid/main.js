@@ -1,8 +1,9 @@
 'use strict';
 
 const RAINBOW_ENABLED = 0;
+const IS_BROWSER = O.env !== 'node';
 
-var size = 40;
+var size = IS_BROWSER ? 40 : 20;
 var diameter = .7;
 
 var w = 1920 / size | 0;
@@ -18,7 +19,7 @@ var cols = {
   darkCirc: '#000000',
   lightCirc: '#ffffff',
   wall: '#808080',
-  void: '#e0e0e0',
+  void: '#00ff00',
   internal: '#00ffff',
 };
 
@@ -28,7 +29,7 @@ var drawFuncs = [
   drawFrameLines,
 ];
 
-var autoDraw = O.env !== 'node';
+var autoDraw = IS_BROWSER;
 
 var grid = null;
 var blackCirc = null;
@@ -125,10 +126,10 @@ function addEventListeners(){
       return;
     }
 
-    var x1 = Math.round(clientX / g.s - g.tx);
-    var y1 = Math.round(clientY / g.s - g.ty);
-    var x2 = Math.round(evt.clientX / g.s - g.tx);
-    var y2 = Math.round(evt.clientY / g.s - g.ty);
+    var x1 = Math.round((clientX - g.tx) / g.s);
+    var y1 = Math.round((clientY - g.ty) / g.s);
+    var x2 = Math.round((evt.clientX - g.tx) / g.s);
+    var y2 = Math.round((evt.clientY - g.ty) / g.s);
 
     var xs = x2 > x1 ? 1 : x2 < x1 ? -1 : 0;
     var ys = y2 > y1 ? 1 : y2 < y1 ? -1 : 0;
@@ -190,10 +191,10 @@ function addEventListeners(){
   function setOrRemoveObjects(evt, type, mode){
     var g = grid.g;
 
-    var x1 = Math.floor(clientX / g.s - g.tx);
-    var y1 = Math.floor(clientY / g.s - g.ty);
-    var x2 = Math.floor(evt.clientX / g.s - g.tx);
-    var y2 = Math.floor(evt.clientY / g.s - g.ty);
+    var x1 = Math.floor((clientX - g.tx) / g.s);
+    var y1 = Math.floor((clientY - g.ty) / g.s);
+    var x2 = Math.floor((evt.clientX - g.tx) / g.s);
+    var y2 = Math.floor((evt.clientY - g.ty) / g.s);
 
     var xs = x2 > x1 ? 1 : x2 < x1 ? -1 : 0;
     var ys = y2 > y1 ? 1 : y2 < y1 ? -1 : 0;
@@ -231,8 +232,8 @@ function addEventListeners(){
 
     var g = grid.g;
 
-    var cx = clientX / g.s - g.tx;
-    var cy = clientY / g.s - g.ty;
+    var cx = (clientX - g.tx) / g.s;
+    var cy = (clientY - g.ty) / g.s;
 
     var x = Math.floor(cx);
     var y = Math.floor(cy);
@@ -896,8 +897,13 @@ function putExternalLines(){
 
       d1 = ndir(x, y, dir).d;
 
-      if(!(d1 && d1.ext)) return d.extLines |= ddir;
-      if(d.circ || (d1 && d1.circ) || isLineTouching(x, y, dir)) return;
+      if(d1 === null || !d1.ext){
+        d.extLines |= ddir;
+        return;
+      }
+
+      if(d.circ || (d1 !== null && d1.circ) || isLineTouching(x, y, dir))
+        return;
 
       d.extLines |= ddir;
     });
@@ -906,7 +912,8 @@ function putExternalLines(){
   iterate((x, y, d) => {
     if(d.ext){
       iterateDirs(dir => {
-        if(d.extLines & (1 << dir)) sdir(x, y, dir);
+        if(d.extLines & (1 << dir))
+          sdir(x, y, dir);
       });
     }
   });
@@ -988,7 +995,7 @@ function putBlackCirc(){
 }
 
 function connectShapes(){
-  var stage = 0;
+  var mode = 0;
   var internalsNumPrev = null;
 
   while(1){
@@ -1008,7 +1015,7 @@ function connectShapes(){
 
       var isStartingTile = someAdjacent(x, y, (x, y, d1) => {
         if(d1 === null) return 0;
-        return stage === 0 ? !d1.internal : d1.wall;
+        return mode === 0 ? !d1.internal : d1.wall;
       });
 
       if(isStartingTile)
@@ -1019,7 +1026,7 @@ function connectShapes(){
       break;
 
     if(internalsNum === internalsNumPrev){
-      stage = 1;
+      mode ^= 1;
       internalsNumPrev = null;
       continue;
     }
@@ -1036,19 +1043,19 @@ function connectShapes(){
     while(queue.length){
       var [x, y, d, path] = queue.shift();
 
-      if((stage === 0 ? !d.internal : d.wall) && d.id === id) continue;
+      if((mode === 0 ? !d.internal : d.wall) && d.id === id) continue;
       d.id = id;
 
-      if((stage === 0 ? d.internal : !d.wall) && path.length){
+      if((mode === 0 ? d.internal : !d.wall) && path.length){
         path = path.map(dir => dir + 2 & 3);
         path.push(path[path.length - 1]);
 
         path.reduceRight((dirPrev, dir) => {
-          if(stage === 0){
+          if(mode === 0){
             if(!d.internal){
               iterateDirs(ddir => {
                 if(ddir !== dir && ddir !== dirPrev){
-                  if(stage === 0) sdir(x, y, ddir);
+                  if(mode === 0) sdir(x, y, ddir);
                   else cdir(x, y, ddir);
                 }
               });
@@ -1072,8 +1079,8 @@ function connectShapes(){
         var obj = ndir(x, y, dir);
 
         if(obj.d === null) return;
-        if(stage === 0 && obj.d.wall) return;
-        if(stage === 1 && !obj.d.internal) return;
+        if(mode === 0 && obj.d.wall) return;
+        if(mode === 1 && !obj.d.internal) return;
 
         if(obj.d.id !== id)
           queue.push([obj.x, obj.y, obj.d, [...path, dir]]);
@@ -1249,14 +1256,15 @@ function checkSnapshot(){
   iterate((x, y, d) => {
     if(!needsChange) return;
 
-    if(d.dir !== d.dirPrev || d.circ !== d.circPrev || d.wall !== d.wallPrev){
+    var dirs = gdirs(x, y);
+
+    if(dirs !== d.dirPrev || d.circ !== d.circPrev || d.wall !== d.wallPrev){
       needsChange = false;
       return;
     }
 
-    if(freeTile === null && !d.internal && gdirs(x, y)){
+    if(freeTile === null && !d.internal && dirs !== 0)
       freeTile = new O.Point(x, y);
-    }
   });
 
   if(needsChange && freeTile !== null){
@@ -1298,19 +1306,22 @@ function setBlackCirc(x, y){
 }
 
 function isLineTouching(x, y, dir){
-  if(gdire(x, y, dir) || gdire(x, y, dir - 1 & 3) || gdire(x, y, dir + 1 & 3)) return true;
+  var advanced = 1;
+
+  if(gdire(x, y, dir, advanced) || gdire(x, y, dir - 1 & 3, advanced) || gdire(x, y, dir + 1 & 3, advanced))
+    return true;
 
   var xx = x, yy = y;
   var d;
 
-  ({x, y, d} = ndir(xx, yy, dir));
-  if(d && (gdire(x, y, dir - 1 & 3) || gdire(x, y, dir + 1 & 3))) return true;
+  ({x, y, d} = ndir(xx, yy, dir, advanced));
+  if(d && (gdire(x, y, dir - 1 & 3, advanced) || gdire(x, y, dir + 1 & 3, advanced))) return true;
 
-  ({x, y, d} = ndir(xx, yy, dir - 1 & 3));
-  if(d && gdire(x, y, dir)) return true;
+  ({x, y, d} = ndir(xx, yy, dir - 1 & 3, advanced));
+  if(d && gdire(x, y, dir, advanced)) return true;
 
-  ({x, y, d} = ndir(xx, yy, dir + 1 & 3));
-  if(d && gdire(x, y, dir)) return true;
+  ({x, y, d} = ndir(xx, yy, dir + 1 & 3, advanced));
+  if(d && gdire(x, y, dir, advanced)) return true;
 
   return false;
 }
@@ -1405,16 +1416,6 @@ function gdir(x, y, dir, advanced){
   return 0;
 }
 
-function gdire(x, y, dir, advanced){
-  var d = ndir(x, y, dir, advanced).d;
-  if(d !== null && !(d.wall || d.ext)) return false;
-  return gdir(x, y, dir, advanced);
-}
-
-function gdirs(x, y, advanced){
-  return gdir(x, y, 0, advanced) | (gdir(x, y, 1, advanced) << 1) | (gdir(x, y, 2, advanced) << 2) | (gdir(x, y, 3, advanced) << 3);
-}
-
 function sdir(x, y, dir){
   var advanced = 1;
   var d = get(x, y, advanced);
@@ -1430,8 +1431,22 @@ function sdir(x, y, dir){
 function cdir(x, y, dir){
   var advanced = 1;
   var d = get(x, y, advanced);
+
   if(d !== null) d.dir &= ~(1 << dir);
   if((d = ndir(x, y, dir, advanced).d) !== null) d.dir &= ~(1 << (dir + 2 & 3));
+}
+
+function gdirs(x, y, advanced){
+  return gdir(x, y, 0, advanced) | (gdir(x, y, 1, advanced) << 1) | (gdir(x, y, 2, advanced) << 2) | (gdir(x, y, 3, advanced) << 3);
+}
+
+function gdire(x, y, dir, advanced){
+  var d = ndir(x, y, dir, advanced).d;
+
+  if(d === null || d.wall || d.void || d.ext)
+    return gdir(x, y, dir, advanced);
+
+  return false;
 }
 
 function sdirs(x, y, advanced){
@@ -1477,7 +1492,7 @@ function swall(x, y){
 }
 
 function cwall(x, y){
-  var d = get(x, y);
+  var d = get(x, y, 1);
   if(d === null || !d.wall) return;
 
   d.wall = 0;
