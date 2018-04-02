@@ -5,8 +5,9 @@ const MAX_COORD = (1 << 16) - 1;
 const RAINBOW_ENABLED = 0;
 const CHECKSUM_ENABLED = 0;
 const COORDS_ENABLED = 0;
+const CHECK_SNAPSHOT = 1;
 
-var size = IS_BROWSER ? 40 : 20;
+var size = IS_BROWSER ? 40 : 10;
 var diameter = .7;
 
 var w = 1920 / size | 0;
@@ -845,13 +846,17 @@ function showTextArea(evt = null){
   var obj = showTextArea[O.static];
   var {div, ta} = obj;
 
+  isCanvasVisible = false;
+  if(evt !== null) evt.disabled = true;
+
   canvas.style.display = 'none';
   div.style.display = 'block';
   ta.value = exportGrid();
-  isCanvasVisible = false;
 
-  if(evt !== null)
-    evt.disabled = true;
+  ta.focus();
+  ta.scrollTop = 0;
+  ta.selectionStart = 0;
+  ta.selectionEnd = 0;
 }
 
 function exportGrid(){
@@ -1389,6 +1394,9 @@ function putWhiteCircs(){
 }
 
 function checkSnapshot(){
+  if(!CHECK_SNAPSHOT)
+    return;
+
   var needsChange = true;
   var freeTile = null;
 
@@ -1612,9 +1620,11 @@ function ndir(x, y, dir, advanced){
 
 function scirc(x, y, type){
   var d = get(x, y, 1);
-  if(d === null || d.void || d.circ === type) return;
+  if(d === null || d.circ === type) return;
 
-  if(d.wall) cwall(x, y, 1);
+  if(d.void) cvoid(x, y);
+  else if(d.wall) cwall(x, y, 1);
+
   d.circ = type;
 }
 
@@ -1627,9 +1637,11 @@ function ccirc(x, y, type){
 
 function swall(x, y){
   var d = get(x, y, 1);
-  if(d === null || d.void || d.wall) return;
+  if(d === null || d.wall) return;
 
-  if(d.circ) d.circ = 0;
+  if(d.void) cvoid(x, y);
+  else if(d.circ) d.circ = 0;
+
   d.wall = 1;
   sdirs(x, y);
 }
