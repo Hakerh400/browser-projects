@@ -8,11 +8,8 @@ game.draw = (x, y, d, g) => {
     g.fillRect(x, y, 1, 1);
     return;
   }
-  if(d[2]){
-    g.fillStyle = '#0000ff';
-  }else{
-    g.fillStyle = '#00ffff';
-  }
+  if(d[2]) g.fillStyle = '#0000ff';
+  else g.fillStyle = '#00ffff';
   g.fillRect(x, y, 1, 1);
   if(d[1]){
     g.fillStyle = '#ffff00';
@@ -55,24 +52,9 @@ game.import = (x, y, d, bs) => {
   }
 };
 
-game.kb.ArrowUp = () => {
+game.kb._dir = (dir, dx, dy) => {
   var {0: x, 1: y} = game.arr;
-  move(x, y, x, y - 1, x, y - 2);
-};
-
-game.kb.ArrowLeft = () => {
-  var {0: x, 1: y} = game.arr;
-  move(x, y, x - 1, y, x - 2, y);
-};
-
-game.kb.ArrowDown = () => {
-  var {0: x, 1: y} = game.arr;
-  move(x, y, x, y + 1, x, y + 2);
-};
-
-game.kb.ArrowRight = () => {
-  var {0: x, 1: y} = game.arr;
-  move(x, y, x + 1, y, x + 2, y);
+  move(x, y, x + dx, y + dy, x + (dx << 1), y + (dy << 1));
 };
 
 function move(x1, y1, x2, y2, x3, y3){
@@ -86,7 +68,7 @@ function move(x1, y1, x2, y2, x3, y3){
     game.update(x2, y2);
   }else{
     var d3 = game.get(x3, y3);
-    if(d3 === null || d3[3] || d3[1]) return;
+    if(d3 === null || d3[1] || d3[3]) return;
     d1[0] = 0;
     d2[0] = 1;
     d2[1] = 0;

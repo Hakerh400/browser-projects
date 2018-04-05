@@ -22,7 +22,7 @@ function showGameList(){
     O.ceText(h1, 'Games');
 
     var gameList = O.ce(menu, 'div');
-    var games = O.sanl(data);
+    var games = O.sortAsc(O.sanl(data));
 
     games.forEach((game, index) => {
       if(index !== 0) O.ceBr(gameList);
@@ -92,8 +92,27 @@ class Game{
         return;
       }
 
-      if(!(evt.code in this.kb))
+      if(!(evt.code in this.kb)){
+        if('_dir' in this.kb){
+          var dir = -1;
+
+          switch(evt.code){
+            case 'ArrowUp': dir = 0; break;
+            case 'ArrowLeft': dir = 1; break;
+            case 'ArrowDown': dir = 2; break;
+            case 'ArrowRight': dir = 3; break;
+          }
+
+          if(dir !== -1){
+            var dx = dir === 1 ? -1 : dir === 3 ? 1 : 0;
+            var dy = dir === 0 ? -1 : dir === 2 ? 1 : 0;
+
+            this.kb._dir(dir, dx, dy);
+          }
+        }
+
         return;
+      }
 
       this.kb[evt.code]();
     });
@@ -167,12 +186,40 @@ class Game{
       this.export(x, y, d.d, bs);
     });
 
+    bs.pack();
     return bs.stringify(true);
   }
 
   importGrid(str){
-    if(str === '')
-      throw new Error();
+    /*var bs = new O.BitStream();
+    var w = 11;
+    var h = 11;
+    bs.write(w - 1, MAX_DIM1);
+    bs.write(h - 1, MAX_DIM1);
+
+    for(var y = 0; y < w; y++){
+      for(var x = 0; x < h; x++){
+        var xx = Math.min(x, w - x - 1);
+        var yy = Math.min(y, h - y - 1);
+
+        if(xx + yy < 2){
+          bs.write(1, 1);
+        }else{
+          bs.write(0, 1);
+          if(x === (w >> 1) && y === (h >> 1)){
+            bs.write(1, 1);
+          }else{
+            bs.write(0, 1);
+            bs.write(x === 1 && y === 1 ? 16 : 0, 31);
+          }
+        }
+      }
+    }
+
+    bs.pack();
+    var str = bs.stringify(true);*/
+
+    /////////////////////////////////////////////////////////////
 
     var bs = getBs(str);
     if(bs === null)
@@ -268,6 +315,61 @@ class Game{
     var d = this.grid.get(x, y);
     if(d === null) return d;
     return d.d;
+  }
+
+  tube(x, y, dir){
+    var {g} = this;
+
+    g.beginPath();
+    g.moveTo(x + .25, y + .25);
+
+    if(dir & 1){
+      g.lineTo(x + .25, y);
+      g.lineTo(x + .75, y);
+    }
+    g.lineTo(x + .75, y + .25);
+
+    if(dir & 8){
+      g.lineTo(x + 1, y + .25);
+      g.lineTo(x + 1, y + .75);
+    }
+    g.lineTo(x + .75, y + .75);
+
+    if(dir & 4){
+      g.lineTo(x + .75, y + 1);
+      g.lineTo(x + .25, y + 1);
+    }
+    g.lineTo(x + .25, y + .75);
+
+    if(dir & 2){
+      g.lineTo(x, y + .75);
+      g.lineTo(x, y + .25);
+    }
+
+    g.closePath();
+    g.fill();
+    g.stroke();
+  }
+
+  randTile(func){
+    var arr = [];
+    this.grid.iterate((x, y, d) => {
+      if(func(x, y, d.d))
+        arr.push([x, y, d.d]);
+    });
+    if(arr.length === 0) return [null, null, null];
+    return arr[this.rand(arr.length)];
+  }
+
+  rand(val){
+    return this.random() * val | 0;
+  }
+
+  random(){
+    var str = this.exportGrid();
+    var int = parseInt(str.substring(0, 8), 16);
+    var double = int / 2 ** 32;
+    return double;
   }
 };
 

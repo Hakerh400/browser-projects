@@ -996,7 +996,8 @@ var O = {
     }
 
     getIndexValue(index, exp){
-      return ((index + 2) ** exp).toString().slice(-3) & 255;
+      var str = ((index + 256) ** exp).toExponential();
+      return str.substring(2, 5) & 255;
     }
 
     stringify(checksum = false){
@@ -1273,6 +1274,9 @@ var O = {
     return sha256;
 
     function sha256(buff){
+      if(typeof buff === 'string')
+        buff = new O.Buffer(buff);
+
       var hh = getArrH();
       var kk = getArrK();
 
