@@ -76,21 +76,26 @@ class Game{
     this.mouse = Object.create(null);
 
     this.func(O, this);
-    this.loadLevel();
+    this.loadLevel(O.urlParam('level') || 1);
   }
 
   addEventListeners(){
     this.ael('keydown', evt => {
-      switch(evt.code){
-        case 'Escape':
-          this.showTextArea(evt);
-          break;
-
-        default:
-          if(!(evt.code in this.kb)) break;
-          this.kb[evt.code]();
-          break;
+      if(evt.code === 'Escape'){
+        this.showTextArea(evt);
+        return;
       }
+
+      if(evt.ctrlKey){
+        if(evt.code === 'ArrowLeft') this.prevLevel();
+        else if(evt.code === 'ArrowRight') this.nextLevel();
+        return;
+      }
+
+      if(!(evt.code in this.kb))
+        return;
+
+      this.kb[evt.code]();
     });
   }
 
@@ -110,8 +115,7 @@ class Game{
     this.addEventListeners();
   }
 
-  loadLevel(){
-    var level = O.urlParam('level');
+  loadLevel(level = 1){
     if(level === null)
       return showLevelList(this.name, this.levels);
 
@@ -139,22 +143,7 @@ class Game{
 
     grid.create((x, y) => {
       var d = createIntArr();
-
-      if(bs !== null)
-        this.import(x, y, d, bs);
-      else{
-        if(x === 0 && y === 0){
-          d[0] = 1;
-        }else{
-          if(O.rand(10) === 0){
-            d[3] = 1;
-          }else{
-            d[1] = O.rand(10) === 0;
-            d[2] = O.rand(10) === 0;
-          }
-        }
-      }
-
+      this.import(x, y, d, bs);
       return [d];
     });
   }
@@ -182,20 +171,17 @@ class Game{
   }
 
   importGrid(str){
-    if(!this.v){
-      this.resetGrid(10, 10);
-      this.v = 1;
-    }else{
-      var bs = getBs(str);
-      if(bs === null)
-        return O.error('Unrecognized level format.');
+    if(str === '')
+      throw new Error();
 
-      var w = 1 + bs.read(MAX_DIM1);
-      var h = 1 + bs.read(MAX_DIM1);
+    var bs = getBs(str);
+    if(bs === null)
+      return O.error('Unrecognized level format.');
 
-      this.resetGrid(w, h, bs);
-    }
+    var w = 1 + bs.read(MAX_DIM1);
+    var h = 1 + bs.read(MAX_DIM1);
 
+    this.resetGrid(w, h, bs);
     this.drawGrid();
   }
 
@@ -246,11 +232,12 @@ class Game{
 
     div.style.display = 'none';
     this.canvas.style.display = 'block';
-    this.importGrid(ta.value);
     this.isCanvasVisible = true;
 
-    if(evt !== null)
+    if(evt !== null){
       evt.disabled = true;
+      this.importGrid(ta.value);
+    }
   }
 
   ael(type, func){
@@ -260,6 +247,16 @@ class Game{
 
       func(evt);
     });
+  }
+
+  prevLevel(){
+    if(this.level === 1) return;
+    this.loadLevel(this.level - 1);
+  }
+
+  nextLevel(){
+    if(this.level === this.levels) return;
+    this.loadLevel(this.level + 1);
   }
 
   update(x, y){

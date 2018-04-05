@@ -1,6 +1,6 @@
 'use strict';
 
-game.levels = 1;
+game.levels = 10;
 
 game.draw = (x, y, d, g) => {
   if(d[3]){
