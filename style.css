@@ -10,3 +10,7 @@ a:active{
 .has-canvas{
   margin: 0px;
 }
+
+*{
+  overflow: hidden;
+}

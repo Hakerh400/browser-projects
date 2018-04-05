@@ -1,300 +1,309 @@
 'use strict';
 
-const MAX_GRID_SIZE = 1000;
+const MAX_DIM = 100;
+const MAX_DIM1 = MAX_DIM - 1;
 
 window.setTimeout(main);
 
 function main(){
-  var game = O.urlParam('game');
-  if(game === null){
-    loadGamesList();
-  }else{
-    loadGame(game);
-  }
+  var name = O.urlParam('game');
+
+  if(name === null) showGameList();
+  else loadGame(name);
 }
 
-function loadGamesList(){
+function showGameList(){
   O.rfLocal('games.txt', (status, data) => {
-    if(status !== 200) return O.error('Cannot load games list.');
-    displayGamesList(O.sanl(data));
+    if(status !== 200)
+      return O.error('Cannot load game list.');
+
+    var menu = O.ce(O.body, 'div');
+    var h1 = O.ce(menu, 'h1');
+    O.ceText(h1, 'Games');
+
+    var gameList = O.ce(menu, 'div');
+    var games = O.sanl(data);
+
+    games.forEach((game, index) => {
+      if(index !== 0) O.ceBr(gameList);
+
+      var name = O.projectToName(game);
+      var url = `/?project=${O.project}&game=${game}`;
+      var link = O.ceLink(gameList, name, url);
+    });
   });
 }
 
-function displayGamesList(list){
-  O.title('Games');
+function showLevelList(name, num){
+  var menu = O.ce(O.body, 'div');
+  var h1 = O.ce(menu, 'h1');
+  O.ceText(h1, O.projectToName(name));
 
-  list.forEach((game, index) => {
-    if(index) O.ceBr(O.body);
-    O.ceLink(O.body, O.projectToName(game), generateUrlForGame(game));
+  var levelList = O.ce(menu, 'div');
+
+  O.repeat(num, index => {
+    if(index !== 0) O.ceBr(levelList);
+
+    var levelName = `Level ${index + 1}`;
+    var url = `/?project=${O.project}&game=${name}&level=${index + 1}`;
+    var link = O.ceLink(levelList, levelName, url);
   });
 }
 
-function generateUrlForGame(game){
-  return `/?project=${O.project}&game=${game}`;
-}
+function loadGame(name){
+  O.rfLocal(`games/${name}.js`, (status, data) => {
+    if(status !== 200)
+      return O.error('Cannot load game.');
 
-function loadGame(game){
-  O.rfLocal(`${game}.js`, (status, data) => {
-    if(status !== 200) return O.error('Cannot load game script.');
-    executeGameScript(data);
+    var func = new Function('O', 'game', data);
+    var game = new Game(name, func);
   });
 }
 
-function executeGameScript(script){
-  var func = new Function('O', 'Game', script);
-  var game = func(O, Game);
+class Game{
+  constructor(name, func){
+    this.name = name;
+    this.func = func;
 
-  game.init();
-}
+    this.grid = null;
+    this.taObj = null;
 
-class Game extends O.TilesGrid{
-  constructor(){
-    super();
-
-    this.genFunc = O.nop;
-    this.drawFunc = O.nop;
-    this.exportFunc = O.nop;
-    this.importFunc = O.nop;
-    this.loadFunc = O.nop;
-
-    this.menuVisible = false;
-    this.levelIndex = null;
-
-    this.createMenu();
+    this.init();
   }
 
   init(){
-    this.addEventListeners();
+    this.kb = Object.create(null);
+    this.mouse = Object.create(null);
 
-    if(this.genFunc !== O.nop){
-      this.generate();
-    }else{
-      this.loadLevelIndex(1);
-    }
-  }
-
-  setGenFunc(func){
-    this.genFunc = func;
-  }
-
-  setDrawFunc(func){
-    this.drawFunc = func;
-  }
-
-  setExportFunc(func){
-    this.exportFunc = func;
-  }
-
-  setImportFunc(func){
-    this.importFunc = func;
-  }
-
-  setLoadFunc(func){
-    this.loadFunc = func;
-  }
-
-  generate(){
-    if(this.genFunc === O.nop){
-      return this.error('Not implemented.');
-    }
-
-    this.levelIndex = null;
-    this.genFunc();
-    
-    this.setSize(32);
-    this.draw();
-  }
-
-  update(x, y){
-    this.drawTile(x, y);
-  }
-
-  export(){
-    var bs = new O.BitStream();
-
-    var max = MAX_GRID_SIZE - 1;
-    bs.write(this.w - 1, max);
-    bs.write(this.h - 1, max);
-
-    this.iterate((x, y, d) => {
-      this.exportFunc(bs, d);
-    });
-
-    bs.pack();
-    var str = bs.stringify(true);
-    
-    this.textArea.value = str;
-  }
-
-  import(){
-    var str = this.textArea.value;
-    var arr = (str.match(/[0-9A-F]{2}/g) || []).map(a => parseInt(a, 16));
-    var bs = new O.BitStream(arr, true);
-
-    if(!arr.length || bs.error){
-      return this.error('Unrecognized level format.');
-    }
-
-    var max = MAX_GRID_SIZE - 1;
-    var w = bs.read(max) + 1;
-    var h = bs.read(max) + 1;
-    this.setWH(w, h);
-
-    this.create((x, y) => {
-      return this.importFunc(bs);
-    });
-
-    this.loadFunc(this.w, this.h);
-    this.draw();
-
-    if(this.menuVisible){
-      this.toggleMenu();
-    }
-  }
-
-  loadLevel(){
-    if(!this.levels){
-      this.loadLevels(this.loadLevel.bind(this));
-      return;
-    }
-
-    var level = this.textArea.value | 0;
-    if(level < 1 || level > this.levels.length){
-      return this.error(`Level number cannot be less than 1 or greater than ${this.levels.length}.`);
-    }
-
-    this.levelIndex = level;
-    this.textArea.value = this.levels[level - 1];
-    this.import();
-  }
-
-  loadLevelIndex(index){
-    this.textArea.value = `${index}`;
+    this.func(O, this);
     this.loadLevel();
   }
 
-  loadLevels(cb = O.nop){
-    O.rfLocal(`levels/${O.urlParam('game')}.txt`, (status, data) => {
-      if(status !== 200) return O.error('Cannot load level.');
-
-      this.levels = data.split`-`;
-
-      cb();
-    });
-  }
-
-  createMenu(){
-    var menuElem = O.ce(O.body, 'div');
-    menuElem.style.margin = '8px';
-    menuElem.style.display = 'none';
-
-    var title = O.ce(menuElem, 'h1');
-    O.ceText(title, 'Main Menu');
-
-    [
-      ['Export level', this.export.bind(this)],
-      ['Import level', this.import.bind(this)],
-      ['Load level', this.loadLevel.bind(this)],
-    ].forEach(([option, func], index) => {
-      if(index) O.ceBr(menuElem);
-
-      var link = O.ceLink(menuElem, option, 'javascript:void(0)');
-      link.addEventListener('click', func);
-    });
-
-    O.ceBr(menuElem, 2);
-
-    var textArea = O.ce(menuElem, 'textarea');
-    textArea.style.width = '75%';
-    textArea.style.height = '300px';
-
-    this.canvas = this.g.g.canvas;
-    this.menuElem = menuElem;
-    this.textArea = textArea;
-  }
-
-  toggleMenu(exportLevel = true){
-    this.menuVisible = !this.menuVisible;
-
-    if(this.menuVisible){
-      if(exportLevel){
-        this.export();
-      }
-
-      this.canvas.style.display = 'none';
-      this.menuElem.style.display = 'block';
-    }else{
-      this.canvas.style.display = 'block';
-      this.menuElem.style.display = 'none';
-    }
-  }
-
   addEventListeners(){
-    window.addEventListener('resize', () => {
-      this.resize();
-      this.draw();
+    this.ael('keydown', evt => {
+      switch(evt.code){
+        case 'Escape':
+          this.showTextArea(evt);
+          break;
+
+        default:
+          if(!(evt.code in this.kb)) break;
+          this.kb[evt.code]();
+          break;
+      }
     });
   }
 
-  addKeyboardListener(func){
-    window.addEventListener('keydown', evt => {
-      var code = evt.code;
+  createGrid(){
+    this.grid = new O.TilesGrid();
+    this.g = this.grid.g;
+    this.canvas = this.g.canvas;
 
-      if(code == 'Escape'){
-        this.toggleMenu();
-        return;
-      }
+    var {grid} = this;
 
-      if(/^F\d+$/.test(code)){
-        evt.preventDefault();
+    grid.setWH(1, 1);
+    grid.setSize(32);
+    grid.setTileParams(['d']);
+    grid.setDrawFunc(this.drawFunc.bind(this));
 
-        switch(code.substring(1) | 0){
-          case 2:
-            this.generate(this.w, this.h);
-            break;
+    this.isCanvasVisible = true;
+    this.addEventListeners();
+  }
 
-          case 3:
-            this.import();
-            break;
+  loadLevel(){
+    var level = O.urlParam('level');
+    if(level === null)
+      return showLevelList(this.name, this.levels);
 
-          case 5:
-            window.location.reload();
-            break;
+    this.level = level | 0;
+
+    O.rfLocal(`levels/${this.name}/${this.level}.txt`, (status, data) => {
+      if(status !== 200)
+        return O.error('Cannot load level.');
+
+      this.importGrid(data);
+    });
+  }
+
+  resetGrid(w, h, bs = null){
+    this.w = w;
+    this.h = h;
+
+    if(this.grid === null) this.createGrid();
+    if(this.taObj === null) this.createTextArea();
+
+    var {grid} = this;
+    grid.setWH(w, h);
+
+    this.arr = createIntArr();
+
+    grid.create((x, y) => {
+      var d = createIntArr();
+
+      if(bs !== null)
+        this.import(x, y, d, bs);
+      else{
+        if(x === 0 && y === 0){
+          d[0] = 1;
+        }else{
+          if(O.rand(10) === 0){
+            d[3] = 1;
+          }else{
+            d[1] = O.rand(10) === 0;
+            d[2] = O.rand(10) === 0;
+          }
         }
-
-        return;
       }
 
-      if(!this.menuVisible){
-        func(evt.code);
-      }
+      return [d];
     });
   }
 
-  onSolved(obj = {}){
-    var keys = Object.keys(obj);
-
-    var str = keys.map(key => {
-      return `${key}: ${obj[key]}`;
-    }).join`\n`;
-
-    if(str) str = `\n\n${str}`;
-    str = `Solved!${str}`;
-
-    if(this.levelIndex === null){
-      this.generate(this.w, this.h);
-      return;
-    }
-
-    if(this.levelIndex < this.levels.length){
-      this.loadLevelIndex(this.levelIndex + 1);
-    }else{
-      this.textArea.value = str;
-      this.toggleMenu(false);
-    }
+  drawGrid(){
+    this.grid.draw();
   }
 
-  error(msg){
-    alert(`ERROR: ${msg}`);
+  drawFunc(x, y, d, g){
+    this.draw(x, y, d.d, g);
+    this.grid.drawFrame(x, y);
+  }
+
+  exportGrid(){
+    var bs = new O.BitStream();
+
+    bs.write(this.w - 1, MAX_DIM1);
+    bs.write(this.h - 1, MAX_DIM1);
+
+    this.grid.iterate((x, y, d) => {
+      this.export(x, y, d.d, bs);
+    });
+
+    return bs.stringify(true);
+  }
+
+  importGrid(str){
+    if(!this.v){
+      this.resetGrid(10, 10);
+      this.v = 1;
+    }else{
+      var bs = getBs(str);
+      if(bs === null)
+        return O.error('Unrecognized level format.');
+
+      var w = 1 + bs.read(MAX_DIM1);
+      var h = 1 + bs.read(MAX_DIM1);
+
+      this.resetGrid(w, h, bs);
+    }
+
+    this.drawGrid();
+  }
+
+  createTextArea(){
+    var taObj = this.taObj = Object.create(null);
+
+    var div = O.ce(O.body, 'div');
+    taObj.div = div;
+    div.style.margin = '8px';
+
+    var ta = O.ce(div, 'textarea');
+    taObj.ta = ta;
+    ta.style.width = `${this.grid.iw * .75}px`;
+    ta.style.height = `${this.grid.ih * .75}px`;
+
+    window.addEventListener('keydown', evt => {
+      if(this.isCanvasVisible || evt.disabled)
+        return;
+
+      switch(evt.code){
+        case 'Escape':
+          this.hideTextArea(evt);
+          break;
+      }
+    });
+
+    this.hideTextArea();
+  }
+
+  showTextArea(evt = null){
+    var {div, ta} = this.taObj;
+
+    this.isCanvasVisible = false;
+    if(evt !== null) evt.disabled = true;
+
+    this.canvas.style.display = 'none';
+    div.style.display = 'block';
+    ta.value = this.exportGrid();
+
+    ta.focus();
+    ta.scrollTop = 0;
+    ta.selectionStart = 0;
+    ta.selectionEnd = 0;
+  }
+
+  hideTextArea(evt = null){
+    var {div, ta} = this.taObj;
+
+    div.style.display = 'none';
+    this.canvas.style.display = 'block';
+    this.importGrid(ta.value);
+    this.isCanvasVisible = true;
+
+    if(evt !== null)
+      evt.disabled = true;
+  }
+
+  ael(type, func){
+    window.addEventListener(type, evt => {
+      if(!this.isCanvasVisible)
+        return;
+
+      func(evt);
+    });
+  }
+
+  update(x, y){
+    var d = this.grid.get(x, y);
+    this.drawFunc(x, y, d, this.g);
+  }
+
+  get(x, y){
+    var d = this.grid.get(x, y);
+    if(d === null) return d;
+    return d.d;
   }
 };
+
+function createIntArr(){
+  var obj = Object.create(null);
+
+  var proxy = new Proxy(obj, {
+    get(obj, index){
+      return obj[index] | 0;
+    },
+
+    set(obj, index, val){
+      obj[index] = val | 0;
+      return true;
+    }
+  });
+
+  return proxy;
+}
+
+function getBs(buff){
+  if(typeof buff === 'string')
+    buff = str2buff(buff);
+
+  if(buff.length === 0) return null;
+  var bs = new O.BitStream(buff, true);
+  if(bs.error) return null;
+
+  return bs;
+}
+
+function str2buff(str){
+  var buff = str.match(/[0-9A-F]{2}/g) || [];
+  buff = buff.map(a => parseInt(a, 16) & 255);
+  return buff;
+}
