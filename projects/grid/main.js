@@ -1,13 +1,15 @@
 'use strict';
 
 const IS_BROWSER = O.env !== 'node';
+const IS_NODE = !IS_BROWSER;
+
 const MAX_COORD = (1 << 16) - 1;
 const RAINBOW_ENABLED = 0;
 const CHECKSUM_ENABLED = 0;
 const COORDS_ENABLED = 0;
 const CHECK_SNAPSHOT = 1;
 
-var size = IS_BROWSER ? 40 : 10;
+var size = IS_BROWSER ? 40 : 40;
 var diameter = .7;
 
 var w = 1920 / size | 0;
@@ -71,7 +73,7 @@ function addEventListeners(){
     switch(evt.code){
       case 'Enter': applyAlgorithms(); break;
       case 'KeyS': solve(); break;
-      case 'KeyG': generate(); break;
+      case 'KeyG': generateGrid(); break;
       case 'KeyR': resetGrid(); break;
       case 'KeyC': closeGrid(); break;
       case 'KeyD': divideGrid(); break;
@@ -169,6 +171,27 @@ function addEventListeners(){
     evt.preventDefault();
   });
 
+  if(IS_NODE){
+    window.addEventListener('_msg', evt => {
+      switch(evt.type){
+        case 'import': importGrid(evt.data); break;
+        case 'export': evt.data = exportGrid(); break;
+        case 'algs': applyAlgorithms(); break;
+
+        case 'test':
+          importGrid(evt.data[0]);
+          if(exportGrid() !== evt.data[0]) { evt.data = false; break; }
+          applyAlgorithms();
+          evt.data = exportGrid() === evt.data[1];
+          break;
+
+        default:
+          throw new TypeError('Unrecognized message type');
+          break;
+      }
+    });
+  }
+
   function getInputType(){
     if(keys['KeyB']) return 1;
     if(keys['KeyW']) return 2;
@@ -260,184 +283,6 @@ function addEventListeners(){
     return [x, y, dir];
   }
 
-  function move(dir){
-    var collected = 0;
-
-    iterate((x, y, d) => d.moved = 0);
-
-    iterate((x, y, d) => {
-      if(d.moved !== 2 && d.circ === 1 && !gdir(x, y, dir)){
-        var d1 = ndir(x, y, dir).d;
-        if(d1 === null) return;
-
-        if(!d.moved){
-          d.circ = 0;
-        }
-
-        if(d1.circ !== 1){
-          if(d.circ === 2) collected++;
-          d1.circ = 1;
-          d1.moved = 2;
-        }else{
-          d1.moved = 1;
-        }
-      }
-    });
-
-    drawGrid();
-
-    return collected;
-  }
-
-  function solve(){
-    var dirPrev = -1;
-    var p = [];
-
-    iterate((x, y, d) => {
-      d.solvingDir1 = gdirs(x, y) ^ 15;
-      d.solvingDir2 = d.solvingDir1;
-
-      if(d.circ === 1){
-        p.push(new O.Point(x, y));
-      }
-    });
-
-    if(p.length !== 1) return;
-
-    var {x, y} = p[0];
-    var [xPrev, yPrev] = [x, y];
-    var d = get(x, y);
-
-    window.requestAnimationFrame(performMove);
-
-    function performMove(){
-      var dir = -1;
-
-      xPrev = x;
-      yPrev = y;
-
-      iterateDirs(ddir => {
-        if(dir === -1 && ddir !== dirPrev && (d.solvingDir1 & (1 << ddir))){
-          dir = ddir;
-        }
-      });
-
-      if(dir === -1){
-        iterateDirs(ddir => {
-          if(dir === -1 && ddir !== dirPrev && (d.solvingDir2 & (1 << ddir))){
-            dir = ddir;
-          }
-        });
-      }
-
-      if(dir === -1) return;
-
-      if(d.solvingDir1 & (1 << dir)) d.solvingDir1 &= ~(1 << dir);
-      else d.solvingDir2 &= ~(1 << dir);
-
-      dirPrev = dir + 2 & 3;
-      d.circ = 0;
-
-      var obj = ndir(x, y, dir);
-
-      x = obj.x;
-      y = obj.y;
-      d = obj.d;
-
-      if(d.circ) dirPrev = -1;
-      d.circ = 1;
-
-      if(d.solvingDir1 & (1 << dirPrev)) d.solvingDir1 &= ~(1 << dirPrev);
-      else d.solvingDir2 &= ~(1 << dirPrev);
-
-      calcCols(x, y);
-      drawGrid();
-
-      window.requestAnimationFrame(performMove);
-    }
-
-    function drawAdjacentTiles(mode){
-      var px = mode ? x : xPrev;
-      var py = mode ? y : yPrev;
-
-      drawFuncs.forEach(func => {
-        func(px, py, d, grid.g);
-        
-        adjacent(px, py, (x, y, d, dir) => {
-          if(!(d === null || d.wall)){
-            func(x, y, d, grid.g);
-          }
-        });
-      });
-    }
-  }
-
-  function generate(){
-    var x0, y0;
-
-    do{
-      resetGrid();
-
-      iterate((x, y, d) => {
-        d.visited = 0;
-        if(Math.random() < 0) swall(x, y);
-      });
-
-      var x = O.rand(w);
-      var y = O.rand(h);
-      var dir = -1;
-
-      x0 = x;
-      y0 = y;
-
-      var queue = [[x, y, -1]];
-      var d = get(x, y);
-
-      if(d.wall) cwall(x, y);
-      d.circ = 1;
-
-      while(queue.length){
-        [x, y, dir] = queue.splice(O.rand(queue.length), 1)[0];
-
-        d = get(x, y);
-        if(d.visited) continue;
-
-        iterateDirs(dir => {
-          if(!gdir(x, y, dir)){
-            var obj = ndir(x, y, dir);
-
-            if(obj.d !== null){
-              queue.push([obj.x, obj.y, dir + 2 & 3]);
-            }
-          }
-        });
-
-        sdirs(x, y);
-        if(dir !== -1) cdir(x, y, dir);
-
-        d.visited = 1;
-      }
-
-      iterate((x, y, d) => {
-        if(!d.visited && !d.wall){
-          swall(x, y);
-        }
-      });
-
-      var freeSpace = 0;
-
-      iterate((x, y, d) => {
-        if(!d.wall) freeSpace++;
-      });
-    }while(freeSpace < 100);
-
-    findInternalCells();
-    putWhiteCircs();
-
-    calcCols(x0, y0);
-    drawGrid();
-  }
-
   function ael(type, func){
     window.addEventListener(type, evt => {
       if(!isCanvasVisible)
@@ -456,7 +301,7 @@ function createGrid(){
   resetGrid();
 }
 
-function resetGrid(){
+function resetGrid(draw = true){
   blackCirc = null;
 
   iterate(1, (x, y, d) => {
@@ -468,6 +313,72 @@ function resetGrid(){
     d.internal = 0;
   });
 
+  if(draw) drawGrid();
+}
+
+function generateGrid(){
+  var x0, y0;
+
+  do{
+    resetGrid();
+
+    iterate((x, y, d) => {
+      d.visited = 0;
+      if(Math.random() < 0) swall(x, y);
+    });
+
+    var x = O.rand(w);
+    var y = O.rand(h);
+    var dir = -1;
+
+    x0 = x;
+    y0 = y;
+
+    var queue = [[x, y, -1]];
+    var d = get(x, y);
+
+    if(d.wall) cwall(x, y);
+    d.circ = 1;
+
+    while(queue.length){
+      [x, y, dir] = queue.splice(O.rand(queue.length), 1)[0];
+
+      d = get(x, y);
+      if(d.visited) continue;
+
+      iterateDirs(dir => {
+        if(!gdir(x, y, dir)){
+          var obj = ndir(x, y, dir);
+
+          if(obj.d !== null){
+            queue.push([obj.x, obj.y, dir + 2 & 3]);
+          }
+        }
+      });
+
+      sdirs(x, y);
+      if(dir !== -1) cdir(x, y, dir);
+
+      d.visited = 1;
+    }
+
+    iterate((x, y, d) => {
+      if(!d.visited && !d.wall){
+        swall(x, y);
+      }
+    });
+
+    var freeSpace = 0;
+
+    iterate((x, y, d) => {
+      if(!d.wall) freeSpace++;
+    });
+  }while(freeSpace < 100);
+
+  findInternalCells();
+  putWhiteCircs();
+
+  calcCols(x0, y0);
   drawGrid();
 }
 
@@ -615,10 +526,14 @@ function iterateExternalShape(x, y, func){
 
 function iterateInternalShape(x, y, func){
   var id = getId();
-  var queue = [{x, y, d: get(x, y), dist: 0}];
+  var queue = [x, y, get(x, y), 0];
 
   while(queue.length){
-    var {x, y, d, dist} = queue.shift();
+    var x = queue.shift();
+    var y = queue.shift();
+    var d = queue.shift();
+    var dist = queue.shift();
+
     if(d.id === id) continue;
     d.id = id;
 
@@ -630,8 +545,7 @@ function iterateInternalShape(x, y, func){
       var obj = ndir(x, y, dir);
       if(obj.d.id === id) return;
 
-      obj.dist = dist + 1;
-      queue.push(obj);
+      queue.push(obj.x, obj.y, obj.d, dist + 1);
     });
   }
 }
@@ -894,8 +808,8 @@ function exportGrid(){
   return bs.stringify(CHECKSUM_ENABLED);
 }
 
-function importGrid(str){
-  var arr = (str.match(/[0-9A-F]{1,2}/gi) || []).map(a => parseInt(a, 16));
+function importGrid(str, draw = true){
+  var arr = (`${str}`.match(/[0-9A-F]{1,2}/gi) || []).map(a => parseInt(a, 16));
   var bs = new O.BitStream(arr, CHECKSUM_ENABLED);
 
   if(COORDS_ENABLED){
@@ -903,7 +817,7 @@ function importGrid(str){
     h = bs.read(MAX_COORD);
   }
 
-  resetGrid();
+  resetGrid(draw);
 
   iterate(1, (x, y, d) => {
     var dirs = gdirs(x, y, 1);
@@ -932,8 +846,10 @@ function importGrid(str){
     d.circ = bs.read(2);
   });
 
-  updateInternals();
-  drawGrid();
+  if(draw){
+    updateInternals();
+    drawGrid();
+  }
 }
 
 /*
@@ -1106,9 +1022,8 @@ function findShapes(){
   iterate((x, y, d) => {
     if(!d.internal || d.containsCircs) return;
 
-    if(d.circ){
+    if(d.circ)
       iterateInternalShape(x, y, (x, y, d) => d.containsCircs = 1);
-    }
   });
 }
 
@@ -1150,20 +1065,21 @@ function connectShapes(){
       internalsNum++;
     });
 
-    var tiles = [];
+    var id = getId();
     var queue = [];
 
     iterateExternalShape(blackCirc.x, blackCirc.y, (x, y, d) => {
-      tiles.push([x, y]);
       internalsNum--;
+      d.id2 = id;
 
-      var isStartingTile = someAdjacent(x, y, (x, y, d1) => {
-        if(d1 === null) return 0;
-        return mode === 0 ? !d1.internal : d1.wall;
+      adjacent(x, y, (x, y, d1, dir) => {
+        if(d1 === null || d1.id2 === id) return;
+
+        if(mode === 0 ? !d1.internal : d1.wall){
+          d1.id2 = id;
+          queue.push([x, y, d1, [dir]]);
+        }
       });
-
-      if(isStartingTile)
-        queue.push([x, y, d, []]);
     });
 
     if(internalsNum === 0)
@@ -1178,19 +1094,10 @@ function connectShapes(){
     internalsNumPrev = internalsNum;
     sortCoords(queue);
 
-    var id = getId();
-
-    tiles.forEach(([x, y]) => {
-      get(x, y).id = id;
-    });
-
     while(queue.length){
       var [x, y, d, path] = queue.shift();
 
-      if((mode === 0 ? !d.internal : d.wall) && d.id === id) continue;
-      d.id = id;
-
-      if((mode === 0 ? d.internal : !d.wall) && path.length){
+      if(mode === 0 ? d.internal : !d.wall){
         path = path.map(dir => dir + 2 & 3);
         path.push(path[path.length - 1]);
 
@@ -1215,19 +1122,21 @@ function connectShapes(){
           return dir + 2 & 3;
         });
 
-        drawGrid();
         break;
       }
 
       iterateDirs(dir => {
         var obj = ndir(x, y, dir);
+        var d = obj.d;
 
-        if(obj.d === null) return;
-        if(mode === 0 && obj.d.wall) return;
-        if(mode === 1 && !obj.d.internal) return;
+        if(d === null) return;
+        if(mode === 0 && d.wall) return;
+        if(mode === 1 && !d.internal) return;
 
-        if(obj.d.id !== id)
-          queue.push([obj.x, obj.y, obj.d, [...path, dir]]);
+        if(d.id2 !== id){
+          d.id2 = id;
+          queue.push([obj.x, obj.y, d, [...path, dir]]);
+        }
       });
     }
 
@@ -1254,7 +1163,8 @@ function fillShapes(){
 function fillShapeWhichHasNoCircs(x, y){
   traverseShape(x, y, (x, y, d, dir1, dir2) => {
     iterateDirs(dir => {
-      if(dir !== dir1 && dir !== dir2) sdir(x, y, dir);
+      if(dir !== dir1 && dir !== dir2)
+        sdir(x, y, dir);
     });
 
     d.visited = 1;
@@ -1266,10 +1176,13 @@ function fillShapeWhichHasCircs(xStart, yStart){
     var id = getId();
 
     var foundLoop = false;
-    var queue = [[xStart, yStart, -1]];
+    var queue = [xStart, yStart, -1];
 
     while(queue.length){
-      var [x, y, lastDir] = queue.shift();
+      var x = queue.shift();
+      var y = queue.shift();
+      var lastDir = queue.shift();
+
       var d = get(x, y);
       var reversedLastDir = lastDir !== -1 ? lastDir + 2 & 3 : -1;
 
@@ -1334,7 +1247,7 @@ function fillShapeWhichHasCircs(xStart, yStart){
         var obj = ndir(x, y, dir);
         if(obj.d === null || obj.d.id === id) return;
 
-        queue.push([obj.x, obj.y, dir]);
+        queue.push(obj.x, obj.y, dir);
       });
     }
   }while(foundLoop);
