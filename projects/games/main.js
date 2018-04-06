@@ -432,7 +432,7 @@ class Game{
     this.loadLevel(this.level + 1);
   }
 
-  update(x, y, d, prop, prev){
+  update(x, y, d, prev){
     if(x === null) return;
 
     if(!(y in this.updates)){
@@ -446,8 +446,8 @@ class Game{
       this.updated++;
       row[-1]++;
       row[x] = d;
-      d[~prop] = prev;
-    }else if(d[prop] === d[~prop]){
+      d[-1] = prev;
+    }else if(`${d}` === d[-1]){
       delete row[x];
       if(!--row[-1]){
         delete this.updates[y];
@@ -594,9 +594,9 @@ function createIntArr(game, x = null, y = null){
         val |= 0;
         if(val === 0 && !(prop in obj)) return 1;
         if(obj[prop] === val) return 1;
-        var prev = obj[prop] | 0;
+        var prev = `${obj}`;
         obj[prop] = val;
-        game.update(x, y, obj, prop, prev);
+        game.update(x, y, obj, prev);
       }
       return 1;
     }
