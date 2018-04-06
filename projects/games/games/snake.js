@@ -1,6 +1,6 @@
 'use strict';
 
-game.levels = 1;
+game.levels = 2;
 
 game.draw = (x, y, d, g) => {
   if(d[2]){
@@ -47,7 +47,7 @@ game.import = (x, y, d, bs) => {
   }
 };
 
-game.kb._dir = (dir, dx, dy) => {
+game.kb.dir = (dir, dx, dy) => {
   var x1 = game.arr[0];
   var y1 = game.arr[1];
   var d1 = game.get(x1, y1);
@@ -80,8 +80,6 @@ game.kb._dir = (dir, dx, dy) => {
     d2[1] = 0;
     spawnGem();
   }
-  game.update(x1, y1);
-  game.update(x2, y2);
 };
 
 function moveTail(){
@@ -99,8 +97,6 @@ function moveTail(){
   game.arr[3] = y2;
   d1[0] = 0;
   d2[0] &= ~(1 << (dir + 2 & 3));
-  game.update(x1, y1);
-  game.update(x2, y2);
 }
 
 function spawnGem(){
@@ -109,6 +105,5 @@ function spawnGem(){
   });
   if(d !== null){
     d[1] = 1;
-    game.update(x, y);
   }
 }

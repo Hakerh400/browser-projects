@@ -52,7 +52,7 @@ game.import = (x, y, d, bs) => {
   }
 };
 
-game.kb._dir = (dir, dx, dy) => {
+game.kb.dir = (dir, dx, dy) => {
   var {0: x, 1: y} = game.arr;
   move(x, y, x + dx, y + dy, x + (dx << 1), y + (dy << 1));
 };
@@ -64,8 +64,6 @@ function move(x1, y1, x2, y2, x3, y3){
   if(d2[1] === 0){
     d1[0] = 0;
     d2[0] = 1;
-    game.update(x1, y1);
-    game.update(x2, y2);
   }else{
     var d3 = game.get(x3, y3);
     if(d3 === null || d3[1] || d3[3]) return;
@@ -73,9 +71,6 @@ function move(x1, y1, x2, y2, x3, y3){
     d2[0] = 1;
     d2[1] = 0;
     d3[1] = 1;
-    game.update(x1, y1);
-    game.update(x2, y2);
-    game.update(x3, y3);
   }
   game.arr[0] = x2;
   game.arr[1] = y2;
