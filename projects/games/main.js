@@ -194,10 +194,10 @@ class Game{
 
     if(evt.button === 0){
       if('lmb' in this.mouse)
-        this.mouse.lmb(x, y, d);
+        this.mouse.lmb(cx, cy, d);
     }else if(evt.button === 2){
       if('rmb' in this.mouse)
-        this.mouse.rmb(x, y, d);
+        this.mouse.rmb(cx, cy, d);
     }
   }
 
@@ -222,7 +222,7 @@ class Game{
         var row = updates[y |= 0];
         for(var x in row){
           if((x |= 0) < 0) continue;
-          this.drawFunc(x, y, row[x], g);
+          this.drawFunc(x, y, this.get(x, y), g);
         }
       }
     }
