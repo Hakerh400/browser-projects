@@ -7,13 +7,6 @@ game.draw = (x, y, d, g) => {
   g.fillRect(x, y, 1, 1);
   g.fillStyle = '#00ff00';
   game.tube(x, y, d[0]);
-
-  if(m && d.id === m){
-    g.globalAlpha = .5;
-    g.fillStyle = 'red';
-    g.fillRect(x, y, 1, 1);
-    g.globalAlpha = 1;
-  }
 };
 
 game.export = (x, y, d, bs) => {
@@ -26,16 +19,14 @@ game.import = (x, y, d, bs) => {
   d[1] = bs.read(1);
 };
 
-var m;
-
 game.generate = () => {
   var {w, h} = game;
   game.iterate((x, y, d) => d[0] = d[1] = 0);
   var [x, y] = [w, h].map(a => a >> 1);
-  var id = m = game.getId();
+  var id = game.getId();
   var d = game.get(x, y);
-  d.id1 = id;
   var queue = [[x, y, d]];
+  d.id1 = id;
   while(queue.length !== 0){
     [x, y, d] = queue.splice(O.rand(queue.length), 1)[0];
     if(d[0]) continue;
