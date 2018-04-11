@@ -6,3 +6,4 @@ grid
 encrypted
 desktop
 hyper
+grid.io

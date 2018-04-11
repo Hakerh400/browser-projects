@@ -46,7 +46,7 @@ var activeFragment = null;
 
 var isCanvasVisible = true;
 
-window.setTimeout(main);
+setTimeout(main);
 
 function main(){
   grid = new O.TilesGrid();

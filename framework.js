@@ -84,11 +84,11 @@ var O = {
   nonCapWords: 'a,an,and,as,at,but,by,for,in,nor,of,on,or,the,to,up'.split`,`,
 
   projectTest(project){
-    return /^[a-z0-9]+(?:\-[a-z0-9]+)*$/.test(project);
+    return /^[a-z0-9\.]+(?:\-[a-z0-9\.]+)*$/.test(project);
   },
 
   projectToName(project){
-    return project.replace(/\-/g, ' ').replace(/[a-z0-9]+/g, word => {
+    return project.replace(/\-/g, ' ').replace(/[a-z0-9\.]+/g, word => {
       if(O.nonCapWords.indexOf(word) == -1) return word[0].toUpperCase() + word.substring(1);
       else return word;
     });
