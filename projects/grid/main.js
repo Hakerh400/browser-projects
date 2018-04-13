@@ -11,10 +11,10 @@ const CHECK_SNAPSHOT = 1;
 
 var size = IS_BROWSER ? 40 : 40;
 var diameter = .7;
+var radius = diameter / 2;
 
 var w = 1920 / size | 0;
 var h = 1080 / size | 0;
-var radius = diameter / 2;
 
 var tileParams = ['dir', 'circ', 'wall', 'void'];
 
@@ -46,7 +46,7 @@ var activeFragment = null;
 
 var isCanvasVisible = true;
 
-setTimeout(main);
+window.setTimeout(main);
 
 function main(){
   grid = new O.TilesGrid();

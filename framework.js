@@ -1107,7 +1107,10 @@ var O = {
   */
 
   ca(len, func){
-    return new Array(len).fill().map((elem, index) => func(index));
+    var arr = [];
+    for(var i = 0; i < len; i++)
+      arr.push(func(i));
+    return arr;
   },
 
   /*
