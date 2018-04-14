@@ -1,6 +1,6 @@
 'use strict';
 
-const PSEUDO_RANDOM = 1;
+const PSEUDO_RANDOM = 0;
 
 const TILE_SIZE = 40;
 const MAX_DIM = 100;

@@ -384,8 +384,8 @@ var O = {
 
       this.g = g === null ? O.ceCanvas(true).g : g;
 
-      this.iw = this.g.g.width;
-      this.ih = this.g.g.height;
+      this.iw = this.g.g.canvas.width;
+      this.ih = this.g.g.canvas.height;
       this.iwh = this.iw / 2;
       this.ihh = this.ih / 2;
 
@@ -1127,6 +1127,10 @@ var O = {
 
   randf(a){
     return Math.random() * a;
+  },
+
+  randElem(arr){
+    return arr[O.rand(arr.length)];
   },
 
   bound(val, min, max){
