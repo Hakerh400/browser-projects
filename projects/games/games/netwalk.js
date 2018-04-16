@@ -1,12 +1,12 @@
 'use strict';
 
-game.levels = 1;
+game.levels = 2;
 
 game.draw = (x, y, d, g) => {
-  g.fillStyle = ['#00ffff', '#008080'][d[1]];
+  g.fillStyle = ['#c0c0c0', '#808080'][d[1]];
   g.fillRect(x, y, 1, 1);
-  g.fillStyle = '#00ff00';
-  game.tube(x, y, d[0]);
+  g.fillStyle = ['#00ff00', '#008000'][d[1]];
+  game.tube(x, y, d[0], .25, 1);
 };
 
 game.export = (x, y, d, bs) => {

@@ -586,6 +586,8 @@ var O = {
       this.pointsQueue = [];
       this.arcsQueue = [];
 
+      this.tubeMode = false;
+
       [
         'fillStyle',
         'strokeStyle',
@@ -646,7 +648,7 @@ var O = {
     }
 
     finishLine(fillMode){
-      var g = this.g;
+      var {g} = this;
       var q = this.pointsQueue;
       var aq = this.arcsQueue;
 
@@ -656,15 +658,21 @@ var O = {
       var i = 0;
       var j = 0;
 
+      var tubeMode = this.tubeMode && !fillMode;
+      var hasArcs = aq.length !== 0;
+
+      if(tubeMode){
+        var fillStyle = g.fillStyle;
+        g.fillStyle = g.strokeStyle;
+      }
+
       g.beginPath();
 
       do{
-        while(j < aq.length && aq[j] == i){
+        if(j < aq.length && aq[j] === i){
           g.arc(aq[j + 1], aq[j + 2], aq[j + 3], aq[j + 4], aq[j + 5], aq[j + 6]);
           j += 7;
         }
-
-        i += 3;
 
         var type = q[i];
 
@@ -672,8 +680,8 @@ var O = {
         var y2 = q[i + 2];
 
         if(fillMode){
-          if(Math.abs(x1 - x2) == 1) x2 = x1;
-          if(Math.abs(y1 - y2) == 1) y2 = y1;
+          if(Math.abs(x1 - x2) === 1) x2 = x1;
+          if(Math.abs(y1 - y2) === 1) y2 = y1;
         }
 
         if(!type){
@@ -685,16 +693,24 @@ var O = {
         if(fillMode){
           g.lineTo(x2, y2);
         }else{
-          var dx = y1 != y2 ? .5 : 0;
-          var dy = x1 != x2 ? .5 : 0;
+          var dx = y1 !== y2 ? .5 : 0;
+          var dy = x1 !== x2 ? .5 : 0;
 
           g.moveTo(x1 + dx, y1 + dy);
           g.lineTo(x2 + dx, y2 + dy);
+
+          if(tubeMode){
+            if(x1 < x2 || y1 < y2)
+              g.fillRect(x2, y2, 1, 1);
+          }
         }
 
         x1 = x2;
         y1 = y2;
-      }while(i < q.length);
+      }while((i += 3) < q.length);
+
+      if(tubeMode)
+        g.fillStyle = fillStyle;
     }
 
     resetTransform(){
@@ -788,7 +804,14 @@ var O = {
         a2 = (a2 - this.rot) % O.pi2;
       }
 
-      this.arcsQueue.push(this.pointsQueue.length, x * this.s + this.tx + .5, y * this.s + this.ty + .5, r * this.s, a1, a2, acw);
+      var xx = x * this.s + this.tx + .5;
+      var yy = y * this.s + this.ty + .5;
+      var rr = r * this.s;
+      this.arcsQueue.push(this.pointsQueue.length, xx, yy, rr, a1, a2, acw);
+
+      xx += Math.cos(a2) * rr;
+      yy += Math.sin(a2) * rr;
+      this.pointsQueue.push(0, xx, yy);
     }
 
     fillText(text, x, y){

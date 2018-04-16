@@ -317,18 +317,14 @@ class Game{
   importGrid(str){
     if(0){
       var bs = new O.BitStream();
-      var w = 4;
-      var h = 4;
+      var w = 45;
+      var h = 25;
       bs.write(w - 1, MAX_DIM1);
       bs.write(h - 1, MAX_DIM1);
 
       for(var y = 0; y < h; y++){
         for(var x = 0; x < w; x++){
-          if(x === 1 && y == 1 || x === 2 && y === 2){
-            bs.write(1, 30);
-          }else{
-            bs.write(0, 30);
-          }
+          //bs.write(0)
         }
       }
 
@@ -462,38 +458,98 @@ class Game{
     return d.d;
   }
 
-  tube(x, y, dir){
+  tube(x, y, dir, size = .5, round = 0){
     var {g} = this;
+    g.tubeMode = true;
+
+    var s1 = (1 - size) / 2;
+    var s2 = 1 - s1;
 
     g.beginPath();
-    g.moveTo(x + .25, y + .25);
 
-    if(dir & 1){
-      g.lineTo(x + .25, y);
-      g.lineTo(x + .75, y);
+    drawingBlock: {
+      if(round === 1){
+        var radius = Math.min(size, .5);
+
+        var p1 = (1 - Math.sqrt(radius * radius * 4 - size * size)) / 2;
+        var p2 = 1 - p1;
+
+        var phi1 = (1.9 - size / (radius * 4)) * O.pi;
+        var phi2 = phi1 + O.pi2 - size / radius * O.pih;
+
+        var dphi = 0;
+        var foundArc = false;
+
+        if(dir === 1){
+          g.moveTo(x + s2, y + p1);
+          g.lineTo(x + s2, y);
+          g.lineTo(x + s1, y);
+          g.lineTo(x + s1, y + p1);
+          foundArc = true;
+          break drawingBlock;
+        }else if(dir === 2){
+          dphi = O.pi2 - O.pih;
+          g.moveTo(x + p1, y + s1);
+          g.lineTo(x, y + s1);
+          g.lineTo(x, y + s2);
+          g.lineTo(x + p1, y + s2);
+          foundArc = true;
+          break drawingBlock;
+        }else if(dir === 4){
+          dphi = O.pi;
+          g.moveTo(x + s1, y + p2);
+          g.lineTo(x + s1, y + 1);
+          g.lineTo(x + s2, y + 1);
+          g.lineTo(x + s2, y + p2);
+          foundArc = true;
+          break drawingBlock;
+        }else if(dir === 8){
+          dphi = O.pi2 - (O.pi + O.pih);
+          g.moveTo(x + p2, y + s2);
+          g.lineTo(x + 1, y + s2);
+          g.lineTo(x + 1, y + s1);
+          g.lineTo(x + p2, y + s1);
+          foundArc = true;
+          break drawingBlock;
+        }
+      }
+
+      g.moveTo(x + s1, y + s1);
+
+      if(dir & 1){
+        g.lineTo(x + s1, y);
+        g.lineTo(x + s2, y);
+      }
+      g.lineTo(x + s2, y + s1);
+
+      if(dir & 8){
+        g.lineTo(x + 1, y + s1);
+        g.lineTo(x + 1, y + s2);
+      }
+      g.lineTo(x + s2, y + s2);
+
+      if(dir & 4){
+        g.lineTo(x + s2, y + 1);
+        g.lineTo(x + s1, y + 1);
+      }
+      g.lineTo(x + s1, y + s2);
+
+      if(dir & 2){
+        g.lineTo(x, y + s2);
+        g.lineTo(x, y + s1);
+      }
     }
-    g.lineTo(x + .75, y + .25);
 
-    if(dir & 8){
-      g.lineTo(x + 1, y + .25);
-      g.lineTo(x + 1, y + .75);
-    }
-    g.lineTo(x + .75, y + .75);
-
-    if(dir & 4){
-      g.lineTo(x + .75, y + 1);
-      g.lineTo(x + .25, y + 1);
-    }
-    g.lineTo(x + .25, y + .75);
-
-    if(dir & 2){
-      g.lineTo(x, y + .75);
-      g.lineTo(x, y + .25);
+    if(foundArc){
+      g.arc(x + .5, y + .5, radius, phi2 + dphi, phi1 + dphi, true);
+    }else{
+      g.closePath();
     }
 
-    g.closePath();
     g.fill();
     g.stroke();
+
+    g.tubeMode = false;
   }
 
   iterate(func){
