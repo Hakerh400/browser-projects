@@ -81,7 +81,7 @@ var O = {
     Project function
   */
 
-  nonCapWords: 'a,an,and,as,at,but,by,for,in,nor,of,on,or,the,to,up'.split`,`,
+  nonCapWords: 'a,an,and,as,at,but,by,for,in,nor,of,on,or,the,to,up'.split(','),
 
   projectTest(project){
     return /^[a-z0-9\.]+(?:\-[a-z0-9\.]+)*$/.test(project);
@@ -1031,7 +1031,7 @@ var O = {
         var byteStr = byte.toString(16).toUpperCase().padStart(2, '0');
 
         return `${byteStr}${newLine ? '\n' : ''}`;
-      }).join``;
+      }).join('');
     }
   },
   Buffer: class extends Uint8Array{
@@ -1064,11 +1064,11 @@ var O = {
 
       switch(type){
         case 'hex':
-          return arr.map(a => a.toString(16).padStart(2, '0')).join``;
+          return arr.map(a => a.toString(16).padStart(2, '0')).join('');
           break;
 
         default:
-          return arr.map(a => String.fromCharCode(a)).join``;
+          return arr.map(a => String.fromCharCode(a)).join('');
           break;
       }
     }
@@ -1417,7 +1417,7 @@ var O = {
         a.unshift('0');
       }
 
-      return parseInt(a.join``, 2) | 0;
+      return parseInt(a.join(''), 2) | 0;
     }
 
     function rot(a, b){
@@ -1428,7 +1428,7 @@ var O = {
         a.unshift(a.pop());
       }
 
-      return parseInt(a.join``, 2) | 0;
+      return parseInt(a.join(''), 2) | 0;
     }
 
     function toUint32(a){
@@ -1450,7 +1450,7 @@ var O = {
 
         var bits = O.ca(bitsNum, i => {
           return !!(a & (1 << (bitsNum - i - 1))) | 0;
-        }).join``;
+        }).join('');
 
         a = parseInt(bits, 2);
 
@@ -1461,7 +1461,7 @@ var O = {
     function buffToBits(buff){
       return [...buff].map(byte => {
         return byte.toString(2).padStart(8, '0');
-      }).join``;
+      }).join('');
     }
 
     function bitsToBuff(bits){

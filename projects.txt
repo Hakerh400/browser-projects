@@ -1,9 +1,5 @@
 image
 video
-land-explorer
 games
 grid
-encrypted
-desktop
-hyper
 grid.io
