@@ -22,8 +22,8 @@ var cols = {
   bg: '#ffffff',
   nonMarkedLines: '#e0e0e0',
   markedLines: '#000000',
-  darkCirc: '#000000',
-  lightCirc: '#ffffff',
+  blackCirc: '#000000',
+  whiteCirc: '#ffffff',
   wall: '#808080',
   void: '#00ff00',
   internal: '#00ffff',
@@ -324,7 +324,7 @@ function generateGrid(){
 
     iterate((x, y, d) => {
       d.visited = 0;
-      if(Math.random() < 0) swall(x, y);
+      //if(Math.random() < .5) swall(x, y);
     });
 
     var x = O.rand(w);
@@ -469,7 +469,7 @@ function drawTile(x, y, d, g){
   }
 
   if(d.circ){
-    g.fillStyle = [cols.darkCirc, cols.lightCirc][d.circ - 1];
+    g.fillStyle = [cols.blackCirc, cols.whiteCirc][d.circ - 1];
     g.beginPath();
     g.arc(x + .5, y + .5, radius, 0, O.pi2);
     g.fill();
@@ -517,9 +517,8 @@ function iterateExternalShape(x, y, func){
       if(d === null || d.wall)
         return;
 
-      if(d !== null && d.internal && d.id !== id){
+      if(d.internal && d.id !== id)
         queue.push(obj);
-      }
     });
   }
 }
@@ -678,12 +677,10 @@ function getFirstTile(){
 }
 
 function get(x, y, advanced){
-  var d = grid.get(x, y);
-
-  if(!advanced && !activeFragment.includes(x, y))
+  if(!(advanced || activeFragment.includes(x, y)))
     return null;
 
-  return d;
+  return grid.get(x, y);
 }
 
 class Fragment{
@@ -790,7 +787,7 @@ function exportGrid(){
     bs.write(dirs & 8 ? 1 : 0, 1);
     bs.write(dirs & 4 ? 1 : 0, 1);
 
-    if(!(((dirs & 1) && isVoid(x, y - 1, 1)) || ((dirs & 2) && isVoid(x - 1, y, 1)))){
+    if(!(((dirs & 1) && isVoid(x, y - 1)) || ((dirs & 2) && isVoid(x - 1, y)))){
       bs.write(d.void | 0, 1);
       if(d.void) return;
     }
@@ -833,7 +830,7 @@ function importGrid(str, draw = true){
         sdir(x, y, dir);
     });
 
-    if(!(((dirs & 1) && isVoid(x, y - 1, 1)) || ((dirs & 2) && isVoid(x - 1, y, 1)))){
+    if(!(((dirs & 1) && isVoid(x, y - 1)) || ((dirs & 2) && isVoid(x - 1, y)))){
       d.void = bs.read(1);
       if(d.void) return;
     }
@@ -1457,8 +1454,8 @@ function dirsNum(x, y){
   return gdir(x, y, 0) + gdir(x, y, 1) + gdir(x, y, 2) + gdir(x, y, 3);
 }
 
-function isVoid(x, y, advanced){
-  var d = get(x, y, advanced);
+function isVoid(x, y){
+  var d = get(x, y, 1);
   return d === null || d.void;
 }
 

@@ -2,9 +2,13 @@
 
 const PSEUDO_RANDOM = 0;
 
+const LAYERS_NUM = 2;
 const TILE_SIZE = 40;
 const MAX_DIM = 100;
 const MAX_DIM1 = MAX_DIM - 1;
+
+var w, h;
+var wh, hh;
 
 window.setTimeout(main);
 
@@ -68,6 +72,7 @@ class Game{
     this.name = name;
     this.func = func;
 
+    this.display = null;
     this.grid = null;
     this.taObj = null;
     this.exportedGrid = null;
@@ -97,10 +102,35 @@ class Game{
   }
 
   addEventListeners(){
+    var g = this.display.getLayer(1).g;
+    g.g.canvas.style.opacity = '.5';
+    g.fillStyle = 'red';
+
+    var s = 32;
+    var sh = s >> 1;
+
+    var shift = 0;
+    var cx = w >> 1;
+    var cy = h >> 1;
+
     this.ael('keydown', evt => {
+      if(evt.shiftKey){
+        shift = true;
+        drawCursorLines();
+        return;
+      }
+
       this.restartUpdates();
       this.onKeyDown(evt);
       this.checkUpdates();
+    });
+
+    this.ael('keyup', evt => {
+      if(!evt.shiftKey){
+        shift = false;
+        g.clearRect(0, 0, w, h);
+        return;
+      }
     });
 
     this.ael('mousedown', evt => {
@@ -112,12 +142,29 @@ class Game{
 
     this.ael('mousemove', evt => {
       this.updateMouseCoords(evt);
-    });
 
+      cx = evt.clientX;
+      cy = evt.clientY;
+
+      if(shift)
+        drawCursorLines();
+    });
 
     this.ael('contextmenu', evt => {
       evt.preventDefault();
     });
+
+    this.ael('blur', evt => {
+      shift = false;
+      g.clearRect(0, 0, w, h);
+    });
+
+    function drawCursorLines(){
+      g.clearRect(0, 0, w, h);
+
+      g.fillRect(0, cy - sh, w, s);
+      g.fillRect(cx - sh, 0, s, h);
+    }
   }
 
   onKeyDown(evt){
@@ -229,9 +276,20 @@ class Game{
   }
 
   createGrid(){
-    this.grid = new O.TilesGrid();
-    this.g = this.grid.g;
-    this.canvas = this.g.canvas;
+    O.body.classList.add('has-canvas');
+
+    var css = O.ce(O.head, 'link');
+    css.rel = 'stylesheet';
+    css.type = 'text/css';
+    css.href = `/projects/${O.project}/style.css`;
+
+    var display = this.display = new Display(LAYERS_NUM);
+    var layer = display.getLayer(0);
+    var g = layer.g;
+
+    this.grid = new O.TilesGrid(g);
+    this.g = g;
+    this.canvas = g.canvas;
 
     var {grid} = this;
 
@@ -386,7 +444,7 @@ class Game{
     this.isCanvasVisible = false;
     if(evt !== null) evt.disabled = true;
 
-    this.canvas.style.display = 'none';
+    this.display.hide();
     div.style.display = 'block';
     ta.value = this.exportGrid();
 
@@ -400,7 +458,7 @@ class Game{
     var {div, ta} = this.taObj;
 
     div.style.display = 'none';
-    this.canvas.style.display = 'block';
+    this.display.show();
     this.isCanvasVisible = true;
 
     if(evt !== null){
@@ -693,3 +751,78 @@ function str2buff(str){
   buff = buff.map(a => parseInt(a, 16) & 255);
   return buff;
 }
+
+class Display{
+  constructor(layersNum = 0){
+    this.div = this.div = O.ce(O.body, 'div');
+    this.layers = [];
+
+    this.updateWH();
+    this.aels();
+
+    if(layersNum !== 0){
+      O.repeat(layersNum, () => {
+        this.createLayer();
+      });
+    }
+
+    this.show();
+  }
+
+  aels(){
+    window.addEventListener('resize', evt => {
+      this.updateWH();
+    });
+  }
+
+  updateWH(){
+    w = window.innerWidth;
+    h = window.innerHeight;
+    wh = w / 2;
+    hh = h / 2;
+
+    for(var layer of this.layers)
+      layer.updateWH();
+  }
+
+  createLayer(){
+    var layer = new Layer(this, this.layers.length);
+    this.layers.push(layer);
+    return layer;
+  }
+
+  getLayer(index){
+    return this.layers[index];
+  }
+
+  show(){
+    this.div.style.display = 'block';
+  }
+
+  hide(){
+    this.div.style.display = 'none';
+  }
+};
+
+class Layer{
+  constructor(display, zIndex){
+    this.display = display;
+    this.zIndex = zIndex;
+
+    this.createCanvas();
+    this.updateWH();
+  }
+
+  updateWH(){
+    this.canvas.width = w;
+    this.canvas.height = h;
+  }
+
+  createCanvas(){
+    var div = this.display.div;
+    var canvas = this.canvas = O.ce(div, 'canvas');
+    canvas.classList.add('layer');
+    canvas.style.zIndex = `${this.zIndex}`;
+    this.g = new O.EnhancedRenderingContext(canvas.getContext('2d'));
+  }
+};

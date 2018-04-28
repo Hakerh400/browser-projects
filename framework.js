@@ -617,7 +617,8 @@ var O = {
     }
 
     clearCanvas(col = null){
-      if(col !== null) this.fillStyle = col;
+      if(col !== null)
+        this.fillStyle = col;
       
       this.resetTransform();
       this.fillRect(0, 0, this.canvas.width, this.canvas.height);

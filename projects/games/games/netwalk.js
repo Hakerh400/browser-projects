@@ -36,8 +36,11 @@ game.generate = () => {
     for(var dir = 0; dir < 4; dir++){
       var x1 = x + (dir === 1 ? -1 : dir === 3 ? 1 : 0);
       var y1 = y + (dir === 0 ? -1 : dir === 2 ? 1 : 0);
+      if(x1 === -1) x1 = w - 1;
+      else if(x1 === w) x1 = 0;
+      if(y1 === -1) y1 = h - 1;
+      else if(y1 === h) y1 = 0;
       var d1 = game.get(x1, y1);
-      if(d1 === null) continue;
       var ddir1 = 1 << dir;
       var ddir2 = 1 << (dir + 2 & 3);
       if(d1.id === id && (d1[0] || d1.id1 === id)){
