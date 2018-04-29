@@ -1058,7 +1058,8 @@ function connectShapes(){
     var internalsNum = 0;
 
     iterate((x, y, d) => {
-      if(!d.internal || d.wall) return;
+      if(!d.internal || d.wall)
+        return;
       internalsNum++;
     });
 
@@ -1068,12 +1069,15 @@ function connectShapes(){
     iterateExternalShape(blackCirc.x, blackCirc.y, (x, y, d) => {
       internalsNum--;
       d.id2 = id;
+      d.elem = null;
 
       adjacent(x, y, (x, y, d1, dir) => {
-        if(d1 === null || d1.id2 === id) return;
+        if(d1 === null || d1.id2 === id)
+          return;
 
         if(mode === 0 ? !d1.internal : d1.wall){
           d1.id2 = id;
+          d1.elem = null;
           queue.push([x, y, d1, [dir]]);
         }
       });
@@ -1118,8 +1122,9 @@ function connectShapes(){
         if(mode === 0 && d.wall) return;
         if(mode === 1 && !d.internal) return;
 
-        if(d.id2 !== id){
+        if(d.id2 !== id || (d.elem !== null && findMinPathElem([elem, d.elem]) === elem)){
           d.id2 = id;
+          d.elem = elem;
           queue.push([obj.x, obj.y, d, [...path, dir]]);
         }
       });
@@ -1158,6 +1163,10 @@ function connectShapes(){
   }
 
   findInternalCells();
+
+  iterate((x, y, d) => {
+    d.elem = null;
+  });
 }
 
 function fillShapes(){
