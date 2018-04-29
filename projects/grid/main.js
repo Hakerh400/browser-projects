@@ -9,7 +9,7 @@ const CHECKSUM_ENABLED = 0;
 const COORDS_ENABLED = 0;
 const CHECK_SNAPSHOT = 1;
 
-var size = IS_BROWSER ? 40 : 40;
+var size = 40;
 var diameter = .7;
 var radius = diameter / 2;
 
@@ -58,6 +58,35 @@ function main(){
 
   createGrid();
   addEventListeners();
+
+  importGrid(`
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000420000000000000000000000000000000
+    0000000000000000000000000082200000000000000000000000000000000000
+    00000000000000000000020B0842108000000000000000000000000000000000
+    000000000000000020A884211000000000000000000000000000000000000000
+    0000000000020200001080000000000000000000000000000000000000000000
+    0000001012498400000000000000000000000000000000000000000000000000
+    8080003080000000000000000000000000000000000000000000000000101410
+    1840000000000000000000000000000000000000000000000000082189018400
+    00000000000000000000000000000000000000000000000092480C2000000000
+    0000000000000000000000000000000000000000000000001840000000000000
+    0000000000000000000000000000000000000000000878800000000000000000
+    000000000000000000000000000000000000041088C000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    000000000000000000000000
+  `);
 }
 
 function addEventListeners(){
@@ -313,7 +342,8 @@ function resetGrid(draw = true){
     d.internal = 0;
   });
 
-  if(draw) drawGrid();
+  if(draw)
+    drawGrid();
 }
 
 function generateGrid(){
@@ -324,7 +354,6 @@ function generateGrid(){
 
     iterate((x, y, d) => {
       d.visited = 0;
-      //if(Math.random() < .5) swall(x, y);
     });
 
     var x = O.rand(w);
@@ -344,15 +373,15 @@ function generateGrid(){
       [x, y, dir] = queue.splice(O.rand(queue.length), 1)[0];
 
       d = get(x, y);
-      if(d.visited) continue;
+      if(d.visited)
+        continue;
 
       iterateDirs(dir => {
         if(!gdir(x, y, dir)){
           var obj = ndir(x, y, dir);
 
-          if(obj.d !== null){
+          if(obj.d !== null)
             queue.push([obj.x, obj.y, dir + 2 & 3]);
-          }
         }
       });
 
@@ -363,15 +392,15 @@ function generateGrid(){
     }
 
     iterate((x, y, d) => {
-      if(!d.visited && !d.wall){
+      if(!d.visited && !d.wall)
         swall(x, y);
-      }
     });
 
     var freeSpace = 0;
 
     iterate((x, y, d) => {
-      if(!d.wall) freeSpace++;
+      if(!d.wall)
+        freeSpace++;
     });
   }while(freeSpace < 100);
 
@@ -1091,35 +1120,23 @@ function connectShapes(){
     internalsNumPrev = internalsNum;
     sortCoords(queue);
 
+    var pathLen = null;
+    var elems = [];
+
     while(queue.length){
-      var [x, y, d, path] = queue.shift();
+      var elem = queue.shift();
+      var [x, y, d, path] = elem;
 
       if(mode === 0 ? d.internal : !d.wall){
-        path = path.map(dir => dir + 2 & 3);
-        path.push(path[path.length - 1]);
+        if(pathLen === null){
+          pathLen = path.length;
+        }else{
+          if(path.length > pathLen)
+            break;
+        }
 
-        path.reduceRight((dirPrev, dir) => {
-          if(mode === 0){
-            if(!d.internal){
-              iterateDirs(ddir => {
-                if(ddir !== dir && ddir !== dirPrev){
-                  if(mode === 0) sdir(x, y, ddir);
-                  else cdir(x, y, ddir);
-                }
-              });
-            }
-          }else{
-            if(d.wall){
-              cwall(x, y);
-            }
-          }
-
-          ({x, y, d} = ndir(x, y, dir));
-
-          return dir + 2 & 3;
-        });
-
-        break;
+        elems.push(elem);
+        continue;
       }
 
       iterateDirs(dir => {
@@ -1134,6 +1151,35 @@ function connectShapes(){
           d.id2 = id;
           queue.push([obj.x, obj.y, d, [...path, dir]]);
         }
+      });
+    }
+
+    if(pathLen !== null){
+      var elem = findMinPathElem(elems);
+      var [x, y, d, path] = elem;
+
+      path = path.map(dir => dir + 2 & 3);
+      path.push(path[path.length - 1]);
+
+      path.reduceRight((dirPrev, dir) => {
+        if(mode === 0){
+          if(!d.internal){
+            iterateDirs(ddir => {
+              if(ddir !== dir && ddir !== dirPrev){
+                if(mode === 0) sdir(x, y, ddir);
+                else cdir(x, y, ddir);
+              }
+            });
+          }
+        }else{
+          if(d.wall){
+            cwall(x, y);
+          }
+        }
+
+        ({x, y, d} = ndir(x, y, dir));
+
+        return dir + 2 & 3;
       });
     }
 
@@ -1426,6 +1472,51 @@ function sortCoords(coords){
     if(x1 < x2) return -1;
     return 1;
   });
+
+  return coords;
+}
+
+function findMinPathElem(elems){
+  if(elems.length === 1)
+    return elems[0];
+
+  var len = elems[0][3].length - 1;
+
+  var coords = elems.map(([x, y, d, path], index) => {
+    var coords = [];
+    coords.index = index;
+
+    for(var i = len; i >= 1; i--){
+      ({x, y} = ndir(x, y, path[i] + 2 & 3));
+      coords.push([x, y]);
+    }
+
+    return sortCoords(coords);
+  });
+
+  for(var i = 0; i < len; i++){
+    var [xMin, yMin] = coords[0][i];
+
+    coords.forEach(coords => {
+      var [x, y] = coords[i];
+
+      if(y < yMin || (y === yMin && x < xMin)){
+        xMin = x;
+        yMin = y;
+      }
+    });
+
+    coords = coords.filter(coords => {
+      var [x, y] = coords[i];
+
+      return x === xMin && y === yMin;
+    });
+
+    if(coords.length === 1)
+      break;
+  }
+
+  return elems[coords[0].index];
 }
 
 function dirGt(dir1, dir2){
