@@ -1270,19 +1270,23 @@ function connectDirShapes(){
 
     iterateInternalShape(x, y, (x, y, d) => {
       iterateDirs(dir => {
-        if(!gdir(x, y, dir)) return;
+        if(!gdir(x, y, dir))
+          return;
 
-        var obj = ndir(x, y, dir);
-        var d1 = obj.d;
-
-        if(d1 === null || d1.wall || !d1.internal || d1.shapeId === shapeId) return;
+        var d1 = ndir(x, y, dir).d;
+        if(d1 === null || d1.wall || !d1.internal || d1.shapeId === shapeId)
+          return;
 
         if(dirMin === -1){
           xMin = x;
           yMin = y;
           dirMin = dir;
         }else{
-          [xMin, yMin, dirMin] = findMinCoordsAndDir(xMin, yMin, dirMin, x, y, dir);
+          if(compareCoordsAndDir(xMin, yMin, dirMin, x, y, dir)){
+            xMin = x;
+            yMin = y;
+            dirMin = dir;
+          }
         }
       });
     });
@@ -1392,33 +1396,27 @@ function findMinCoords(xMin, yMin, x, y){
   return [xMin, yMin];
 }
 
-function findMinCoordsAndDir(xMin, yMin, dirMin, x, y, dir){
-  var x1 = xMin;
-  var y1 = yMin;
-  var dir1 = dirMin & 1;
-  
-  var x2 = x;
-  var y2 = y;
-  var dir2 = dir & 1;
+function compareCoordsAndDir(xMin, yMin, dirMin, x, y, dir){
+  if(dirMin === 2){
+    dirMin = 0;
+    yMin++;
+  }else if(dirMin === 3){
+    dirMin = 1;
+    xMin++;
+  }
 
-  if(dirMin === 3) x1++;
-  else if(dirMin === 2) y1++;
+  if(dir === 2){
+    dir = 0;
+    y++;
+  }else if(dir === 3){
+    dir = 1;
+    x++;
+  }
 
-  if(dir === 3) x2++;
-  else if(dir === 2) y2++;
-
-  var paramsMin = [xMin, yMin, dirMin];
-  var params = [x, y, dir];
-
-  if(y2 < y1) return params;
-  if(y2 > y1) return paramsMin;
-
-  if(dir2 < dir1) return params;
-
-  if(x2 < x1) return params;
-  if(x2 > x1) return paramsMin;
-
-  return paramsMin;
+  if(y < yMin) return true;
+  if(y > yMin) return false;
+  if(dir === dirMin) return x < xMin;
+  return dir === 0;
 }
 
 function sortCoords(coords){

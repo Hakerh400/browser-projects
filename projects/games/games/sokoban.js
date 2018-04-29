@@ -1,7 +1,6 @@
 'use strict';
 
 game.levels = 10;
-game.mem = [1, 1, 1, 1];
 
 game.draw = (x, y, d, g) => {
   if(d[3]){
