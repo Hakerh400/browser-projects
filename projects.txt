@@ -1,5 +1,5 @@
 image
 video
 games
-grid
+grid-projects
 grid.io

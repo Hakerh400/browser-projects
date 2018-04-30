@@ -550,6 +550,112 @@ var O = {
       }
     }
 
+    drawTube(x, y, dirs, size, round){
+      var {g} = this;
+      g.concaveMode = true;
+
+      var s1 = (1 - size) / 2;
+      var s2 = 1 - s1;
+
+      g.beginPath();
+
+      drawingBlock: {
+        if(round === 1){
+          var radius = Math.min(size, .5);
+
+          var p1 = (1 - Math.sqrt(radius * radius * 4 - size * size)) / 2;
+          var p2 = 1 - p1;
+
+          var phi1 = (1.9 - size / (radius * 4)) * O.pi;
+          var phi2 = phi1 + O.pi2 - size / radius * O.pih;
+
+          var dphi = 0;
+          var foundArc = true;
+
+          switch(dirs){
+            case 0:
+              g.arc(x + .5, y + .5, radius, 0, O.pi2);
+              break;
+
+            case 1:
+              g.moveTo(x + s2, y + p1);
+              g.lineTo(x + s2, y);
+              g.lineTo(x + s1, y);
+              g.lineTo(x + s1, y + p1);
+              break;
+
+            case 2:
+              dphi = O.pi2 - O.pih;
+              g.moveTo(x + p1, y + s1);
+              g.lineTo(x, y + s1);
+              g.lineTo(x, y + s2);
+              g.lineTo(x + p1, y + s2);
+              break;
+
+            case 4:
+              dphi = O.pi;
+              g.moveTo(x + s1, y + p2);
+              g.lineTo(x + s1, y + 1);
+              g.lineTo(x + s2, y + 1);
+              g.lineTo(x + s2, y + p2);
+              break;
+
+            case 8:
+              dphi = O.pi2 - (O.pi + O.pih);
+              g.moveTo(x + p2, y + s2);
+              g.lineTo(x + 1, y + s2);
+              g.lineTo(x + 1, y + s1);
+              g.lineTo(x + p2, y + s1);
+              break;
+
+            default:
+              foundArc = false;
+              break;
+          }
+
+          if(foundArc)
+            break drawingBlock;
+        }
+
+        g.moveTo(x + s1, y + s1);
+
+        if(dirs & 1){
+          g.lineTo(x + s1, y);
+          g.lineTo(x + s2, y);
+        }
+        g.lineTo(x + s2, y + s1);
+
+        if(dirs & 8){
+          g.lineTo(x + 1, y + s1);
+          g.lineTo(x + 1, y + s2);
+        }
+        g.lineTo(x + s2, y + s2);
+
+        if(dirs & 4){
+          g.lineTo(x + s2, y + 1);
+          g.lineTo(x + s1, y + 1);
+        }
+        g.lineTo(x + s1, y + s2);
+
+        if(dirs & 2){
+          g.lineTo(x, y + s2);
+          g.lineTo(x, y + s1);
+        }
+      }
+
+      if(foundArc){
+        if(dirs !== 0)
+          g.arc(x + .5, y + .5, radius, phi2 + dphi, phi1 + dphi, true);
+      }else{
+        g.closePath();
+      }
+
+      g.fill();
+      g.stroke();
+
+      g.concaveMode = false;
+    }
+
     get(x, y){
       var {w, h} = this;
       if(x < 0 || y < 0 || x >= w || y >= h) return null;
@@ -586,7 +692,7 @@ var O = {
       this.pointsQueue = [];
       this.arcsQueue = [];
 
-      this.tubeMode = false;
+      this.concaveMode = false;
 
       [
         'fillStyle',
@@ -596,6 +702,8 @@ var O = {
         'textBaseline',
         'lineWidth',
         'globalCompositeOperation',
+        'lineCap',
+        'lineJoin',
       ].forEach(prop => {
         Object.defineProperty(this, prop, {
           set: val => g[prop] = val,
@@ -659,10 +767,10 @@ var O = {
       var i = 0;
       var j = 0;
 
-      var tubeMode = this.tubeMode && !fillMode;
+      var concaveMode = this.concaveMode && !fillMode;
       var hasArcs = aq.length !== 0;
 
-      if(tubeMode){
+      if(concaveMode){
         var fillStyle = g.fillStyle;
         g.fillStyle = g.strokeStyle;
       }
@@ -700,7 +808,7 @@ var O = {
           g.moveTo(x1 + dx, y1 + dy);
           g.lineTo(x2 + dx, y2 + dy);
 
-          if(tubeMode){
+          if(concaveMode){
             if(x1 < x2 || y1 < y2)
               g.fillRect(x2, y2, 1, 1);
           }
@@ -710,7 +818,7 @@ var O = {
         y1 = y2;
       }while((i += 3) < q.length);
 
-      if(tubeMode)
+      if(concaveMode)
         g.fillStyle = fillStyle;
     }
 

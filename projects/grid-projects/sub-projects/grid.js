@@ -16,7 +16,12 @@ var radius = diameter / 2;
 var w = 1920 / size | 0;
 var h = 1080 / size | 0;
 
-var tileParams = ['dir', 'circ', 'wall', 'void'];
+var tileParams = [
+  'dir',
+  'circ',
+  'wall',
+  'void',
+];
 
 var cols = {
   bg: '#ffffff',
