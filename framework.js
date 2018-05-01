@@ -115,13 +115,17 @@ var O = {
     DOM functions
   */
 
-  ce(parent, tag){
+  ce(parent, tag, className=null){
     var elem = O.doc.createElement(tag);
     parent.appendChild(elem);
+
+    if(className !== null)
+      elem.classList.add(className);
+
     return elem;
   },
 
-  ceBr(elem, num = 1){
+  ceBr(elem, num=1){
     while(num--) O.ce(elem, 'br');
   },
 
@@ -131,8 +135,8 @@ var O = {
     return t;
   },
 
-  ceLink(elem, text, href){
-    var a = O.ce(elem, 'a');
+  ceLink(elem, text, href, className=null){
+    var a = O.ce(elem, 'a', className);
     
     a.href = href;
     O.ceText(a, text);
@@ -140,7 +144,7 @@ var O = {
     return a;
   },
 
-  ceCanvas(enhanced = false){
+  ceCanvas(enhanced=false){
     O.body.classList.add('has-canvas');
 
     var w = window.innerWidth;

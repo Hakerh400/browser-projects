@@ -1,0 +1,119 @@
+body{
+  margin: 0px;
+  font-family: "Segoe UI";
+}
+
+header{
+  background-color: #24292e;
+  height: 54px;
+  color: rgba(255, 255, 255, .75);
+  font-family: "Segoe UI Semibold";
+  font-size: 14px;
+}
+
+header a:link, header a:visited{
+  margin-left: 8px;
+  margin-right: 8px;
+  color: rgba(255, 255, 255, .75) !important;
+}
+
+header a:hover{
+  color: #ffffff !important;
+}
+
+header .search-form{
+  display: inline-table;
+  vertical-align: middle;
+  box-shadow: none;
+  padding: 0px;
+  width: 300px;
+  height: 30px;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  background-color: rgba(255, 255, 255, .125);
+  font-size: 13px;
+  font-family: "Segoe UI";
+}
+
+header .search-form a:link, header .search-form a:visited{
+  display: table-cell;
+  vertical-align: middle;
+  padding-left: 8px;
+  padding-right: 8px;
+  border-right-width: 1px;
+  border-right-style: solid;
+  border-right-color: #282e34;
+  border-bottom-left-radius: 3px;
+  border-top-left-radius: 3px;
+  font-weight: 400;
+}
+
+header .search-form a:hover{
+  color: rgba(255, 255, 255, .75) !important;
+  background-color: rgba(255, 255, 255, .125);
+}
+
+header .search-form .query{
+  display: inline-block;
+  box-shadow: none;
+  height: 100%;
+  padding: 0px;
+  padding-left: 8px;
+  padding-right: 8px;
+  width: 210px;
+  background-color: rgba(0, 0, 0, 0);
+  border-width: 0px;
+  border-style: none;
+}
+
+header .search-form .query::-webkit-input-placeholder{
+  font-family: "Segoe UI Semibold";
+  white-space: nowrap;
+  color: rgba(255, 255, 255, .33);
+}
+
+header .nav{
+  display: inline-block;
+  margin-left: 8px;
+}
+
+header .container{
+  width: 996px;
+}
+
+.content .header{
+  height: 83px;
+  margin-bottom: 20px;
+  padding-top: 20px;
+  background-color: #fafbfc;
+  color: #24292e;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: #e1e4e8;
+}
+
+.container{
+  width: 980px;
+  height: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.vcenter{
+  margin: 0;
+  position: relative;
+  top: 50%;
+  transform: translate(0%, -50%);
+}
+
+.left{
+  display: flex;
+  float: left;
+}
+
+.right{
+  display: flex;
+  float: right;
+}

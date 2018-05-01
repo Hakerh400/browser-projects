@@ -14,3 +14,7 @@ a:active{
 *{
   overflow: hidden;
 }
+
+::-webkit-input-placeholder{
+  visibility: visible !important;
+}

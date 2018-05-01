@@ -111,14 +111,14 @@ function drawFunc(x, y, d, g){
 
     g.fillStyle = cols.arrow;
     g.beginPath();
-    g.arc(x + .5, y + .5, 5 / size, 0, O.pi2);
+    g.arc(x + .5, y + .5, 5 / 40, 0, O.pi2);
     g.fill();
     g.stroke();
   }else if(d.arrow){
     g.fillStyle = cols.arrowBg;
     g.fillRect(x, y, 1, 1);
 
-    g.lineWidth = 3;
+    g.lineWidth = 3 / 40 * size;
     g.strokeStyle = cols.arrow;
     g.beginPath();
 
@@ -156,7 +156,7 @@ function drawFunc(x, y, d, g){
 }
 
 function generateTile(x, y){
-  if(O.rand(5) === 1) setCirc(x, y);
+  if(O.rand(5) === 0) setCirc(x, y);
   else setArrow(x, y, O.rand(4));
 }
 

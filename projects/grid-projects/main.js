@@ -19,7 +19,7 @@ function displayProjects(){
     O.title(O.projectToName(O.project));
     var menu = O.ce(O.body, 'div');
 
-    O.sanl(data).forEach((subProject, index) => {
+    O.sortAsc(O.sanl(data)).forEach((subProject, index) => {
       if(index !== 0) O.ceBr(menu);
       O.ceLink(menu, O.projectToName(subProject), `/?project=${O.project}&sub-project=${subProject}`);
     });
