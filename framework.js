@@ -210,9 +210,16 @@ var O = {
     O.rf(`/projects/${O.project}/${file}`, isBinary, cb);
   },
 
-  require(project, cb = O.nop){
-    O.rf(`/projects/${project}/index.js`, false, (status, data) => {
-      if(status !== 200) return O.error('Cannot load project.');
+  require(script, cb = O.nop){
+    if(/\.js$/.test(script)){
+      script = `/projects/${O.project}/${script}`;
+    }else{
+      script = `/projects/${script}/index.js`;
+    }
+
+    O.rf(script, false, (status, data) => {
+      if(status !== 200)
+        return O.error('Cannot load script.');
 
       var module = {
         exports: {}
@@ -223,6 +230,143 @@ var O = {
 
       cb(module.exports);
     });
+  },
+
+  /*
+    String functions
+  */
+
+  ascii(str){
+    return [...str].map(char => {
+      var charCode = char.charCodeAt(0);
+      if(charCode >= 32 && charCode <= 126) return char;
+      else return '?';
+    }).join('');
+  },
+
+  sanl(str){
+    return str.split(/\r\n|\r|\n/gm);
+  },
+
+  pad(str, len, char = '0'){
+    str += '';
+    if(str.length >= len) return str;
+    return char.repeat(len - str.length) + str;
+  },
+
+  capitalize(str){
+    return `${str[0].toUpperCase()}${str.substring(1)}`;
+  },
+
+  indent(str, indent){
+    return `${'  '.repeat(indent)}${str}`;
+  },
+
+  /*
+    Array functions
+  */
+
+  ca(len, func){
+    var arr = [];
+    for(var i = 0; i < len; i++)
+      arr.push(func(i));
+    return arr;
+  },
+
+  /*
+    Other functions
+  */
+
+  repeat(num, func){
+    for(var i = 0; i < num; i++) func(i);
+  },
+
+  rand(a){
+    return Math.random() * a | 0;
+  },
+
+  randf(a){
+    return Math.random() * a;
+  },
+
+  randElem(arr){
+    return arr[O.rand(arr.length)];
+  },
+
+  bound(val, min, max){
+    if(val < min) return min;
+    if(val > max) return max;
+    return val;
+  },
+
+  int(val, min = null, max = null){
+    if(typeof val == 'object') val = 0;
+    else val |= 0;
+    if(min != null) val = O.bound(val, min, max);
+    return val;
+  },
+
+  bool(val){
+    return Boolean(O.int(val));
+  },
+
+  sortAsc(arr){
+    return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0);
+  },
+
+  sortDesc(arr){
+    return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0);
+  },
+
+  rgb(...col){
+    return `#${col.map(val => O.pad((val | 0).toString(16), 2)).join('')}`;
+  },
+
+  hsv(val){
+    var col = [0, 0, 0];
+    var v = Math.round(val * 256 * 6);
+
+    if(v < 256) col[0] = 255, col[1] = v % 256;
+    else if(v < 256 * 2) col[1] = 255, col[0] = 255 - v % 256;
+    else if(v < 256 * 3) col[1] = 255, col[2] = v % 256;
+    else if(v < 256 * 4) col[2] = 255, col[1] = 255 - v % 256;
+    else if(v < 256 * 5) col[2] = 255, col[0] = v % 256;
+    else col[0] = 255, col[2] = 255 - v % 256;
+
+    return col;
+  },
+
+  hsvx(val){
+    if(val === 0)
+      return O.hsv(0);
+
+    while(val < 1 / 49)
+      val *= 49;
+
+    return O.hsv(val - 1 / 64);
+  },
+
+  binLen(a){
+    return a && (Math.log2(a) | 0) + 1;
+  },
+
+  raf(func){
+    return window.requestAnimationFrame(func);
+  },
+
+  /*
+    Events
+  */
+
+  ael(type, func){
+    return window.addEventListener(type, func);
+  },
+  rel(type, func){
+    return window.removeEventListener(type, func);
+  },
+  pd(evt, stopPropagation = false){
+    evt.preventDefault();
+    if(stopPropagation) evt.stopPropagation();
   },
 
   /*
@@ -1147,6 +1291,7 @@ var O = {
       }).join('');
     }
   },
+
   Buffer: class extends Uint8Array{
     constructor(...params){
       if(params.length === 1 && typeof params[0] === 'string'){
@@ -1210,139 +1355,6 @@ var O = {
       this[offset + 2] = val >> 8;
       this[offset + 3] = val;
     }
-  },
-
-  /*
-    String functions
-  */
-
-  ascii(str){
-    return [...str].map(char => {
-      var charCode = char.charCodeAt(0);
-      if(charCode >= 32 && charCode <= 126) return char;
-      else return '?';
-    }).join('');
-  },
-
-  sanl(str){
-    return str.split(/\r\n|\r|\n/gm);
-  },
-
-  pad(str, len, char = '0'){
-    str += '';
-    if(str.length >= len) return str;
-    return char.repeat(len - str.length) + str;
-  },
-
-  capitalize(str){
-    return `${str[0].toUpperCase()}${str.substring(1)}`;
-  },
-
-  /*
-    Array functions
-  */
-
-  ca(len, func){
-    var arr = [];
-    for(var i = 0; i < len; i++)
-      arr.push(func(i));
-    return arr;
-  },
-
-  /*
-    Other functions
-  */
-
-  repeat(num, func){
-    for(var i = 0; i < num; i++) func(i);
-  },
-
-  rand(a){
-    return Math.random() * a | 0;
-  },
-
-  randf(a){
-    return Math.random() * a;
-  },
-
-  randElem(arr){
-    return arr[O.rand(arr.length)];
-  },
-
-  bound(val, min, max){
-    if(val < min) return min;
-    if(val > max) return max;
-    return val;
-  },
-
-  int(val, min = null, max = null){
-    if(typeof val == 'object') val = 0;
-    else val |= 0;
-    if(min != null) val = O.bound(val, min, max);
-    return val;
-  },
-
-  bool(val){
-    return Boolean(O.int(val));
-  },
-
-  sortAsc(arr){
-    return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0);
-  },
-
-  sortDesc(arr){
-    return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0);
-  },
-
-  rgb(...col){
-    return `#${col.map(val => O.pad((val | 0).toString(16), 2)).join('')}`;
-  },
-
-  hsv(val){
-    var col = [0, 0, 0];
-    var v = Math.round(val * 256 * 6);
-
-    if(v < 256) col[0] = 255, col[1] = v % 256;
-    else if(v < 256 * 2) col[1] = 255, col[0] = 255 - v % 256;
-    else if(v < 256 * 3) col[1] = 255, col[2] = v % 256;
-    else if(v < 256 * 4) col[2] = 255, col[1] = 255 - v % 256;
-    else if(v < 256 * 5) col[2] = 255, col[0] = v % 256;
-    else col[0] = 255, col[2] = 255 - v % 256;
-
-    return col;
-  },
-
-  hsvx(val){
-    if(val === 0)
-      return O.hsv(0);
-
-    while(val < 1 / 49)
-      val *= 49;
-
-    return O.hsv(val - 1 / 64);
-  },
-
-  binLen(a){
-    return a && (Math.log2(a) | 0) + 1;
-  },
-
-  raf(func){
-    return window.requestAnimationFrame(func);
-  },
-
-  /*
-    Events
-  */
-
-  ael(type, func){
-    return window.addEventListener(type, func);
-  },
-  rel(type, func){
-    return window.removeEventListener(type, func);
-  },
-  pd(evt, stopPropagation = false){
-    evt.preventDefault();
-    if(stopPropagation) evt.stopPropagation();
   },
 
   /*

@@ -6,6 +6,12 @@ window.setTimeout(main);
 
 function main(){
   injectDOMElements();
+
+  O.require('icons.js', a => {
+    a.getIcons().then(a => {
+      O.ce(O.body, 'img').src = a['smiley'];
+    });
+  });
 }
 
 function injectDOMElements(){
