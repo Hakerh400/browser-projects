@@ -1329,7 +1329,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['code', 14, 16, g => {
+  ['details', 14, 16, g => {
     g.beginPath();
     g.moveTo(9.5, 3);
     g.lineTo(8, 4.5);
@@ -2895,108 +2895,6 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['gist-secret', 14, 16, g => {
-    g.beginPath();
-    g.moveTo(7.782, 10.5);
-    g.lineTo(8.782, 14);
-    g.lineTo(4.782, 14);
-    g.lineTo(5.782, 10.5);
-    g.lineTo(5.032, 9);
-    g.lineTo(8.532, 9);
-    g.lineTo(7.782, 10.5);
-    g.closePath();
-    g.fill();
-    g.stroke();
-    g.beginPath();
-    g.moveTo(9.782, 6);
-    g.lineTo(3.782, 6);
-    g.lineTo(1.782, 7);
-    g.lineTo(11.782, 7);
-    g.lineTo(9.782, 6);
-    g.closePath();
-    g.fill();
-    g.stroke();
-    g.beginPath();
-    g.moveTo(8.782, 2);
-    g.lineTo(6.782, 3);
-    g.lineTo(4.782, 2);
-    g.lineTo(3.782, 5);
-    g.lineTo(9.782, 5);
-    g.lineTo(8.782, 2);
-    g.closePath();
-    g.fill();
-    g.stroke();
-    g.beginPath();
-    g.moveTo(12.812, 9.75);
-    g.lineTo(9.782, 9);
-    g.lineTo(10.782, 11);
-    g.lineTo(8.782, 14);
-    g.lineTo(12.002, 14);
-    g.bezierCurveTo(12.452, 14, 12.862, 13.69, 12.972, 13.25);
-    g.lineTo(13.532, 10.97);
-    g.bezierCurveTo(13.672, 10.44, 13.342, 9.89, 12.812, 9.75);
-    g.closePath();
-    g.fill();
-    g.stroke();
-    g.beginPath();
-    g.moveTo(3.782, 9);
-    g.lineTo(0.752, 9.75);
-    g.bezierCurveTo(0.222, 9.89, -0.108, 10.44, 0.032, 10.97);
-    g.lineTo(0.592, 13.25);
-    g.bezierCurveTo(0.702, 13.69, 1.112, 14, 1.562, 14);
-    g.lineTo(4.782, 14);
-    g.lineTo(2.782, 11);
-    g.lineTo(3.782, 9);
-    g.closePath();
-    g.fill();
-    g.stroke();
-  }],
-  ['gist', 12, 16, g => {
-    g.beginPath();
-    g.moveTo(7.5, 5);
-    g.lineTo(10, 7.5);
-    g.lineTo(7.5, 10);
-    g.lineTo(6.75, 9.25);
-    g.lineTo(8.5, 7.5);
-    g.lineTo(6.75, 5.75);
-    g.lineTo(7.5, 5);
-    g.closePath();
-    g.fill();
-    g.stroke();
-    g.beginPath();
-    g.moveTo(4.5, 5);
-    g.lineTo(2, 7.5);
-    g.lineTo(4.5, 10);
-    g.lineTo(5.25, 9.25);
-    g.lineTo(3.5, 7.5);
-    g.lineTo(5.25, 5.75);
-    g.lineTo(4.5, 5);
-    g.closePath();
-    g.fill();
-    g.stroke();
-    g.beginPath();
-    g.moveTo(0, 13);
-    g.lineTo(0, 2);
-    g.bezierCurveTo(0, 1.45, 0.45, 1, 1, 1);
-    g.lineTo(11, 1);
-    g.bezierCurveTo(11.55, 1, 12, 1.45, 12, 2);
-    g.lineTo(12, 13);
-    g.bezierCurveTo(12, 13.55, 11.55, 14, 11, 14);
-    g.lineTo(1, 14);
-    g.bezierCurveTo(0.45, 14, 0, 13.55, 0, 13);
-    g.closePath();
-    g.fill();
-    g.stroke();
-    g.beginPath();
-    g.moveTo(1, 13);
-    g.lineTo(11, 13);
-    g.lineTo(11, 2);
-    g.lineTo(1, 2);
-    g.lineTo(1, 13);
-    g.closePath();
-    g.fill();
-    g.stroke();
-  }],
   ['git-branch', 10, 16, g => {
     g.beginPath();
     g.moveTo(10, 5);
@@ -3188,7 +3086,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['git-pull-request', 12, 16, g => {
+  ['git-change-request', 12, 16, g => {
     g.beginPath();
     g.moveTo(11, 11.28);
     g.lineTo(11, 5);
@@ -3732,7 +3630,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['issue-closed', 16, 16, g => {
+  ['task-closed', 16, 16, g => {
     g.beginPath();
     g.moveTo(7, 10);
     g.lineTo(9, 10);
@@ -3779,7 +3677,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['issue-opened', 14, 16, g => {
+  ['task-opened', 14, 16, g => {
     g.beginPath();
     g.moveTo(7, 2.3);
     g.bezierCurveTo(10.14, 2.3, 12.7, 4.86, 12.7, 8);
@@ -3817,7 +3715,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['issue-reopened', 14, 16, g => {
+  ['task-reopened', 14, 16, g => {
     g.beginPath();
     g.moveTo(8, 9);
     g.lineTo(6, 9);
@@ -6136,7 +6034,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['repo-clone', 16, 16, g => {
+  ['field-clone', 16, 16, g => {
     g.beginPath();
     g.moveTo(15, 0);
     g.lineTo(9, 0);
@@ -6251,7 +6149,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['repo-force-push', 12, 16, g => {
+  ['field-force-push', 12, 16, g => {
     g.beginPath();
     g.moveTo(10, 9);
     g.lineTo(8, 9);
@@ -6298,7 +6196,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['repo-forked', 10, 16, g => {
+  ['field-forked', 10, 16, g => {
     g.beginPath();
     g.moveTo(8, 1);
     g.ellipse(7.99473412, 2.99299304, 1.993, 1.993, 0, -1.56815414, 2.09337229, true);
@@ -6348,7 +6246,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['repo-pull', 16, 16, g => {
+  ['field-change', 16, 16, g => {
     g.beginPath();
     g.moveTo(13, 8);
     g.lineTo(13, 6);
@@ -6437,7 +6335,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['repo-push', 12, 16, g => {
+  ['field-push', 12, 16, g => {
     g.beginPath();
     g.moveTo(4, 3);
     g.lineTo(3, 3);
@@ -6498,7 +6396,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['repo', 12, 16, g => {
+  ['field', 12, 16, g => {
     g.beginPath();
     g.moveTo(4, 9);
     g.lineTo(3, 9);

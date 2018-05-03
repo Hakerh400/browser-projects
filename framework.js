@@ -115,12 +115,20 @@ var O = {
     DOM functions
   */
 
-  ce(parent, tag, className=null){
+  ce(parent, tag, classNames=null){
     var elem = O.doc.createElement(tag);
-    parent.appendChild(elem);
 
-    if(className !== null)
-      elem.classList.add(className);
+    if(parent !== null)
+      parent.appendChild(elem);
+
+    if(classNames !== null){
+      if(typeof classNames === 'string')
+        classNames = classNames.split(' ');
+
+      classNames.forEach(className => {
+        elem.classList.add(className);
+      });
+    }
 
     return elem;
   },
@@ -135,8 +143,8 @@ var O = {
     return t;
   },
 
-  ceLink(elem, text, href, className=null){
-    var a = O.ce(elem, 'a', className);
+  ceLink(elem, text, href, classNames=null){
+    var a = O.ce(elem, 'a', classNames);
     
     a.href = href;
     O.ceText(a, text);
