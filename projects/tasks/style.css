@@ -79,10 +79,6 @@ header .nav{
   margin-left: 8px;
 }
 
-header .container{
-  width: 996px;
-}
-
 .content .header{
   height: 83px;
   margin-bottom: 20px;
@@ -96,7 +92,9 @@ header .container{
 }
 
 .above-nav{
-  margin-bottom: 30px;
+  margin-top: 1px;
+  margin-bottom: 29px;
+  padding-left: 8px;
   overflow: visible;
 }
 
@@ -123,9 +121,12 @@ header .container{
   border-style: solid;
   border-color: rgba(0, 0, 0, 0);
   border-top-width: 3px;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
 }
 
 .nav-item.selected{
+  background-color: #ffffff;
   border-top-color: #e36209;
   border-left-color: #e1e4e8;
   border-right-color: #e1e4e8;
@@ -144,7 +145,7 @@ header .container{
 }
 
 .container{
-  width: 980px;
+  width: 996px;
   height: 100%;
   margin-left: auto;
   margin-right: auto;
@@ -175,9 +176,9 @@ header .container{
 
 .field-icon{
   position: relative;
-  top: 2px;
-  left: -8px;
-  margin-right: -2px;
+  top: 1px;
+  margin-left: -8px;
+  margin-right: 5.5px;
 }
 
 .path-divider{
