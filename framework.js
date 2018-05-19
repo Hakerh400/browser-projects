@@ -281,6 +281,14 @@ var O = {
     return arr;
   },
 
+  shuffle(arr){
+    var arr1 = arr.slice();
+    arr.length = 0;
+    while(arr1.length !== 0)
+      arr.push(arr1.splice(O.rand(arr1.length), 1)[0]);
+    return arr;
+  },
+
   /*
     Other functions
   */
@@ -651,8 +659,8 @@ var O = {
         g.fillRect(0, 0, this.w, this.h);
       }
 
-      g.textAlign = 'center';
       g.textBaseline = 'middle';
+      g.textAlign = 'center';
       g.font(this.s * .8);
     }
 
