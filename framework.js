@@ -338,16 +338,16 @@ var O = {
     return `#${col.map(val => O.pad((val | 0).toString(16), 2)).join('')}`;
   },
 
-  hsv(val){
-    var col = [0, 0, 0];
-    var v = Math.round(val * 256 * 6);
+  hsv(val, col){
+    var v = Math.round(val * (256 * 6 - 1)) | 0;
+    var h = v & 255;
 
-    if(v < 256) col[0] = 255, col[1] = v % 256;
-    else if(v < 256 * 2) col[1] = 255, col[0] = 255 - v % 256;
-    else if(v < 256 * 3) col[1] = 255, col[2] = v % 256;
-    else if(v < 256 * 4) col[2] = 255, col[1] = 255 - v % 256;
-    else if(v < 256 * 5) col[2] = 255, col[0] = v % 256;
-    else col[0] = 255, col[2] = 255 - v % 256;
+    if(v < 256) col[2] = 0, col[0] = 255, col[1] = h;
+    else if(v < 256 * 2) col[2] = 0, col[1] = 255, col[0] = 255 - h;
+    else if(v < 256 * 3) col[0] = 0, col[1] = 255, col[2] = h;
+    else if(v < 256 * 4) col[0] = 0, col[2] = 255, col[1] = 255 - h;
+    else if(v < 256 * 5) col[1] = 0, col[2] = 255, col[0] = h;
+    else col[1] = 0, col[0] = 255, col[2] = 255 - h;
 
     return col;
   },
@@ -450,6 +450,25 @@ var O = {
     combine(len, angle){
       this.x += Math.cos(angle) * len;
       this.y += Math.sin(angle) * len;
+
+      return this;
+    }
+
+    dec(x, y){
+      if(x instanceof O.Vector)
+        ({x, y} = x);
+
+      if(x !== 0){
+        var sx = this.x > 0 ? 1 : -1;
+        if(Math.abs(this.x) > x) this.x = x * sx - this.x;
+        else this.x = 0;
+      }
+  
+      if(y !== 0){
+        var sy = this.y > 0 ? 1 : -1;
+        if(Math.abs(this.y) > y) this.y = y * sy - this.y;
+        else this.y = 0;
+      }
 
       return this;
     }

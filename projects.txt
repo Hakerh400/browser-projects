@@ -1,7 +1,7 @@
 image
 video
 games
-grid-projects
+other-projects
 grid.io
 tasks
 text
