@@ -3,6 +3,10 @@
 window.setTimeout(main);
 
 function main(){
+  createWorld();
+}
+
+function createWorld(){
   var world = World.create();
   var {w, h, g} = world;
   var [wh, hh] = [w, h].map(a => a / 2);
@@ -12,36 +16,35 @@ function main(){
 
   ent.setCol(new Color(0, 255, 0));
 
-  ent.addVert(0, 0);
-  ent.addVert(100, 0);
-  ent.addVert(100, 100);
-  ent.addVert(200, 100);
-  ent.addVert(200, 0);
-  ent.addVert(300, 0);
-  ent.addVert(300, 200);
-  ent.addVert(0, 200);
+  var n = 30;
+  O.repeat(n, i => {
+    var k = (i / n) ** .5;
+    var angle = -(k * O.pi2);
+    var len = i & 1 ? 150 : 100;
+    var x = Math.cos(angle) * len;
+    var y = Math.sin(angle) * len;
 
-  ent.updateOrigin();
-  ent.translate(wh, hh);
+    ent.addVert(new O.Vector(x, y));
+  });
+
+  ent.reposition();
 
   var f = () => {
-    ent.updateOrigin();
-    ent.rotate(.02);
-
-    ent.update();
     world.render();
 
-    var s = 30;
+    var s = 64;
     var sh = s / 2;
 
     for(var y = sh; y < h; y += s){
       for(var x = sh; x < w; x += s){
         g.beginPath();
-        g.fillStyle = ent.includes(x, y) ? '#ff0000' : '#00ffff';
+        g.fillStyle = ent.includes(new O.Vector(x, y)) ? '#ff0000' : '#00ffff';
         g.arc(x, y, 5, 0, O.pi2);
         g.fill();
       }
     }
+
+    ent.moment = .01;
 
     O.raf(f);
   };
@@ -94,18 +97,14 @@ class Polygon extends GraphicalObject{
     this.updated = false;
   }
 
-  addVert(x, y){
+  addVert(v){
     this.updated = false;
-    var vert = new O.Vector(x, y);
-    this.verts.push(vert);
-    return vert;
+    this.verts.push(v);
   }
 
-  addVertAt(x, y, index){
+  addVertAt(v, index){
     this.updated = false;
-    var vert = new O.Vector(x, y);
-    this.verts.splice(index, 0, vert);
-    return vert;
+    this.verts.splice(index, 0, v);
   }
 
   getVert(index){
@@ -113,13 +112,13 @@ class Polygon extends GraphicalObject{
     return this.verts[index];
   }
 
-  removeVert(x, y){
+  removeVert(v){
     this.updated = false;
-    var index = this.verts.findIndex(vert => vert.x === x && vert.y === y);
-    return this.removeVertByIndex(index);
+    var index = this.verts.indexOf(v);
+    return this.removeVertAt(index);
   }
 
-  removeVertByIndex(index){
+  removeVertAt(index){
     this.updated = false;
     return this.verts.splice(index, 1)[0];
   }
@@ -130,38 +129,33 @@ class Polygon extends GraphicalObject{
   }
 
   getArea(){
-    if(!this.updated)
-      this.update();
-
+    if(!this.updated) this.update();
     return this.area;
   }
 
   getCentroid(){
-    if(!this.updated)
-      this.update();
-
+    if(!this.updated) this.update();
     return this.centroid;
   }
 
   updateOrigin(){
+    this.update();
+
     var {verts} = this;
     var len = verts.length;
 
     var c = this.getCentroid();
-    var cx = c.x;
-    var cy = c.y;
+    var d = c.clone().sub(this);
 
-    for(var i = 0; i !== len; i++){
-      var v = verts[i];
-      v.x -= cx;
-      v.y -= cy;
-    }
+    for(var i = 0; i !== len; i++)
+      verts[i].sub(d);
 
-    this.x += cx;
-    this.y += cy;
+    this.add(d);
+  }
 
-    c.x = 0;
-    c.y = 0;
+  reposition(){
+    this.translate(super.clone().mul(2).sub(this.getCentroid()));
+    this.updateOrigin();
   }
 
   update(){
@@ -170,8 +164,7 @@ class Polygon extends GraphicalObject{
 
     if(len === 0){
       this.area = 0;
-      this.centroid.x = 0;
-      this.centroid.y = 0;
+      this.centroid.set(0, 0);
       return;
     }
 
@@ -193,15 +186,8 @@ class Polygon extends GraphicalObject{
       cy += (v1.y + v2.y) * d;
     }
 
-    area /= 2;
-
-    var k = 1 / 6 / area;
-    cx *= k;
-    cy *= k;
-
-    this.area = area;
-    this.centroid.x = cx;
-    this.centroid.y = cy;
+    this.area = area / 2;
+    this.centroid.set(cx, cy).mul(1 / 3 / area).add(this);
 
     this.updated = true;
   }
@@ -220,17 +206,19 @@ class Polygon extends GraphicalObject{
     }
   }
 
-  translate(x, y){
-    var dx = x - this.x;
-    var dy = y - this.y;
+  translate(v){
+    var dx = this.x = v.x;
+    var dy = this.y = v.y;
+    this.set(v);
 
-    this.x += dx;
-    this.y += dy;
-    this.centroid.x += dx;
-    this.centroid.y += dy;
+    var c = this.getCentroid();
+    c.x += dx;
+    c.y += dy;
   }
 
   rotate(angle){
+    if(!this.updated) this.update();
+
     var {verts} = this;
     var len = verts.length;
 
@@ -240,19 +228,33 @@ class Polygon extends GraphicalObject{
     this.updated = false;
   }
 
-  includes(x, y){
+  rotateAround(v, angle){
+    if(!this.updated) this.update();
+
+    var {verts} = this;
+    var len = verts.length;
+
+    v = v.clone().sub(this);
+
+    for(var i = 0; i !== len; i++)
+      verts[i].sub(v).rotate(angle).add(v);
+
+    this.updated = false;
+  }
+
+  includes(v){
     var {verts} = this;
     var len = verts.length;
 
     var c = false;
-    x -= this.x;
-    y -= this.y;
+    var x = v.x - this.x;
+    var y = v.y - this.y;
 
     for(var i = 0, j = len - 1; i !== len; j = i++){
       var vi = verts[i];
       var vj = verts[j];
 
-      if(((vi.y > y) !== (vj.y > y)) && (x < (vj.x - vi.x) * (y - vi.y) / (vj.y - vi.y) + vi.x))
+      if((vi.y > y) !== (vj.y > y) && x < (vj.x - vi.x) * (y - vi.y) / (vj.y - vi.y) + vi.x)
         c = !c;
     }
 
@@ -309,9 +311,11 @@ class Entity extends Polygon{
     super(x, y, world.g);
 
     this.world = world;
+    this.world.addEnt(this);
     this.setCol(col);
 
-    this.world.addEnt(this);
+    this.vel = new O.Vector(0, 0);
+    this.moment = 0;
   }
 
   setCol(col){
@@ -320,6 +324,11 @@ class Entity extends Polygon{
 
   getCol(){
     return this.col;
+  }
+
+  tick(){
+    this.add(this.vel);
+    this.rotate(this.moment);
   }
 
   draw(){
@@ -338,9 +347,10 @@ class Entity extends Polygon{
     g.fill();
     g.stroke();
 
+    var c = this.getCentroid().clone().sub(this);
     g.fillStyle = 'black';
     g.beginPath();
-    g.arc(this.getCentroid().x, this.getCentroid().y, 5, 0, O.pi2);
+    g.arc(c.x, c.y, 5, 0, O.pi2);
     g.fill();
 
     g.beginPath();
@@ -371,10 +381,10 @@ class World{
 
   removeEnt(ent){
     var index = this.ents.findIndex(ent);
-    return this.removeEntByIndex(index);
+    return this.removeEntAt(index);
   }
 
-  removeEntByIndex(index){
+  removeEntAt(index){
     return this.ents.splice(index, 1)[0];
   }
 
@@ -385,6 +395,7 @@ class World{
     g.fillRect(0, 0, w, h);
 
     this.ents.forEach(ent => {
+      ent.tick();
       ent.render();
     });
   }

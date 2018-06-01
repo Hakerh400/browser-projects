@@ -397,16 +397,25 @@ var O = {
   },
 
   Vector: class{
-    constructor(x = 0, y = 0){
-      this.x = +x;
-      this.y = +y;
+    constructor(x=0, y=0){
+      this.set(x, y);
     }
 
-    fromAngle(len, angle){
+    static fromAngle(len, angle){
       var x = Math.cos(angle) * len;
       var y = Math.sin(angle) * len;
 
       return new O.Vector(x, y);
+    }
+
+    set(x, y){
+      if(x instanceof O.Vector)
+        ({x, y} = x);
+
+      this.x = x;
+      this.y = y;
+
+      return this;
     }
 
     clone(){
@@ -482,6 +491,8 @@ var O = {
 
       this.x = Math.cos(angle) * len;
       this.y = Math.sin(angle) * len;
+
+      return this;
     }
 
     angle(){
@@ -493,10 +504,14 @@ var O = {
 
       this.x = Math.cos(angle) * len;
       this.y = Math.sin(angle) * len;
+
+      return this;
     }
 
     norm(){
       this.div(this.len());
+
+      return this;
     }
 
     dist(x, y){
@@ -512,6 +527,8 @@ var O = {
     maxLen(maxLen){
       if(this.len() > maxLen)
         this.setLen(maxLen);
+
+      return this;
     }
 
     rotate(angle){

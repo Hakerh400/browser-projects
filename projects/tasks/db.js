@@ -3,7 +3,7 @@
 var dbPhp = `/projects/${O.project}/db.php`;
 
 var db = {
-  async post(onj=null){
+  async post(obj=null){
     var res = await fetch(dbPhp, obj);
   },
   async test(){
