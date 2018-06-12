@@ -334,11 +334,15 @@ var O = {
     return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0);
   },
 
+  undupe(arr){
+    return arr.filter((a, b, c) => c.indexOf(a) === b);
+  },
+
   rgb(...col){
     return `#${col.map(val => O.pad((val | 0).toString(16), 2)).join('')}`;
   },
 
-  hsv(val, col){
+  hsv(val, col=new Uint8Array(3)){
     var v = Math.round(val * (256 * 6 - 1)) | 0;
     var h = v & 255;
 
@@ -388,13 +392,6 @@ var O = {
   /*
     Constructors
   */
-
-  Point: class{
-    constructor(x, y){
-      this.x = +x;
-      this.y = +y;
-    }
-  },
 
   Vector: class{
     constructor(x=0, y=0){
@@ -486,6 +483,10 @@ var O = {
       return Math.sqrt(this.x * this.x + this.y * this.y);
     }
 
+    lenM(){
+      return Math.abs(this.x) + Math.abs(this.y);
+    }
+
     setLen(len){
       var angle = this.angle();
 
@@ -541,6 +542,59 @@ var O = {
       this.y = y;
 
       return this;
+    }
+
+    isIn(x1, y1, x2, y2){
+      var {x, y} = this;
+      return x >= x1 && y >= y1 && x < x2 && y < y2;
+    }
+  },
+
+  Color: class extends Uint8Array{
+    constructor(r, g, b){
+      super(3);
+
+      this.set(r, g, b);
+    }
+
+    static from(rgb){
+      return new O.Color(rgb[0], rgb[1], rgb[2]);
+    }
+
+    clone(){
+      return O.Color.from(this);
+    }
+
+    set(r, g, b){
+      this[0] = r;
+      this[1] = g;
+      this[2] = b;
+      this.updateStr();
+    }
+
+    setR(r){
+      this[0] = r;
+      this.updateStr();
+    }
+
+    setG(g){
+      this[1] = g;
+      this.updateStr();
+    }
+
+    setB(b){
+      this[2] = b;
+      this.updateStr();
+    }
+
+    updateStr(){
+      this.str = `#${[...this].map(byte => {
+        return byte.toString(16).padStart(2, '0');
+      }).join('')}`;
+    }
+
+    toString(){
+      return this.str;
     }
   },
 

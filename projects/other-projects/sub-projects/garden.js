@@ -11,45 +11,33 @@ function createWorld(){
   var {w, h, g} = world;
   var [wh, hh] = [w, h].map(a => a / 2);
 
-  var col = new Color(255, 0, 0);
-  var ent = new Entity(world, wh, hh, col);
+  O.repeat(2, i => {
+    var col = new O.Color(255, 0, i * 255);
+    var ent = new Entity(world, w * (i + 1) / 3, hh, col);
 
-  ent.setCol(new Color(0, 255, 0));
+    var n = 30;
+    O.repeat(n, i => {
+      var k = (i / n) ** 2;
+      var angle = -(k * O.pi2);
+      var len = i & 1 ? 150 : 100;
+      var x = Math.cos(angle) * len;
+      var y = Math.sin(angle) * len;
 
-  var n = 30;
-  O.repeat(n, i => {
-    var k = (i / n) ** .5;
-    var angle = -(k * O.pi2);
-    var len = i & 1 ? 150 : 100;
-    var x = Math.cos(angle) * len;
-    var y = Math.sin(angle) * len;
+      ent.addVert(new O.Vector(x, y));
+    });
 
-    ent.addVert(new O.Vector(x, y));
+    ent.reposition();
+    ent.moment = .01 - .02 * i;
   });
-
-  ent.reposition();
 
   var f = () => {
     world.render();
 
-    var s = 64;
-    var sh = s / 2;
-
-    for(var y = sh; y < h; y += s){
-      for(var x = sh; x < w; x += s){
-        g.beginPath();
-        g.fillStyle = ent.includes(new O.Vector(x, y)) ? '#ff0000' : '#00ffff';
-        g.arc(x, y, 5, 0, O.pi2);
-        g.fill();
-      }
-    }
-
-    ent.moment = .01;
-
     O.raf(f);
   };
 
-  f();
+  world.render();
+  O.raf(f);
 }
 
 class GraphicalObject extends O.Vector{
@@ -92,8 +80,11 @@ class Polygon extends GraphicalObject{
     super(x, y, g);
 
     this.verts = [];
+
     this.area = 0;
     this.centroid = new O.Vector(0, 0);
+    this.radiusM = 0;
+
     this.updated = false;
   }
 
@@ -165,12 +156,14 @@ class Polygon extends GraphicalObject{
     if(len === 0){
       this.area = 0;
       this.centroid.set(0, 0);
+      this.radiusM = 0;
       return;
     }
 
     var area = 0;
     var cx = 0;
     var cy = 0;
+    var r = 0;
 
     var v1 = null;
     var v2 = verts[verts.length - 1];
@@ -178,6 +171,9 @@ class Polygon extends GraphicalObject{
     for(var i = 0; i !== len; i++){
       v1 = v2;
       v2 = verts[i];
+
+      var vLen = v2.lenM();
+      if(vLen > r) r = vLen;
 
       var d = v1.x * v2.y - v2.x * v1.y;
 
@@ -188,6 +184,7 @@ class Polygon extends GraphicalObject{
 
     this.area = area / 2;
     this.centroid.set(cx, cy).mul(1 / 3 / area).add(this);
+    this.radiusM = r;
 
     this.updated = true;
   }
@@ -262,50 +259,6 @@ class Polygon extends GraphicalObject{
   }
 };
 
-class Color extends Uint8Array{
-  constructor(r, g, b){
-    super(3);
-
-    this.set(r, g, b);
-  }
-
-  static from(rgb){
-    return new Color(...rgb);
-  }
-
-  set(r, g, b){
-    this[0] = r;
-    this[1] = g;
-    this[2] = b;
-    this.updateStr();
-  }
-
-  setR(r){
-    this[0] = r;
-    this.updateStr();
-  }
-
-  setG(g){
-    this[1] = g;
-    this.updateStr();
-  }
-
-  setB(b){
-    this[2] = b;
-    this.updateStr();
-  }
-
-  updateStr(){
-    this.str = `#${[...this].map(byte => {
-      return byte.toString(16).padStart(2, '0');
-    }).join('')}`;
-  }
-
-  toString(){
-    return this.str;
-  }
-};
-
 class Entity extends Polygon{
   constructor(world, x, y, col){
     super(x, y, world.g);
@@ -334,6 +287,12 @@ class Entity extends Polygon{
   draw(){
     var {g, col, verts} = this;
     var len = verts.length;
+
+    g.fillStyle = '#ffff00';
+    g.beginPath();
+    g.arc(0, 0, this.radiusM, 0, O.pi2);
+    g.fill();
+    g.stroke();
 
     g.fillStyle = col;
     g.beginPath();
