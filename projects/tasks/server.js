@@ -1,0 +1,166 @@
+'use strict';
+
+const PORT = 1037;
+
+var proj = O.project;
+
+module.exports = {
+  reset,
+  query,
+  avatar: {
+    query: avatarQuery,
+    insert: insertAvatar,
+    upload: uploadAvatar,
+  },
+};
+
+async function reset(){
+  var obj = await query(`
+    drop database if exists ${proj};
+
+    create database ${proj}
+      character set utf8mb4
+      collate utf8mb4_unicode_ci;
+  `);
+  if(obj.error !== null) return obj;
+
+  obj = await query(`
+    create table users (
+      id int primary key auto_increment,
+      name text not null,
+      email text,
+      avatar int default 1
+    );
+
+    create table avatars (
+      id int primary key auto_increment,
+      sha512 text
+    );
+
+    create table fields (
+      id int primary key auto_increment,
+      user int not null,
+      name text not null
+    );
+  `);
+  if(obj.error !== null) return obj;
+
+  obj = await resetAvatars();
+  if(obj.error !== null) return obj;
+
+  return succ();
+}
+
+async function resetAvatars(){
+  var obj = await avatarQuery('reset');
+  if(obj.error !== null) return obj;
+
+  obj = await createDefaultAvatar();
+  if(obj.error !== null) return obj;
+
+  return succ();
+}
+
+async function createDefaultAvatar(){
+  return await new Promise(res => {
+    O.rfLocal('default-avatar.png', true, async (status, buff) => {
+      var obj = await uploadAvatar(buff);
+      if(obj.error !== null) return res(obj);
+
+      res(succ());
+    });
+  });
+}
+
+async function uploadAvatar(buff){
+  var obj = await avatarQuery('upload', buff);
+  if(obj.error !== null) return obj;
+
+  var data = obj.data;
+  var {index, sha512} = data;
+
+  obj = await insertAvatar(index, sha512);
+  if(obj.error !== null) return obj;
+
+  return succ(obj.data);
+}
+
+async function insertAvatar(index, sha512){
+  var obj = await query(`
+    select id
+      from avatars
+      where sha512 = '${sha512}';
+  `);
+  if(obj.error !== null) return obj;
+
+  var arr = obj.data[0];
+  if(arr.length !== 0)
+    return succ(arr[0].id | 0);
+
+  obj = await query(`
+    insert into avatars
+      (sha512) values (
+        '${sha512}'
+      );
+  `);
+  if(obj.error !== null) return obj;
+
+  return succ(index);
+}
+
+async function query(query=null){
+  return await post('db', query);
+}
+
+async function avatarQuery(path, query=null){
+  return await post(`http://localhost:${PORT}/${path}`, query);
+}
+
+async function post(file, query=null){
+  if(!file.includes('//'))
+    file = `/projects/${proj}/${file}.php`
+
+  return await new Promise(res => {
+    var xhr = new XMLHttpRequest();
+
+    xhr.onreadystatechange = () => {
+      if(xhr.readyState !== 4) return;
+
+      var responseText = xhr.responseText;
+
+      var obj = {
+        data: null,
+        error: null,
+      };
+
+      if(xhr.status === 200){
+        try{
+          obj = JSON.parse(responseText);
+        }catch(err){
+          obj.error = `Unable to parse JSON string: ${err.message}`;
+        }
+      }else{
+        obj.error = `[${xhr.status}] ${responseText}`;
+      }
+
+      res(obj);
+    };
+
+    xhr.open('POST', file);
+    xhr.send(query);
+  });
+}
+
+function succ(msg='ok'){
+  return {
+    data: msg,
+    error: null,
+  };
+}
+
+function err(msg){
+  return {
+    data: null,
+    error: msg,
+  };
+}

@@ -10,31 +10,25 @@ var params = {
 };
 
 var modules = [
+  'server',
   'icons',
-  'db',
 ];
 
 var icons = null;
-var db = null;
+var server = null;
 
 window.setTimeout(main);
 
-function main(){
+async function main(){
   O.body.style.opacity = '0';
 
-  require(modules).then(modules => {
-    ({db} = modules);
+  ({server, icons} = await require(modules));
+  icons = await icons.getIcons();
 
-    modules.icons.getIcons().then(iconsObj => {
-      icons = iconsObj;
+  var obj = await server.reset();
+  if(obj.error !== null) return err(obj.error);
 
-      injectDOMElements();
-
-      db.reset().then(obj => {
-        console.log(JSON.stringify(obj, null, 2));
-      });
-    });
-  });
+  injectDOMElements();
 }
 
 function injectDOMElements(){
@@ -54,8 +48,29 @@ function injectStylesheet(){
 }
 
 function injectHTML(){
-  injectHeader();
-  injectPageContent();
+  var header = injectHeader();
+  var content = injectPageContent();
+
+  var input = O.ce(content, 'input');
+  input.type = 'file';
+
+  O.ael(input, 'change', evt => {
+    var files = input.files;
+    if(files.length !== 1)
+      return;
+
+    var reader = new FileReader();
+
+    reader.onload = () => {
+      var buff = reader.result;
+
+      server.avatar.upload(buff).then(result => {
+        console.log(result);
+      });
+    };
+
+    reader.readAsArrayBuffer(files[0]);
+  });
 }
 
 function injectHeader(){
@@ -76,6 +91,8 @@ function injectHeader(){
   var navInner = O.ce(nav, 'div', 'vcenter');
   O.ceLink(navInner, 'Tasks', '.');
   O.ceLink(navInner, 'Changes', '.');
+
+  return header;
 }
 
 function injectPageContent(){
@@ -108,6 +125,8 @@ function injectPageContent(){
     addIcon(link, icon, s ? '#24292e' : '#1b1f23', 1, 'nav-item-icon' + str);
     O.ceText(link, name);
   });
+
+  return content;
 }
 
 async function require(moduleName){
@@ -168,4 +187,9 @@ async function load(file){
       res(data);
     });
   });
+}
+
+function err(msg){
+  O.error(msg);
+  O.body.style.opacity = '1';
 }

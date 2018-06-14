@@ -2,10 +2,7 @@
   include('header.php');
 
   $query = file_get_contents('php://input');
-  $con = mysqli_connect('localhost', 'root', '', 'tasks');
-
-  if(mysqli_connect_errno())
-    err('mysqli_connect failed: ' . mysqli_connect_error());
+  $con = getCon();
 
   if(!$con->multi_query($query))
     err($con->error);

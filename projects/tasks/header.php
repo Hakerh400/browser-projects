@@ -1,4 +1,20 @@
 <?php
+  function getProj(){
+    $str = str_replace('\\', '/', getcwd());
+    $arr = explode('/', $str);
+    
+    return array_pop($arr);
+  }
+
+  function getCon(){
+    $con = mysqli_connect('localhost', 'root', '', getProj());
+
+    if(mysqli_connect_errno())
+      err('mysqli_connect failed: ' . mysqli_connect_error());
+
+    return $con;
+  }
+
   function succ($data){
     echo json_encode([
       'data' => $data,

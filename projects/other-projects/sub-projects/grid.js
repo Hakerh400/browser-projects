@@ -1036,8 +1036,8 @@ function putBlackCirc(){
 
   iterate((x, y, d) => {
     if(d.internal && !d.wall){
-      if(firstInternalCell === null) firstInternalCell = new O.Point(x, y);
-      if(d.circ === 1 && firstBlackCirc === null) firstBlackCirc = new O.Point(x, y);
+      if(firstInternalCell === null) firstInternalCell = new O.Vector(x, y);
+      if(d.circ === 1 && firstBlackCirc === null) firstBlackCirc = new O.Vector(x, y);
     }
 
     if(d.circ === 1) d.circ = 0;
@@ -1356,7 +1356,7 @@ function checkSnapshot(){
     }
 
     if(freeTile === null && !d.internal && dirs !== 0)
-      freeTile = new O.Point(x, y);
+      freeTile = new O.Vector(x, y);
   });
 
   if(needsChange && freeTile !== null){
@@ -1393,7 +1393,7 @@ function getId(){
 function setBlackCirc(x, y){
   var d = get(x, y);
   if(d.wall) cwall(x, y);
-  blackCirc = new O.Point(x, y);
+  blackCirc = new O.Vector(x, y);
   d.circ = 1;
 }
 

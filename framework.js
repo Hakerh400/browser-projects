@@ -179,7 +179,7 @@ var O = {
   */
 
   urlTime(url){
-    var char = url.indexOf('?') != -1 ? '&' : '?';
+    var char = url.indexOf('?') !== -1 ? '&' : '?';
     return `${url}${char}_=${Date.now()}`;
   },
 
@@ -196,9 +196,9 @@ var O = {
     }
 
     xhr.onreadystatechange = () => {
-      if(xhr.readyState == 4){
+      if(xhr.readyState === 4){
         if(isBinary){
-          cb(xhr.status, new O.Buffer(xhr.response));
+          cb(xhr.status, xhr.response);
         }else{
           cb(xhr.status, xhr.responseText);
         }
@@ -378,12 +378,26 @@ var O = {
     Events
   */
 
-  ael(type, func){
-    return window.addEventListener(type, func);
+  ael(target, type, func=null){
+    if(func === null){
+      func = type;
+      type = target;
+      target = window;
+    }
+
+    return target.addEventListener(type, func);
   },
+
   rel(type, func){
-    return window.removeEventListener(type, func);
+    if(func === null){
+      func = type;
+      type = target;
+      target = window;
+    }
+
+    return target.removeEventListener(type, func);
   },
+
   pd(evt, stopPropagation = false){
     evt.preventDefault();
     if(stopPropagation) evt.stopPropagation();
