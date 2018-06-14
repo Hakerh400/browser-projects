@@ -9,17 +9,30 @@ var params = {
   'nav-selected': path[2] || 'details',
 };
 
+var modules = [
+  'icons',
+  'db',
+];
+
 var icons = null;
+var db = null;
 
 window.setTimeout(main);
 
 function main(){
   O.body.style.opacity = '0';
 
-  O.require('icons.js', getIcons => {
-    getIcons.getIcons().then(iconsObj => {
+  require(modules).then(modules => {
+    ({db} = modules);
+
+    modules.icons.getIcons().then(iconsObj => {
       icons = iconsObj;
+
       injectDOMElements();
+
+      db.reset().then(obj => {
+        console.log(JSON.stringify(obj, null, 2));
+      });
     });
   });
 }
@@ -95,6 +108,27 @@ function injectPageContent(){
     addIcon(link, icon, s ? '#24292e' : '#1b1f23', 1, 'nav-item-icon' + str);
     O.ceText(link, name);
   });
+}
+
+async function require(moduleName){
+  if(typeof moduleName === 'string'){
+    if(!moduleName.endsWith('.js'))
+      moduleName += '.js';
+
+    return await new Promise(res => {
+      O.require(moduleName, module => {
+        res(module);
+      });
+    });
+  }
+
+  var arr = moduleName;
+  var obj = Object.create(null);
+
+  for(moduleName of arr)
+    obj[moduleName] = await require(moduleName);
+
+  return obj;
 }
 
 function param(param){
