@@ -5,7 +5,7 @@ var proj = O.project;
 module.exports = {
   query,
   reset,
-}
+};
 
 async function reset(){
   var obj = await query(`
