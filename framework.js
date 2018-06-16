@@ -1,14 +1,9 @@
 'use strict';
 
 var O = {
-  /*
-    Parameters
-  */
-
   doc: document,
   head: document.head,
   body: document.body,
-  href: window.location.href,
 
   /*
     Constants
@@ -78,7 +73,7 @@ var O = {
   },
 
   /*
-    Project function
+    Project functions
   */
 
   nonCapWords: 'a,an,and,as,at,but,by,for,in,nor,of,on,or,the,to,up'.split(','),
@@ -98,11 +93,16 @@ var O = {
     URL functions
   */
 
+  href(){
+    return window.location.href;
+  },
+
   urlParam(param){
-    var match = O.href.match(new RegExp(`[\\?\\&]${param}=([^\\&]*)`));
+    var url = O.href();
+    var match = url.match(new RegExp(`[\\?\\&]${param}=([^\\&]*)`));
 
     if(match === null){
-      if(new RegExp(`[\\?\\&]${param}(?:\\&|$)`).test(O.href))
+      if(new RegExp(`[\\?\\&]${param}(?:\\&|$)`).test(url))
         match = '';
     }else{
       match = window.unescape(match[1]);
@@ -115,6 +115,10 @@ var O = {
     DOM functions
   */
 
+  ge(selector){
+    return O.doc.getElementById(selector);
+  },
+
   ce(parent, tag, classNames=null){
     var elem = O.doc.createElement(tag);
 
@@ -126,6 +130,9 @@ var O = {
         classNames = classNames.split(' ');
 
       classNames.forEach(className => {
+        if(className === '')
+          return;
+        
         elem.classList.add(className);
       });
     }
@@ -133,23 +140,52 @@ var O = {
     return elem;
   },
 
-  ceBr(elem, num=1){
-    while(num--) O.ce(elem, 'br');
+  ceBr(parent, num=1){
+    while(num--) O.ce(parent, 'br');
   },
 
-  ceText(elem, text){
+  ceHr(parent){
+    return O.ce(parent, 'hr');
+  },
+
+  ceText(parent, text){
     var t = O.doc.createTextNode(text);
-    elem.appendChild(t);
+    parent.appendChild(t);
     return t;
   },
 
-  ceLink(elem, text, href, classNames=null){
-    var a = O.ce(elem, 'a', classNames);
-    
-    a.href = href;
-    O.ceText(a, text);
+  ceLink(parent, label, href, classNames=null){
+    var link = O.ce(parent, 'a', classNames);
+    link.href = href;
+    if(!(label === null || label === '')) O.ceText(link, label);
+    return link;
+  },
 
-    return a;
+  ceInput(parent, type, classNames=null){
+    var input = O.ce(parent, 'input', classNames);
+    input.type = type;
+    if(type === 'text') input.autocomplete = 'off';
+    return input;
+  },
+
+  ceRadio(parent, name, value, label=null, classNames=null){
+    var radio = O.ceInput(parent, 'radio', classNames);
+    radio.name = name;
+    radio.value = value;
+    if(!(label === null || label === '')) O.ceText(parent, label);
+    return radio;
+  },
+
+  ceH(parent, type, text=null, classNames=null){
+    var h = O.ce(parent, `h${type}`, classNames);
+    if(!(text === null || text === '')) O.ceText(h, text);
+    return h;
+  },
+
+  ceLabel(parent, text=null, classNames=null){
+    var label = O.ce(parent, 'label', classNames);
+    if(!(text === null || text === '')) O.ceText(label, text);
+    return label;
   },
 
   ceCanvas(enhanced=false){
@@ -388,7 +424,7 @@ var O = {
     return target.addEventListener(type, func);
   },
 
-  rel(type, func){
+  rel(target, type, func=null){
     if(func === null){
       func = type;
       type = target;
@@ -620,6 +656,7 @@ var O = {
       grid.iterate = this.iterate.bind(grid);
       return grid;
     }
+    
     iterate(func){
       var {w, h} = this;
       var x, y;

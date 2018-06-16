@@ -11,13 +11,13 @@ header{
   font-size: 14px;
 }
 
-header a:link, header a:visited{
+header .link{
   margin-left: 8px;
   margin-right: 8px;
   color: rgba(255, 255, 255, .75);
 }
 
-header a:hover{
+header .link:hover{
   color: #ffffff;
 }
 
@@ -37,7 +37,7 @@ header .search-form{
   font-family: "Segoe UI";
 }
 
-header .search-form a:link, header .search-form a:visited{
+header .search-form .link{
   display: table-cell;
   vertical-align: middle;
   padding-left: 8px;
@@ -50,7 +50,7 @@ header .search-form a:link, header .search-form a:visited{
   font-weight: 400;
 }
 
-header .search-form a:hover{
+header .search-form .link:hover{
   color: rgba(255, 255, 255, .75);
   background-color: rgba(255, 255, 255, .125);
 }
@@ -152,6 +152,104 @@ header .nav{
   overflow: visible;
 }
 
+.margin-top{
+  margin-top: 24px;
+}
+
+.avatar{
+  width: 48px;
+  height: 48px;
+}
+
+.list-item{
+  padding-top: 24px;
+  padding-bottom: 24px;
+  border-top: 1px solid #e1e4e8;
+}
+
+.image-choice{
+  width: 500px;;
+  height: 100px;
+  border: 1px solid #d1d5da;
+  border-radius: 3px;
+  background-color: #fafbfc;
+}
+
+.image-item{
+  cursor: pointer;
+  margin-right: 2px;
+  margin-bottom: 2px;
+  border: 2px solid transparent;
+  border-radius: 0.25em;
+}
+
+.image-item.chosen{
+  border-color: #000000;
+}
+
+.btn{
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  vertical-align: middle;
+  background-repeat: repeat-x;
+  background-position: -1px -1px;
+  background-size: 110% 110%;
+  border: 1px solid rgba(27,31,35,0.2);
+  border-radius: 0.25em;
+  height: 20px;
+  cursor: pointer;
+}
+
+.btn-primary{
+  color: #ffffff !important;
+  background-color: #28a745;
+  background-image: linear-gradient(-180deg, #34d058 0%, #28a745 90%);
+}
+
+.input{
+  margin-bottom: 15px;
+}
+
+input[type="text"].input, input[type="password"].input{
+  width: 250px;
+  height: 34px;
+  min-height: 34px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  font-size: 14px;
+  vertical-align: middle;
+  border: 1px solid #d1d5da;
+  border-radius: 3px;
+  background-color: #fafbfc;
+  color: #24292e;
+}
+
+input[type="text"].input:focus, input[type="password"].input:focus{
+  background-color: #ffffff;
+}
+
+input[type="radio"].input{
+  margin-left: 0px;
+}
+
+.error{
+  padding: 5px;
+  color: #86181d;
+  background-color: #ffdce0;
+  border: 1px solid #cea0a5;
+  border-radius: 3px;
+}
+
+.title{
+  padding-bottom: 16px;
+}
+
+.hcenter{
+  text-align: center;
+}
+
 .vcenter{
   margin: 0;
   position: relative;
@@ -167,6 +265,10 @@ header .nav{
 .right{
   display: flex;
   float: right;
+}
+
+.left-space{
+  margin-left: 8px;
 }
 
 .url{
@@ -188,4 +290,53 @@ header .nav{
 
 .strong{
   font-weight: 600;
+}
+
+.block{
+  display: block;
+}
+
+.margin-bottom{
+  margin-bottom: 15px;
+}
+
+.top-left{
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  opacity: 0;
+  z-index: -1;
+}
+
+.transparent{
+  opacity: 0;
+}
+
+.hidden{
+  display: none;
+}
+
+h1, h2, h3, h4, h5, h6{
+  margin: 0px;
+}
+
+h3{
+  font-size: 20px;
+  font-weight: 600;
+}
+
+label{
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #24292e;
+}
+
+hr{
+  box-sizing: content-box;
+  border: 0;
+  border-bottom: 1px solid #dfe2e5;
+  margin: 0;
+  margin-bottom: 15px;
 }

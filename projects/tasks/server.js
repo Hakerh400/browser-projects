@@ -5,14 +5,20 @@ const PORT = 1037;
 var proj = O.project;
 
 module.exports = {
+  ping,
   reset,
   query,
+
   avatar: {
     query: avatarQuery,
     insert: insertAvatar,
     upload: uploadAvatar,
   },
 };
+
+async function ping(){
+  return await post('ping');
+}
 
 async function reset(){
   var obj = await query(`
@@ -27,13 +33,13 @@ async function reset(){
   obj = await query(`
     create table users (
       id int primary key auto_increment,
-      name text not null,
+      nick text not null,
       email text,
       avatar int default 1
     );
 
     create table avatars (
-      id int primary key auto_increment,
+      id int primary key,
       sha512 text
     );
 
@@ -99,7 +105,8 @@ async function insertAvatar(index, sha512){
 
   obj = await query(`
     insert into avatars
-      (sha512) values (
+      (id, sha512) values (
+        ${index},
         '${sha512}'
       );
   `);
@@ -113,7 +120,7 @@ async function query(query=null){
 }
 
 async function avatarQuery(path, query=null){
-  return await post(`http://localhost:${PORT}/${path}`, query);
+  return await post(`http://localhost:${PORT}/avatars/${path}`, query);
 }
 
 async function post(file, query=null){
@@ -140,7 +147,8 @@ async function post(file, query=null){
           obj.error = `Unable to parse JSON string: ${err.message}`;
         }
       }else{
-        obj.error = `[${xhr.status}] ${responseText}`;
+        var msg = responseText !== '' ? ` ${responseText}` : '';
+        obj.error = `[Status code: ${xhr.status}]${msg}`;
       }
 
       res(obj);
