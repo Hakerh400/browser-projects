@@ -1,5 +1,7 @@
 'use strict';
 
+/* test */
+
 var O = {
   doc: document,
   head: document.head,
