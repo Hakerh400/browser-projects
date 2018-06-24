@@ -35,6 +35,7 @@ var O = {
     }
 
     var util = O.env === 'node' ? require('util') : null;
+    var console = global.console;
     var logOrig = console.log;
 
     global.log = (...args) => {
@@ -48,11 +49,11 @@ var O = {
       return args[args.length - 1];
     };
 
-    var errMsg = 'The console has been overriden';
-
     Object.defineProperty(global, 'console', {
-      get(){ throw new TypeError(errMsg); },
-      set(){ throw new TypeError(errMsg); },
+      get(){
+        log('The console has been overriden');
+        return console;
+      },
     });
 
     if(O.env === 'browser'){
