@@ -176,7 +176,7 @@ var injectElems = {
         }
       }
 
-      console.log(avatar);
+      log(avatar);
     }
 
     function getAvFunc(div){

@@ -34,25 +34,40 @@ var O = {
       default: O.env = 'unknown'; break;
     }
 
-    O.project = O.urlParam('project');
+    var logOrig = console.log;
+    global.log = (...args) => {
+      logOrig(...args);
+      return args[args.length - 1];
+    };
 
-    if(!O.projectTest(O.project)) return O.error(`Illegal project name "${O.ascii(O.project).replace(/\"/gm, '\\"')}".`);
+    var errMsg = 'The console has been overriden';
+    Object.defineProperty(global, 'console', {
+      get(){ throw new TypeError(errMsg); },
+      set(){ throw new TypeError(errMsg); },
+    });
 
-    if(O.project == null){
-      O.rf(`projects.txt`, (status, projects) => {
-        if(status != 200) return O.error(`Failed to load projects list.`);
+    if(O.env === 'browser'){
+      O.project = O.urlParam('project');
 
-        O.title('Projects');
-        O.sortAsc(O.sanl(projects)).forEach((project, index, projects) => {
-          O.ceLink(O.body, O.projectToName(project), `/?project=${project}`);
-          if(index < projects.length - 1) O.ceBr(O.body);
+      if(!O.projectTest(O.project))
+        return O.error(`Illegal project name "${O.ascii(O.project).replace(/\"/gm, '\\"')}".`);
+
+      if(O.project == null){
+        O.rf(`projects.txt`, (status, projects) => {
+          if(status != 200) return O.error(`Failed to load projects list.`);
+
+          O.title('Projects');
+          O.sortAsc(O.sanl(projects)).forEach((project, index, projects) => {
+            O.ceLink(O.body, O.projectToName(project), `/?project=${project}`);
+            if(index < projects.length - 1) O.ceBr(O.body);
+          });
         });
-      });
-    }else{
-      O.rf(`/projects/${O.project}/main.js`, (status, script) => {
-        if(status != 200) return O.error(`Failed to load script for project "${O.project}". Status code: ${status}.`);
-        new Function('O', script)(O);
-      });
+      }else{
+        O.rf(`/projects/${O.project}/main.js`, (status, script) => {
+          if(status != 200) return O.error(`Failed to load script for project "${O.project}". Status code: ${status}.`);
+          new Function('O', script)(O);
+        });
+      }
     }
   },
 

@@ -202,7 +202,7 @@ var wsListeners = {
   },
 
   onClose: () => {
-    console.log('CLOSED');
+    log('CLOSED');
     ws = null;
   },
 
