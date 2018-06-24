@@ -34,13 +34,22 @@ var O = {
       default: O.env = 'unknown'; break;
     }
 
+    var util = O.env === 'node' ? require('util') : null;
     var logOrig = console.log;
+
     global.log = (...args) => {
+      if(O.env === 'node'){
+        if(!(args.length === 1 && typeof args[0] === 'string'))
+          args = args.map(arg => util.inspect(arg));
+      }
+
       logOrig(...args);
+
       return args[args.length - 1];
     };
 
     var errMsg = 'The console has been overriden';
+
     Object.defineProperty(global, 'console', {
       get(){ throw new TypeError(errMsg); },
       set(){ throw new TypeError(errMsg); },
