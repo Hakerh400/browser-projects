@@ -1005,6 +1005,9 @@ var O = {
       this.g = g;
       this.canvas = g.canvas;
 
+      this.w = this.canvas.width;
+      this.h = this.canvas.height;
+
       this.s = 1;
       this.tx = 0;
       this.ty = 0;
@@ -1050,6 +1053,8 @@ var O = {
       this.strokeStyle = 'black';
       this.textAlign = 'center';
       this.textBaseline = 'middle';
+
+      this.drawImage = g.drawImage.bind(g);
 
       this.clearCanvas();
     }
