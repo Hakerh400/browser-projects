@@ -1,7 +1,7 @@
 'use strict';
 
-const IS_BROWSER = !O.isNode;
-const IS_NODE = IS_BROWSER;
+const IS_BROWSER = O.isBrowser;
+const IS_NODE = O.isNode;
 
 const MAX_COORD = (1 << 16) - 1;
 const RAINBOW_ENABLED = 0;

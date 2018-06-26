@@ -1,8 +1,9 @@
 'use strict';
 
 var O = {
-  win: null,
+  global: null,
   isNode: null,
+  isBrowser: null,
 
   doc: document,
   head: document.head,
@@ -23,23 +24,37 @@ var O = {
   static: Symbol('static'),
 
   /*
+    Project
+  */
+
+  project: null,
+
+  /*
     Main functions
   */
 
-  init(env='browser'){
+  init(loadProject=true){
+    var global = O.global = new Function('return this;')();
+    var env = String(global);
+
+    switch(env){
+      case '[object Window]': env = 'browser'; break;
+      case '[object global]': env = 'node'; break;
+    }
+
     O.env = env;
 
+    var isBrowser = O.isBrowser = env === 'browser';
     var isNode = O.isNode = env === 'node';
-    var window = O.win = isNode ? global : new Function('return this;')();
 
-    if(!window.isConsoleOverriden)
+    if(!global.isConsoleOverriden)
       O.overrideConsole();
 
-    if(O.env === 'browser'){
+    if(loadProject){
       O.project = O.urlParam('project');
 
       if(!O.projectTest(O.project))
-        return O.error(`Illegal project name "${O.ascii(O.project).replace(/\"/gm, '\\"')}".`);
+        return O.error(`Illegal project name ${JSON.stringify(O.ascii(O.project))}".`);
 
       if(O.project == null){
         O.rf(`projects.txt`, (status, projects) => {
@@ -61,14 +76,14 @@ var O = {
   },
 
   overrideConsole(){
-    var window = O.win;
+    var global = O.global;
     var isNode = O.isNode;
 
     var util = isNode ? require('util') : null;
-    var console = window.console;
+    var console = global.console;
     var logOrig = console.log;
 
-    window.log = (...args) => {
+    global.log = (...args) => {
       if(isNode){
         if(!(args.length === 1 && typeof args[0] === 'string'))
           args = args.map(arg => util.inspect(arg));
@@ -79,14 +94,14 @@ var O = {
       return args[args.length - 1];
     };
 
-    Object.defineProperty(window, 'console', {
+    Object.defineProperty(global, 'console', {
       get(){
         log(new Error('The console has been overriden').stack);
         return console;
       },
     });
 
-    window.isConsoleOverriden = true;
+    global.isConsoleOverriden = true;
   },
 
   title(title){
