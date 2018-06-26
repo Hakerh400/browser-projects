@@ -77,18 +77,12 @@ function addEventListeners(){
 
     switch(evt.code){
       case 'Enter': applyAlgorithms(); break;
-      case 'KeyS': solve(); break;
-      case 'KeyG': generateGrid(); break;
       case 'KeyR': resetGrid(); break;
       case 'KeyC': closeGrid(); break;
       case 'KeyD': divideGrid(); break;
       case 'KeyI': updateInternals(); break;
       case 'Escape': showTextArea(evt); break;
       case 'Digit1': drawGrid(1); break;
-      case 'ArrowUp': move(0); break;
-      case 'ArrowLeft': move(1); break;
-      case 'ArrowDown': move(2); break;
-      case 'ArrowRight': move(3); break;
     }
   });
 
@@ -320,71 +314,6 @@ function resetGrid(draw = true){
 
   if(draw)
     drawGrid();
-}
-
-function generateGrid(){
-  var x0, y0;
-
-  do{
-    resetGrid();
-
-    iterate((x, y, d) => {
-      d.visited = 0;
-    });
-
-    var x = O.rand(w);
-    var y = O.rand(h);
-    var dir = -1;
-
-    x0 = x;
-    y0 = y;
-
-    var queue = [[x, y, -1]];
-    var d = get(x, y);
-
-    if(d.wall) cwall(x, y);
-    d.circ = 1;
-
-    while(queue.length){
-      [x, y, dir] = queue.splice(O.rand(queue.length), 1)[0];
-
-      d = get(x, y);
-      if(d.visited)
-        continue;
-
-      iterateDirs(dir => {
-        if(!gdir(x, y, dir)){
-          var obj = ndir(x, y, dir);
-
-          if(obj.d !== null)
-            queue.push([obj.x, obj.y, dir + 2 & 3]);
-        }
-      });
-
-      sdirs(x, y);
-      if(dir !== -1) cdir(x, y, dir);
-
-      d.visited = 1;
-    }
-
-    iterate((x, y, d) => {
-      if(!d.visited && !d.wall)
-        swall(x, y);
-    });
-
-    var freeSpace = 0;
-
-    iterate((x, y, d) => {
-      if(!d.wall)
-        freeSpace++;
-    });
-  }while(freeSpace < 100);
-
-  findInternalCells();
-  putWhiteCircs();
-
-  calcCols(x0, y0);
-  drawGrid();
 }
 
 function closeGrid(){
