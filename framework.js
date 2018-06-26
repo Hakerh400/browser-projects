@@ -1,6 +1,9 @@
 'use strict';
 
 var O = {
+  win: null,
+  isNode: null,
+
   doc: document,
   head: document.head,
   body: document.body,
@@ -23,38 +26,14 @@ var O = {
     Main functions
   */
 
-  init(){
-    var global = new Function('return this')();
-    var globalStringified = `${global}`;
-    var env = globalStringified.substring(globalStringified.indexOf(' ') + 1, globalStringified.length - 1);
+  init(env='browser'){
+    O.env = env;
 
-    switch(env){
-      case 'Window': O.env = 'browser'; break;
-      case 'global': O.env = 'node'; break;
-      default: O.env = 'unknown'; break;
-    }
+    var isNode = O.isNode = env === 'node';
+    var window = O.win = isNode ? global : new Function('return this;')();
 
-    var util = O.env === 'node' ? require('util') : null;
-    var console = global.console;
-    var logOrig = console.log;
-
-    global.log = (...args) => {
-      if(O.env === 'node'){
-        if(!(args.length === 1 && typeof args[0] === 'string'))
-          args = args.map(arg => util.inspect(arg));
-      }
-
-      logOrig(...args);
-
-      return args[args.length - 1];
-    };
-
-    Object.defineProperty(global, 'console', {
-      get(){
-        log('The console has been overriden');
-        return console;
-      },
-    });
+    if(!window.isConsoleOverriden)
+      O.overrideConsole();
 
     if(O.env === 'browser'){
       O.project = O.urlParam('project');
@@ -79,6 +58,35 @@ var O = {
         });
       }
     }
+  },
+
+  overrideConsole(){
+    var window = O.win;
+    var isNode = O.isNode;
+
+    var util = isNode ? require('util') : null;
+    var console = window.console;
+    var logOrig = console.log;
+
+    window.log = (...args) => {
+      if(isNode){
+        if(!(args.length === 1 && typeof args[0] === 'string'))
+          args = args.map(arg => util.inspect(arg));
+      }
+
+      logOrig(...args);
+
+      return args[args.length - 1];
+    };
+
+    Object.defineProperty(window, 'console', {
+      get(){
+        log(new Error('The console has been overriden').stack);
+        return console;
+      },
+    });
+
+    window.isConsoleOverriden = true;
   },
 
   title(title){
