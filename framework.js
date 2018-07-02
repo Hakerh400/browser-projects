@@ -79,17 +79,14 @@ var O = {
     var global = O.global;
     var isNode = O.isNode;
 
-    var util = isNode ? require('util') : null;
+    O.util = isNode ? require('util') : null;
+
     var console = global.console;
     var logOrig = console.log;
 
     global.log = (...args) => {
-      if(isNode){
-        if(!(args.length === 1 && typeof args[0] === 'string'))
-          args = args.map(arg => util.inspect(arg));
-      }
-
-      logOrig(...args);
+      if(isNode) logOrig(O.inspect(args));
+      else logOrig(args);
 
       return args[args.length - 1];
     };
@@ -102,6 +99,18 @@ var O = {
     });
 
     global.isConsoleOverriden = true;
+  },
+
+  inspect(arr){
+    if(!O.isNode)
+      throw new TypeError('Function "inspect" is available only in Node.js');
+
+    var {util} = O;
+
+    if(!(arr.length === 1 && typeof arr[0] === 'string'))
+      arr = arr.map(val => util.inspect(val));
+
+    return arr.join(' ');
   },
 
   title(title){
@@ -450,13 +459,12 @@ var O = {
     return O.hsv(val - 1 / 64);
   },
 
-  binLen(a){
-    return a && (Math.log2(a) | 0) + 1;
-  },
-
-  raf(func){
-    return window.requestAnimationFrame(func);
-  },
+  binLen(a){ return a && (Math.log2(a) | 0) + 1; },
+  raf(func){ return window.requestAnimationFrame(func); },
+  obj(){ return Object.create(null); },
+  keys(obj){ return Object.getOwnPropertyNames(obj); },
+  cc(char){ return char.charCodeAt(0); },
+  sfcc(cc){ return String.fromCharCode(cc); },
 
   /*
     Events
