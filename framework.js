@@ -84,12 +84,35 @@ var O = {
     var console = global.console;
     var logOrig = console.log;
 
-    global.log = (...args) => {
-      if(isNode) logOrig(O.inspect(args));
-      else logOrig(args);
+    var indent = 0;
+
+    var logFunc = (...args) => {
+      if(isNode){
+        var indentStr = '  '.repeat(indent);
+        var str = O.inspect(args);
+
+        str = O.sanl(str).map(line => {
+          return `${indentStr}${line}`;
+        }).join('\n');
+
+        logOrig(str);
+      }else{
+        logOrig(args);
+      }
 
       return args[args.length - 1];
     };
+
+    logFunc.inc = (val=1) => {
+      indent += val;
+    };
+
+    logFunc.dec = (val=1) => {
+      indent -= val;
+      if(indent < 0) indent = 0;
+    };
+
+    global.log = logFunc;
 
     Object.defineProperty(global, 'console', {
       get(){
