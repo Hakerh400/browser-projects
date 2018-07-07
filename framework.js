@@ -97,7 +97,7 @@ var O = {
 
         logOrig(str);
       }else{
-        logOrig(args);
+        logOrig(...args);
       }
 
       return args[args.length - 1];
@@ -110,6 +110,14 @@ var O = {
     logFunc.dec = (val=1) => {
       indent -= val;
       if(indent < 0) indent = 0;
+    };
+
+    logFunc.get = () => {
+      return indent;
+    };
+
+    logFunc.set = i => {
+      indent = i;
     };
 
     global.log = logFunc;
