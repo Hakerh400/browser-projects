@@ -2,6 +2,11 @@
 
 const PORT = 1037;
 
+const DATE_FIELDS = `
+  created datetime default current_timestamp,
+  modified datetime default current_timestamp on update current_timestamp
+`;
+
 var proj = O.project;
 
 module.exports = {
@@ -34,19 +39,22 @@ async function reset(){
     create table users (
       id int primary key auto_increment,
       nick text not null,
-      email text,
-      avatar int default 1
+      name text,
+      avatar int default 1,
+      ${DATE_FIELDS}
     );
 
     create table avatars (
       id int primary key,
-      sha512 text
+      sha512 text not null,
+      ${DATE_FIELDS}
     );
 
     create table fields (
       id int primary key auto_increment,
       user int not null,
-      name text not null
+      name text not null,
+      ${DATE_FIELDS}
     );
   `);
   if(obj.error !== null) return obj;

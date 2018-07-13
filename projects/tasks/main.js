@@ -18,15 +18,34 @@ var modules = [
 ];
 
 var injectElems = {
-  home(){
+  async home(){
     return e404();
   },
 
-  test(){
+  async test(){
   },
 
-  users(){
-    if(path.length <= 1){
+  async users(){
+    var pathLen = path.length;
+    var reg = /^[a-z\-]+$/;
+
+    if(pathLen >= 1){
+      var user = param(1);
+      if(!reg.test(user)) return e404();
+
+      var [userData] = await query(`
+        select id, avatar from users
+        where nick = '${user}';
+      `);
+
+      if(userData.length === 0) return e404();
+      userData = userData[0];
+
+      var userId = userData.id | 0;
+      var avatarId = userData.avatar | 0;
+    }
+
+    if(pathLen === 0 || pathLen === 1){
       query(`
         select * from users;
       `).then(data => {
@@ -53,12 +72,101 @@ var injectElems = {
       }).catch(err => {
         O.ceText(content, err);
       });
+    }else if(pathLen === 2){
+      var div = O.ce(content, 'div', 'margin-top');
+
+      var left = O.ce(div, 'div', 'user-page-left');
+      var avatar = O.ce(left, 'img', 'user-page-avatar');
+      avatar.src = avatarUrl(avatarId);
+
+      var nick = O.ce(left, 'span', 'user-page-nick text large');
+      O.ceText(nick, user);
+
+      var right = O.ce(div, 'div', 'user-page-right');
+
+      var [fields] = await query(`
+        select * from fields
+        where user = ${userId};
+      `);
+
+      var header = O.ce(right, 'div');
+      var fieldsNum = O.ce(header, 'h3', 'left title');
+      O.ceText(fieldsNum, `${formatNumber(fields.length)} fields`);
+
+      var newUserDiv = O.ce(header, 'div', 'right');
+      var newUserBtn = link(newUserDiv, 'New field', ['users', user, 'new-field'], 'btn btn-primary');
+
+      fields.forEach(field => {
+        var item = O.ce(right, 'div', 'list-item');
+
+        var nick = link(item, field.name, ['users', user, 'fields', field.name], 'url');
+      });
     }else{
-      e404();
+      if(path[2] === 'fields'){
+        if(pathLen === 3){
+        }else if(pathLen === 4 || pathLen === 5){
+          var fieldName = param(3);
+
+          var reg = /^[a-z0-9\-]+$/;
+          if(!reg.test(field)) return e404();
+
+          var [field] = await query(`
+            select * from fields
+            where
+              user = ${userId} and
+              name = ${sqlStr(fieldName)};
+          `);
+
+          if(field.length === 0) return e404();
+          field = field[0];
+
+          var selected = param(4);
+
+          O.ce(O.body, 'div', 'header-aa');
+
+          var header = O.ce(content, 'div', 'header');
+
+          var div = O.ce(header, 'div', 'above-nav');
+          addIcon(div, 'field', '#959da5', 1, 'field-icon');
+          link(O.ce(div, 'span'), user, ['users', user], 'url');
+          O.ceText(O.ce(div, 'span', 'above-nav-item path-divider'), '/');
+          link(O.ce(div, 'span'), fieldName, ['users', user, 'fields', fieldName], 'url strong');
+
+          var nav = O.ce(header, 'div', 'nav-bar');
+          var ss = false;
+
+          [
+            ['Details', 'details', null],
+            ['Tasks', 'task-opened', 'tasks'],
+            ['Changes', 'change-request', 'changes'],
+            ['Projects', 'project', 'projects'],
+          ].forEach(([name, icon, href]) => {
+            var s = href === selected;
+            var str = s ? ' selected' : '';
+            if(!ss && s) ss = true;
+
+            var newPath = ['users', user, 'fields', fieldName];
+
+            if(href !== null)
+              newPath.push(href);
+
+            var linkElem = link(nav, null, newPath, 'nav-item' + str);
+            addIcon(linkElem, icon, s ? '#24292e' : '#1b1f23', 1, 'nav-item-icon' + str);
+            O.ceText(linkElem, name);
+          });
+
+          if(!ss) return e404();
+
+          if(selected === null){
+          }
+        }
+      }else{
+        e404();
+      }
     }
   },
 
-  ['new-user'](){
+  async ['new-user'](){
     var div = O.ce(content, 'div', 'margin-top');
     var form = O.ce(div, 'form');
 
@@ -141,9 +249,12 @@ var injectElems = {
       clicked = true;
 
       var nick = form.nick.value;
+
       if(nick === '') return errMsg('Please choose a nick name');
       if(nick.length > 50) return errMsg('Nick name is too long (maximum is 50 characters)');
-      if(!/^[a-z0-9]+(?:\-[a-z0-9]+)*$/.test(nick)) return errMsg('Nick name may only contain alphanumeric characters or single hyphens, and cannot begin or end with a hyphen');
+
+      if(!/^[a-z0-9]+(?:\-[a-z0-9]+)*$/.test(nick))
+        return errMsg('Nick name may only contain alphanumeric characters or single hyphens, and cannot begin or end with a hyphen');
 
       var name = form.name.value;
       var avatar = form.avatar.value;
@@ -176,7 +287,24 @@ var injectElems = {
         }
       }
 
-      log(avatar);
+      var sameNick = await query(`
+        select id from users
+        where nick = '${nick}';
+      `);
+
+      if(sameNick[0].length === 1)
+        return errMsg(`User with nick name "${nick}" already exists`);
+
+      await query(`
+        insert into users
+        (nick, name, avatar) values (
+          '${nick}',
+          ${sqlStr(name)},
+          ${avatar}
+        );
+      `);
+
+      navigate('/');
     }
 
     function getAvFunc(div){
@@ -187,47 +315,7 @@ var injectElems = {
     }
   },
 
-  fields(){
-    if(path.length < 3) return e404();
-
-    var user = param(1);
-    var field = param(2);
-    var selected = param(3, 'details');
-
-    var header = O.ce(content, 'div', 'header');
-    header.id = 'field-header';
-
-    var div = O.ce(header, 'div', 'above-nav');
-    addIcon(div, 'field', '#959da5', 1, 'field-icon');
-    link(O.ce(div, 'span'), user, ['users', user], 'url');
-    O.ceText(O.ce(div, 'span', 'above-nav-item path-divider'), '/');
-    link(O.ce(div, 'span'), field, ['fields', user, field], 'url strong');
-
-    var nav = O.ce(header, 'div', 'nav-bar');
-    var ss = false;
-
-    [
-      ['Details', 'details', 'details'],
-      ['Tasks', 'task-opened', 'tasks'],
-      ['Changes', 'change-request', 'changes'],
-      ['Projects', 'project', 'projects'],
-    ].forEach(([name, icon, href]) => {
-      var s = href === selected;
-      var str = s ? ' selected' : '';
-      if(!ss && s) ss = true;
-
-      var newPath = ['fields', user, field];
-      newPath.push(href);
-
-      var linkElem = link(nav, null, newPath, 'nav-item' + str);
-      addIcon(linkElem, icon, s ? '#24292e' : '#1b1f23', 1, 'nav-item-icon' + str);
-      O.ceText(linkElem, name);
-    });
-
-    if(!ss) return e404();
-  },
-
-  ['404'](){
+  async ['404'](){
     var div = O.ce(content, 'div', 'margin-top');
     var h1 = O.ce(div, 'h1', 'hcenter');
     O.ceText(h1, '404 Not Found');
@@ -247,8 +335,12 @@ async function main(){
   var obj = await server.ping();
   if(obj.error !== null) server = null;
 
-  /*if(server !== null)
-    await server.reset();*/
+  if(O.urlParam('reset') === '1'){
+    var obj = await server.reset();
+    if(obj.error) return log(obj.error);
+    log('ok');
+    return;
+  }
 
   injectDOMElements();
   aels();
@@ -258,6 +350,12 @@ function aels(){
   O.ael('keydown', evt => {
     if(evt.code === 'F5'){
       evt.preventDefault();
+
+      if(O.urlParam('reset') === '1'){
+        location.reload();
+        return;
+      }
+
       navigate(url(path), 1);
     }
   });
@@ -497,6 +595,11 @@ async function readFile(file){
 
     reader.readAsArrayBuffer(file);
   });
+}
+
+function sqlStr(str){
+  if(str === '') return 'NULL';
+  return `'${str}'`;
 }
 
 function formatNumber(num){

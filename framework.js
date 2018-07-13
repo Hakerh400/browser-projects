@@ -307,7 +307,7 @@ var O = {
     return `${url}${char}_=${Date.now()}`;
   },
 
-  rf(file, isBinary, cb = null){
+  rf(file, isBinary, cb=null){
     if(cb === null){
       cb = isBinary;
       isBinary = false;
@@ -333,7 +333,7 @@ var O = {
     xhr.send(null);
   },
 
-  rfLocal(file, isBinary, cb = null){
+  rfLocal(file, isBinary, cb=null){
     if(cb === null){
       cb = isBinary;
       isBinary = false;
@@ -342,7 +342,7 @@ var O = {
     O.rf(`/projects/${O.project}/${file}`, isBinary, cb);
   },
 
-  require(script, cb = O.nop){
+  require(script, cb=O.nop){
     if(/\.js$/.test(script)){
       script = `/projects/${O.project}/${script}`;
     }else{
@@ -492,7 +492,7 @@ var O = {
 
   binLen(a){ return a && (Math.log2(a) | 0) + 1; },
   raf(func){ return window.requestAnimationFrame(func); },
-  obj(){ return Object.create(null); },
+  obj(proto=null){ return Object.create(proto); },
   keys(obj){ return Object.getOwnPropertyNames(obj); },
   cc(char){ return char.charCodeAt(0); },
   sfcc(cc){ return String.fromCharCode(cc); },
