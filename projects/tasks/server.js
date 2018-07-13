@@ -2,7 +2,7 @@
 
 const PORT = 1037;
 
-const DATE_FIELDS = `
+const DATE_ATTRIBS = `
   created datetime default current_timestamp,
   modified datetime default current_timestamp on update current_timestamp
 `;
@@ -41,20 +41,20 @@ async function reset(){
       nick text not null,
       name text,
       avatar int default 1,
-      ${DATE_FIELDS}
+      ${DATE_ATTRIBS}
     );
 
     create table avatars (
       id int primary key,
       sha512 text not null,
-      ${DATE_FIELDS}
+      ${DATE_ATTRIBS}
     );
 
     create table fields (
       id int primary key auto_increment,
       user int not null,
       name text not null,
-      ${DATE_FIELDS}
+      ${DATE_ATTRIBS}
     );
   `);
   if(obj.error !== null) return obj;
