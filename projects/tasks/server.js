@@ -7,6 +7,19 @@ const DATE_ATTRIBS = `
   modified datetime default current_timestamp on update current_timestamp
 `;
 
+const ID_ATTRIB = `id int primary key`;
+const ID_ATTRIB_AI = `id int primary key auto_increment`;
+
+const HEADER_ATTRIBS = `
+  ${ID_ATTRIB},
+  ${DATE_ATTRIBS}
+`;
+
+const HEADER_ATTRIBS_AI = `
+  ${ID_ATTRIB_AI},
+  ${DATE_ATTRIBS}
+`;
+
 var proj = O.project;
 
 module.exports = {
@@ -37,24 +50,59 @@ async function reset(){
 
   obj = await query(`
     create table users (
-      id int primary key auto_increment,
+      ${HEADER_ATTRIBS_AI},
       nick text not null,
       name text,
-      avatar int default 1,
-      ${DATE_ATTRIBS}
+      avatar int default 1
     );
 
     create table avatars (
-      id int primary key,
-      sha512 text not null,
-      ${DATE_ATTRIBS}
+      ${HEADER_ATTRIBS},
+      sha512 text not null
     );
 
     create table fields (
-      id int primary key auto_increment,
+      ${HEADER_ATTRIBS_AI},
       user int not null,
       name text not null,
-      ${DATE_ATTRIBS}
+      details text not null
+    );
+
+    create table tasks (
+      ${HEADER_ATTRIBS_AI},
+      field int not null,
+      ind int not null
+    );
+  `);
+  if(obj.error !== null) return obj;
+
+  obj = await query(`
+    insert into users
+    (nick, name, avatar) values (
+      'user-1',
+      'User Name',
+      1
+    );
+
+    insert into fields
+    (user, name, details) values (
+      1,
+      'field-1',
+      ${JSON.stringify(O.sanl(`
+        #header 1
+        ${'#'.repeat(8)}header 2
+        Some text
+
+        Some link: [link](https://github.com/), another link: [link2](https://github.com/Hakerh400)
+
+        ${'Long text. '.repeat(100)}
+      `.trim()).map(a => a.trim()).join('\n'))}
+    );
+
+    insert into tasks
+    (field, ind) values (
+      1,
+      1
     );
   `);
   if(obj.error !== null) return obj;

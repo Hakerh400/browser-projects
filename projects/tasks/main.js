@@ -27,7 +27,7 @@ var injectElems = {
 
   async users(){
     var pathLen = path.length;
-    var reg = /^[a-z\-]+$/;
+    var reg = /^[a-z0-9\-]+$/;
 
     if(pathLen >= 1){
       var user = param(1);
@@ -46,31 +46,27 @@ var injectElems = {
     }
 
     if(pathLen === 0 || pathLen === 1){
-      query(`
+      var [users] = await query(`
         select * from users;
-      `).then(data => {
-        var users = data[0];
+      `);
 
-        var div = O.ce(content, 'div', 'margin-top');
-        var header = O.ce(div, 'div');
-        var usersNum = O.ce(header, 'h3', 'left title');
-        O.ceText(usersNum, `${formatNumber(users.length)} users`);
+      var div = O.ce(content, 'div', 'margin-top');
+      var header = O.ce(div, 'div');
+      var usersNum = O.ce(header, 'h3', 'left title');
+      O.ceText(usersNum, `${formatNumber(users.length)} users`);
 
-        var newUserDiv = O.ce(header, 'div', 'right');
-        var newUserBtn = link(newUserDiv, 'New user', ['new-user'], 'btn btn-primary');
+      var newUserDiv = O.ce(header, 'div', 'right');
+      var newUserBtn = link(newUserDiv, 'New user', ['new-user'], 'btn btn-primary');
 
-        users.forEach(user => {
-          var item = O.ce(div, 'div', 'list-item');
+      users.forEach(user => {
+        var item = O.ce(div, 'div', 'list-item');
 
-          var left = O.ce(item, 'div', 'left');
-          var avatar = link(left, null, ['users', user.nick], 'avatar left');
-          var avatarImg = O.ce(avatar, 'img', 'avatar');
-          avatarImg.src = avatarUrl(user.avatar);
+        var left = O.ce(item, 'div', 'left');
+        var avatar = link(left, null, ['users', user.nick], 'avatar left');
+        var avatarImg = O.ce(avatar, 'img', 'avatar');
+        avatarImg.src = avatarUrl(user.avatar);
 
-          var nick = link(left, user.nick, ['users', user.nick], 'url right left-space');
-        });
-      }).catch(err => {
-        O.ceText(content, err);
+        var nick = link(left, user.nick, ['users', user.nick], 'url right left-space');
       });
     }else if(pathLen === 2){
       var div = O.ce(content, 'div', 'margin-top');
@@ -120,9 +116,7 @@ var injectElems = {
           if(field.length === 0) return e404();
           field = field[0];
 
-          var selected = param(4);
-
-          O.ce(O.body, 'div', 'header-aa');
+          O.ce(content, 'div', 'header-bg');
 
           var header = O.ce(content, 'div', 'header');
 
@@ -133,6 +127,8 @@ var injectElems = {
           link(O.ce(div, 'span'), fieldName, ['users', user, 'fields', fieldName], 'url strong');
 
           var nav = O.ce(header, 'div', 'nav-bar');
+
+          var selected = param(4);
           var ss = false;
 
           [
@@ -157,7 +153,41 @@ var injectElems = {
 
           if(!ss) return e404();
 
-          if(selected === null){
+          var main = O.ce(content, 'div');
+
+          switch(selected){
+            case null:
+              markdown(main, field.details);
+              break;
+
+            case 'tasks':
+              var nav = O.ce(main, 'div', 'tasks-nav');
+              var left = O.ce(nav, 'div', 'left');
+
+              var search = O.ce(left, 'div', 'tasks-search');
+              var filters = O.ce(search, 'div', 'btn btn-select dropdown chunk-left');
+              O.ceText(filters, 'Filters ');
+
+              var searchDiv = O.ce(search, 'div', 'inline-block absolute');
+              var searchInput = O.ce(searchDiv, 'input', 'tasks-search-input chunk-right');
+              searchInput.value = 'is:task is:open';
+              addIcon(searchDiv, 'search', '#c6cbd1', 1, 'tasks-search-icon');
+
+              var links = O.ce(left, 'div', 'tasks-nav-links');
+              var labels = O.ce(links, 'div', 'btn btn-link chunk-left');
+              O.ceText(labels, 'Labels');
+
+              var milestones = O.ce(links, 'div', 'btn btn-link chunk-right');
+              O.ceText(milestones, 'Milestones');
+
+              var right = O.ce(nav, 'div', 'right');
+              var navPath = ['users', user, 'fields', fieldName, 'tasks', 'new'];
+              var newTaskBtn = link(right, 'New task', navPath, 'btn btn-primary');
+              break;
+
+            default:
+              e404();
+              break;
           }
         }
       }else{
@@ -293,13 +323,13 @@ var injectElems = {
       `);
 
       if(sameNick[0].length === 1)
-        return errMsg(`User with nick name "${nick}" already exists`);
+        return errMsg(`User with nick name '${nick}' already exists`);
 
       await query(`
         insert into users
         (nick, name, avatar) values (
           '${nick}',
-          ${sqlStr(name)},
+          ${sqlStr(name, 1)},
           ${avatar}
         );
       `);
@@ -416,7 +446,6 @@ function injectHeader(){
   var input = O.ce(searchForm, 'input', 'query');
   input.type = 'text';
   input.name = 'q';
-  //input.placeholder = 'Search';
 
   var nav = O.ce(left, 'div', 'nav');
   var navInner = O.ce(nav, 'div', 'vcenter');
@@ -449,6 +478,45 @@ async function require(moduleName){
     obj[moduleName] = await require(moduleName);
 
   return obj;
+}
+
+function markdown(div, text){
+  var md = O.ce(div, 'div', 'markdown');
+
+  var linkReg = /\[([^\]]+)\]\(([^\)]+)\)/;
+  var lines = O.sanl(text);
+
+  lines.forEach((line, index) => {
+    if(index !== 0) O.ceBr(md);
+    var elem = md;
+
+    var heading = line.match(/^\#*/)[0];
+    var hNum = Math.min(heading.length, 6);
+
+    if(hNum !== 0){
+      elem = O.ce(elem, `h${hNum}`);
+      line = line.substring(hNum);
+    }
+
+    while(1){
+      var linkMatch = line.match(linkReg);
+      if(linkMatch === null) break;
+
+      var {index} = linkMatch;
+      if(index !== 0) O.ceText(elem, line.substring(0, index));
+
+      var label = linkMatch[1];
+      var href = linkMatch[2];
+      link(elem, label, href, 'url');
+
+      line = line.substring(index + linkMatch[0].length);
+    }
+
+    if(line !== '')
+      O.ceText(elem, line);
+  });
+
+  return md;
 }
 
 function param(index, defaultValue=null){
@@ -520,8 +588,8 @@ function parsePath(){
   return path.split('/');
 }
 
-function addIcon(parent, name, col, size, classNames){
-  var canvas = icons.add(name, col, size, classNames)
+function addIcon(parent, name, col, scale, classNames){
+  var canvas = icons.add(name, col, scale, classNames)
   parent.appendChild(canvas);
   return canvas;
 }
@@ -565,7 +633,7 @@ async function load(file){
   return await new Promise((res, rej) => {
     O.rfLocal(file, (status, data) => {
       if(status !== 200){
-        O.error(`Cannot load file "${file}"`);
+        O.error(`Cannot load file '${file}'`);
         rej(status);
         return;
       }
@@ -597,9 +665,9 @@ async function readFile(file){
   });
 }
 
-function sqlStr(str){
-  if(str === '') return 'NULL';
-  return `'${str}'`;
+function sqlStr(str, convertToNull=false){
+  if(str === '' && convertToNull) return 'NULL';
+  return JSON.stringify(str);
 }
 
 function formatNumber(num){
