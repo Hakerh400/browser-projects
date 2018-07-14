@@ -228,12 +228,16 @@ var O = {
     return elem;
   },
 
+  ceDiv(parent, classNames){
+    return O.ce(parent, 'div', classNames);
+  },
+
   ceBr(parent, num=1){
     while(num--) O.ce(parent, 'br');
   },
 
-  ceHr(parent){
-    return O.ce(parent, 'hr');
+  ceHr(parent, classNames){
+    return O.ce(parent, 'hr', classNames);
   },
 
   ceText(parent, text){
@@ -242,21 +246,21 @@ var O = {
     return t;
   },
 
-  ceLink(parent, label, href, classNames=null){
+  ceLink(parent, label, href, classNames){
     var link = O.ce(parent, 'a', classNames);
     link.href = href;
     if(!(label === null || label === '')) O.ceText(link, label);
     return link;
   },
 
-  ceInput(parent, type, classNames=null){
+  ceInput(parent, type, classNames){
     var input = O.ce(parent, 'input', classNames);
     input.type = type;
     if(type === 'text') input.autocomplete = 'off';
     return input;
   },
 
-  ceRadio(parent, name, value, label=null, classNames=null){
+  ceRadio(parent, name, value, label=null, classNames){
     var radio = O.ceInput(parent, 'radio', classNames);
     radio.name = name;
     radio.value = value;
@@ -264,13 +268,13 @@ var O = {
     return radio;
   },
 
-  ceH(parent, type, text=null, classNames=null){
+  ceH(parent, type, text=null, classNames){
     var h = O.ce(parent, `h${type}`, classNames);
     if(!(text === null || text === '')) O.ceText(h, text);
     return h;
   },
 
-  ceLabel(parent, text=null, classNames=null){
+  ceLabel(parent, text=null, classNames){
     var label = O.ce(parent, 'label', classNames);
     if(!(text === null || text === '')) O.ceText(label, text);
     return label;

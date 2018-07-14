@@ -35,7 +35,7 @@ var injectElems = {
 
       var [userData] = await query(`
         select id, avatar from users
-        where nick = '${user}';
+        where nick = ${sqlStr(user)};
       `);
 
       if(userData.length === 0) return e404();
@@ -50,18 +50,18 @@ var injectElems = {
         select * from users;
       `);
 
-      var div = O.ce(content, 'div', 'margin-top');
-      var header = O.ce(div, 'div');
+      var div = O.ceDiv(content, 'margin-top');
+      var header = O.ceDiv(div  );
       var usersNum = O.ce(header, 'h3', 'left title');
       O.ceText(usersNum, `${formatNumber(users.length)} users`);
 
-      var newUserDiv = O.ce(header, 'div', 'right');
+      var newUserDiv = O.ceDiv(header, 'right');
       var newUserBtn = link(newUserDiv, 'New user', ['new-user'], 'btn btn-primary');
 
       users.forEach(user => {
-        var item = O.ce(div, 'div', 'list-item');
+        var item = O.ceDiv(div, 'list-item');
 
-        var left = O.ce(item, 'div', 'left');
+        var left = O.ceDiv(item, 'left');
         var avatar = link(left, null, ['users', user.nick], 'avatar left');
         var avatarImg = O.ce(avatar, 'img', 'avatar');
         avatarImg.src = avatarUrl(user.avatar);
@@ -69,31 +69,31 @@ var injectElems = {
         var nick = link(left, user.nick, ['users', user.nick], 'url right left-space');
       });
     }else if(pathLen === 2){
-      var div = O.ce(content, 'div', 'margin-top');
+      var div = O.ceDiv(content, 'margin-top');
 
-      var left = O.ce(div, 'div', 'user-page-left');
+      var left = O.ceDiv(div, 'user-page-left');
       var avatar = O.ce(left, 'img', 'user-page-avatar');
       avatar.src = avatarUrl(avatarId);
 
       var nick = O.ce(left, 'span', 'user-page-nick text large');
       O.ceText(nick, user);
 
-      var right = O.ce(div, 'div', 'user-page-right');
+      var right = O.ceDiv(div, 'user-page-right');
 
       var [fields] = await query(`
         select * from fields
         where user = ${userId};
       `);
 
-      var header = O.ce(right, 'div');
+      var header = O.ceDiv(right  );
       var fieldsNum = O.ce(header, 'h3', 'left title');
       O.ceText(fieldsNum, `${formatNumber(fields.length)} fields`);
 
-      var newUserDiv = O.ce(header, 'div', 'right');
+      var newUserDiv = O.ceDiv(header, 'right');
       var newUserBtn = link(newUserDiv, 'New field', ['users', user, 'new-field'], 'btn btn-primary');
 
       fields.forEach(field => {
-        var item = O.ce(right, 'div', 'list-item');
+        var item = O.ceDiv(right, 'list-item');
 
         var nick = link(item, field.name, ['users', user, 'fields', field.name], 'url');
       });
@@ -116,17 +116,17 @@ var injectElems = {
           if(field.length === 0) return e404();
           field = field[0];
 
-          O.ce(content, 'div', 'header-bg');
+          O.ceDiv(content, 'header-bg');
 
-          var header = O.ce(content, 'div', 'header');
+          var header = O.ceDiv(content, 'header');
 
-          var div = O.ce(header, 'div', 'above-nav');
+          var div = O.ceDiv(header, 'above-nav');
           addIcon(div, 'field', '#959da5', 1, 'field-icon');
           link(O.ce(div, 'span'), user, ['users', user], 'url');
           O.ceText(O.ce(div, 'span', 'above-nav-item path-divider'), '/');
           link(O.ce(div, 'span'), fieldName, ['users', user, 'fields', fieldName], 'url strong');
 
-          var nav = O.ce(header, 'div', 'nav-bar');
+          var nav = O.ceDiv(header, 'nav-bar');
 
           var selected = param(4);
           var ss = false;
@@ -153,7 +153,7 @@ var injectElems = {
 
           if(!ss) return e404();
 
-          var main = O.ce(content, 'div');
+          var main = O.ceDiv(content  );
 
           switch(selected){
             case null:
@@ -161,26 +161,26 @@ var injectElems = {
               break;
 
             case 'tasks':
-              var nav = O.ce(main, 'div', 'tasks-nav');
-              var left = O.ce(nav, 'div', 'left');
+              var nav = O.ceDiv(main, 'tasks-nav');
+              var left = O.ceDiv(nav, 'left');
 
-              var search = O.ce(left, 'div', 'tasks-search');
-              var filters = O.ce(search, 'div', 'btn btn-select dropdown chunk-left');
+              var search = O.ceDiv(left, 'tasks-search');
+              var filters = O.ceDiv(search, 'btn btn-select dropdown chunk-left');
               O.ceText(filters, 'Filters ');
 
-              var searchDiv = O.ce(search, 'div', 'inline-block absolute');
+              var searchDiv = O.ceDiv(search, 'inline-block absolute');
               var searchInput = O.ce(searchDiv, 'input', 'tasks-search-input chunk-right');
               searchInput.value = 'is:task is:open';
               addIcon(searchDiv, 'search', '#c6cbd1', 1, 'tasks-search-icon');
 
-              var links = O.ce(left, 'div', 'tasks-nav-links');
-              var labels = O.ce(links, 'div', 'btn btn-link chunk-left');
+              var links = O.ceDiv(left, 'tasks-nav-links');
+              var labels = O.ceDiv(links, 'btn btn-link chunk-left');
               O.ceText(labels, 'Labels');
 
-              var milestones = O.ce(links, 'div', 'btn btn-link chunk-right');
+              var milestones = O.ceDiv(links, 'btn btn-link chunk-right');
               O.ceText(milestones, 'Milestones');
 
-              var right = O.ce(nav, 'div', 'right');
+              var right = O.ceDiv(nav, 'right');
               var navPath = ['users', user, 'fields', fieldName, 'tasks', 'new'];
               var newTaskBtn = link(right, 'New task', navPath, 'btn btn-primary');
               break;
@@ -197,7 +197,7 @@ var injectElems = {
   },
 
   async ['new-user'](){
-    var div = O.ce(content, 'div', 'margin-top');
+    var div = O.ceDiv(content, 'margin-top');
     var form = O.ce(div, 'form');
 
     var divs = [];
@@ -206,28 +206,28 @@ var injectElems = {
     var avIds = null;
     var chosen = null;
 
-    elem = O.ce(form, 'div');
+    elem = O.ceDiv(form  );
     O.ceLabel(elem, 'Nick name');
     O.ceInput(elem, 'text', 'input').name = 'nick';
 
-    elem = O.ce(form, 'div');
+    elem = O.ceDiv(form  );
     O.ceLabel(elem, 'Full name');
     O.ceInput(elem, 'text', 'input').name = 'name';
 
     O.ceHr(form);
 
-    elem = O.ce(form, 'div');
+    elem = O.ceDiv(form  );
     O.ceLabel(elem, 'Avatar');
 
-    block = O.ce(elem, 'div', 'block');
+    block = O.ceDiv(elem, 'block');
     av = O.ceRadio(block, 'avatar', 'existing', 'Choose an existing avatar', 'input');
-    d = O.ce(block, 'div', 'image-choice margin-bottom hidden');
+    d = O.ceDiv(block, 'image-choice margin-bottom hidden');
     O.ael(av, 'change', getAvFunc(d));
     divs.push(d);
 
-    block = O.ce(elem, 'div', 'block');
+    block = O.ceDiv(elem, 'block');
     av = O.ceRadio(block, 'avatar', 'new', 'Upload a new one', 'input');
-    d = O.ce(block, 'div', 'margin-bottom hidden');
+    d = O.ceDiv(block, 'margin-bottom hidden');
     O.ael(av, 'change', getAvFunc(d));
     divs.push(d);
 
@@ -264,7 +264,7 @@ var injectElems = {
 
     // Upload a new one
 
-    var fileDiv = O.ce(divs[1], 'div');
+    var fileDiv = O.ceDiv(divs[1]);
     var fileBtn = O.ceLabel(fileDiv, 'Upload new picture', 'btn');
     var fileInput = O.ceInput(fileBtn, 'file', 'top-left transparent');
 
@@ -319,16 +319,16 @@ var injectElems = {
 
       var sameNick = await query(`
         select id from users
-        where nick = '${nick}';
+        where nick = ${sqlStr(nick)};
       `);
 
       if(sameNick[0].length === 1)
-        return errMsg(`User with nick name '${nick}' already exists`);
+        return errMsg(`User with nick name ${sqlStr(nick)} already exists`);
 
       await query(`
         insert into users
         (nick, name, avatar) values (
-          '${nick}',
+          ${sqlStr(nick)},
           ${sqlStr(name, 1)},
           ${avatar}
         );
@@ -346,7 +346,7 @@ var injectElems = {
   },
 
   async ['404'](){
-    var div = O.ce(content, 'div', 'margin-top');
+    var div = O.ceDiv(content, 'margin-top');
     var h1 = O.ce(div, 'h1', 'hcenter');
     O.ceText(h1, '404 Not Found');
   },
@@ -402,7 +402,7 @@ function loadPage(){
   var error = O.urlParam('error');
 
   if(error !== null){
-    var div = O.ce(content, 'div', 'margin-top error');
+    var div = O.ceDiv(content, 'margin-top error');
     O.ceText(div, unescape(error));
   }
 
@@ -436,10 +436,10 @@ function injectHTML(){
 
 function injectHeader(){
   var header = O.ce(O.body, 'header');
-  var headerDiv = O.ce(header, 'div', 'container');
-  var headerInner = O.ce(headerDiv, 'div', 'vcenter');
+  var headerDiv = O.ceDiv(header, 'container');
+  var headerInner = O.ceDiv(headerDiv, 'vcenter');
 
-  var left = O.ce(headerInner, 'div', 'left');
+  var left = O.ceDiv(headerInner, 'left');
   var searchForm = O.ce(left, 'form', 'search-form');
   link(searchForm, 'This field', []);
 
@@ -447,8 +447,8 @@ function injectHeader(){
   input.type = 'text';
   input.name = 'q';
 
-  var nav = O.ce(left, 'div', 'nav');
-  var navInner = O.ce(nav, 'div', 'vcenter');
+  var nav = O.ceDiv(left, 'nav');
+  var navInner = O.ceDiv(nav, 'vcenter');
   link(navInner, 'Tasks', []);
   link(navInner, 'Changes', []);
 
@@ -456,7 +456,7 @@ function injectHeader(){
 }
 
 function injectPageContent(){
-  return O.ce(O.body, 'div', 'content container');
+  return O.ceDiv(O.body, 'content container');
 }
 
 async function require(moduleName){
@@ -481,7 +481,7 @@ async function require(moduleName){
 }
 
 function markdown(div, text){
-  var md = O.ce(div, 'div', 'markdown');
+  var md = O.ceDiv(div, 'markdown');
 
   var linkReg = /\[([^\]]+)\]\(([^\)]+)\)/;
   var lines = O.sanl(text);
@@ -633,7 +633,7 @@ async function load(file){
   return await new Promise((res, rej) => {
     O.rfLocal(file, (status, data) => {
       if(status !== 200){
-        O.error(`Cannot load file '${file}'`);
+        O.error(`Cannot load file ${sqlStr(file)}`);
         rej(status);
         return;
       }
