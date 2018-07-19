@@ -185,6 +185,41 @@ header .nav{
   top: 9px;
 }
 
+.tasks-list-header{
+  height: 47px;
+  border: 1px solid #e1e4e8;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  background-color: #f6f8fa;
+}
+
+.tasks-list-header .left{
+  padding-left: 16px;
+}
+
+.tasks-list-header-item{
+  padding: 13px 0px;
+  color: #586069 !important;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: "Segoe UI";
+}
+
+.tasks-list-header-item.selected{
+  color: #24292e !important;
+  font-weight: 600;
+  font-family: "Segoe UI Semibold";
+}
+
+.tasks-icon{
+  margin-right: 2px;
+  vertical-align: text-bottom;
+}
+
+.tasks-margin-left{
+  margin-left: 12px;
+}
+
 .chunk-left{
   border-top-right-radius: 0px !important;
   border-bottom-right-radius: 0px !important;
@@ -376,8 +411,8 @@ input[type="radio"].input{
 }
 
 .vcenter{
-  margin: 0;
   position: relative;
+  margin: 0;
   top: 50%;
   transform: translate(0%, -50%);
 }

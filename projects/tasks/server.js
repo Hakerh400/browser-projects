@@ -71,7 +71,10 @@ async function reset(){
     create table tasks (
       ${HEADER_ATTRIBS_AI},
       field int not null,
-      ind int not null
+      ind int not null,
+      open bit default 1,
+      title text not null,
+      content text not null
     );
   `);
   if(obj.error !== null) return obj;
@@ -100,9 +103,11 @@ async function reset(){
     );
 
     insert into tasks
-    (field, ind) values (
+    (field, ind, title, content) values (
       1,
-      1
+      1,
+      'Title',
+      '#Content\nSome text'
     );
   `);
   if(obj.error !== null) return obj;

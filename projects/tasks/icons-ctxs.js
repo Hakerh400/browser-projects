@@ -3677,7 +3677,7 @@ var icons = [
     g.fill();
     g.stroke();
   }],
-  ['task-opened', 14, 16, g => {
+  ['task-open', 14, 16, g => {
     g.beginPath();
     g.moveTo(7, 2.3);
     g.bezierCurveTo(10.14, 2.3, 12.7, 4.86, 12.7, 8);

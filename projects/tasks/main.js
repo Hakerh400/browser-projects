@@ -107,8 +107,7 @@ var injectElems = {
           if(!reg.test(field)) return e404();
 
           var [field] = await query(`
-            select * from fields
-            where
+            select * from fields where
               user = ${userId} and
               name = ${sqlStr(fieldName)};
           `);
@@ -133,7 +132,7 @@ var injectElems = {
 
           [
             ['Details', 'details', null],
-            ['Tasks', 'task-opened', 'tasks'],
+            ['Tasks', 'task-open', 'tasks'],
             ['Changes', 'change-request', 'changes'],
             ['Projects', 'project', 'projects'],
           ].forEach(([name, icon, href]) => {
@@ -183,6 +182,29 @@ var injectElems = {
               var right = O.ceDiv(nav, 'right');
               var navPath = ['users', user, 'fields', fieldName, 'tasks', 'new'];
               var newTaskBtn = link(right, 'New task', navPath, 'btn btn-primary');
+
+              var [openTasks, closedTasks] = await query(`
+                select * from tasks where
+                  field = ${field.id} and
+                  open = 1;
+
+                select * from tasks where
+                  field = ${field.id} and
+                  open = 0;
+              `);
+
+              var tasksListHeader = O.ceDiv(main, 'tasks-list-header');
+              var left = O.ceDiv(tasksListHeader, 'left');
+
+              var openLink = link(left, '', [], 'tasks-list-header-item selected');
+              addIcon(openLink, 'task-open', '#24292e', 1, 'tasks-icon');
+              O.ceText(openLink, ` ${openTasks.length} Open`);
+
+              var closedLink = link(left, '', [], 'tasks-list-header-item tasks-margin-left');
+              addIcon(closedLink, 'check', '#586069', 1, 'tasks-icon');
+              O.ceText(closedLink, ` ${closedTasks.length} Closed`);
+
+
               break;
 
             default:
@@ -233,34 +255,32 @@ var injectElems = {
 
     // Choose an existing avatar
 
-    query(`
+    var [avatars] = await query(`
       select id from avatars;
-    `).then(data => {
-      var div = divs[0];
-      var imgs = [];
+    `);
 
-      avIds = data[0].map((av, index) => {
-        var id = av.id | 0;
-        var img = O.ce(div, 'img', 'avatar image-item');
+    var div = divs[0];
+    var imgs = [];
 
-        img.src = avatarUrl(id);
-        imgs.push(img);
+    avIds = avatars.map((av, index) => {
+      var id = av.id | 0;
+      var img = O.ce(div, 'img', 'avatar image-item');
 
-        O.ael(img, 'click', () => {
-          if(chosen !== null)
-            imgs[chosen].classList.remove('chosen');
+      img.src = avatarUrl(id);
+      imgs.push(img);
 
-          chosen = index;
-          imgs[chosen].classList.add('chosen');
-        });
+      O.ael(img, 'click', () => {
+        if(chosen !== null)
+          imgs[chosen].classList.remove('chosen');
 
-        return id;
+        chosen = index;
+        imgs[chosen].classList.add('chosen');
       });
 
-      chosen = null;
-    }).catch(err => {
-      avIds = [];
+      return id;
     });
+
+    chosen = null;
 
     // Upload a new one
 
@@ -424,7 +444,7 @@ function injectStylesheet(){
     style.innerHTML = styleSrc;
 
     setTimeout(() => {
-      O.body.style.opacity = '1';
+      O.body.removeAttribute('style');
     });
   });
 }

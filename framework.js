@@ -326,7 +326,7 @@ var O = {
     xhr.onreadystatechange = () => {
       if(xhr.readyState === 4){
         if(isBinary){
-          cb(xhr.status, xhr.response);
+          cb(xhr.status, O.Buffer.from(xhr.response));
         }else{
           cb(xhr.status, xhr.responseText);
         }
@@ -1547,9 +1547,8 @@ var O = {
 
   Buffer: class extends Uint8Array{
     constructor(...params){
-      if(params.length === 1 && typeof params[0] === 'string'){
+      if(params.length === 1 && typeof params[0] === 'string')
         params[0] = [...params[0]].map(a => a.charCodeAt(0));
-      }
 
       super(...params);
     }
@@ -1558,8 +1557,17 @@ var O = {
       return new O.Buffer(size);
     }
 
-    static from(arr){
-      return new O.Buffer(arr);
+    static from(data, encoding){
+      switch(encoding){
+        case 'hex':
+          data = data.match(/[0-9a-f]{2}/gi).map(a => parseInt(a, 16));
+          return new O.Buffer(data);
+          break;
+
+        default:
+          return new O.Buffer(data);
+          break;
+      }
     }
 
     static concat(arr){
@@ -1570,10 +1578,10 @@ var O = {
       return new O.Buffer(arr);
     }
 
-    toString(type){
+    toString(encoding){
       var arr = [...this];
 
-      switch(type){
+      switch(encoding){
         case 'hex':
           return arr.map(a => a.toString(16).padStart(2, '0')).join('');
           break;
