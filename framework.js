@@ -1685,36 +1685,41 @@ var O = {
     }
   },
   sha256: (() => {
-    var MAX_UINT = 2 ** 32;
+    const MAX_UINT = 2 ** 32;
+
+    var hhBase = null;
+    var kkBase = null;
 
     return sha256;
 
     function sha256(buff){
-      if(typeof buff === 'string')
+      if(!(buff instanceof O.Buffer))
         buff = new O.Buffer(buff);
 
-      var hh = getArrH();
-      var kk = getArrK();
+      if(hhBase === null){
+        hhBase = getArrH();
+        kkBase = getArrK();
+      }
 
-      var chunks = getChunks(buff);
+      const hh = hhBase.slice();
+      const kk = kkBase.slice();
+      const w = new Uint32Array(64);
 
-      chunks.forEach(chunk => {
-        var w = new Uint32Array(64);
-
-        for(var i = 0; i < 16; i++){
+      getChunks(buff).forEach(chunk => {
+        for(var i = 0; i !== 16; i++){
           w[i] = chunk.readUInt32BE(i << 2);
         }
 
-        for(var i = 16; i < 64; i++){
-          var s0 = (rot(w[i - 15], 7) ^ rot(w[i - 15], 18) ^ shr(w[i - 15], 3)) | 0;
-          var s1 = (rot(w[i - 2], 17) ^ rot(w[i - 2], 19) ^ shr(w[i - 2], 10)) | 0;
+        for(var i = 16; i !== 64; i++){
+          var s0 = (rot(w[i - 15], 7) ^ rot(w[i - 15], 18) ^ (w[i - 15] >>> 3)) | 0;
+          var s1 = (rot(w[i - 2], 17) ^ rot(w[i - 2], 19) ^ (w[i - 2] >>> 10)) | 0;
 
           w[i] = w[i - 16] + w[i - 7] + s0 + s1 | 0;
         }
 
         var [a, b, c, d, e, f, g, h] = hh;
 
-        for(var i = 0; i < 64; i++){
+        for(var i = 0; i !== 64; i++){
           var s1 = (rot(e, 6) ^ rot(e, 11) ^ rot(e, 25)) | 0;
           var ch = ((e & f) ^ (~e & g)) | 0;
           var temp1 = (h + s1 + ch + kk[i] + w[i]) | 0;
@@ -1737,9 +1742,7 @@ var O = {
         });
       });
 
-      var digest = computeDigest(hh);
-
-      return digest;
+      return computeDigest(hh);
     }
 
     function getArrH(){
@@ -1787,40 +1790,19 @@ var O = {
     }
 
     function computeDigest(a){
-      return O.Buffer.concat([...a].map(a => {
-        var buff = O.Buffer.alloc(4);
+      var arr = [];
+      var buff = O.Buffer.alloc(4);
+
+      a.forEach(a => {
         buff.writeUInt32BE(a, 0);
-        return buff;
-      }));
-    }
+        arr.push(buff[0], buff[1], buff[2], buff[3]);
+      });
 
-    function shr(a, b){
-      a = toUint32(a);
-      a = [...a.toString(2).padStart(32, '0')];
-
-      while(b--){
-        a.pop();
-        a.unshift('0');
-      }
-
-      return parseInt(a.join(''), 2) | 0;
+      return O.Buffer.from(arr);
     }
 
     function rot(a, b){
-      a = toUint32(a);
-      a = [...a.toString(2).padStart(32, '0')];
-
-      while(b--){
-        a.unshift(a.pop());
-      }
-
-      return parseInt(a.join(''), 2) | 0;
-    }
-
-    function toUint32(a){
-      var buff = O.Buffer.alloc(4);
-      buff.writeInt32BE(a | 0, 0);
-      return buff.readUInt32BE(0);
+      return (a >>> b) | (a << 32 - b);
     }
 
     function arrPow(arr, pow){

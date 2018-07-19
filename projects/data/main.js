@@ -6,14 +6,22 @@ const MAX_STR_LEN = 50;
 
 const baseUrl = 'http://localhost/projects/test/data';
 
+const offsets = {
+  heading: 25,
+  text: 0,
+  btn: 0,
+};
+
 const fonts = {
-  title: 32,
+  heading: 32,
   text: 20,
 };
 
 const cols = {
   bg: 'darkgray',
-  title: 'black',
+  error: '#800000',
+
+  heading: 'black',
   text: 'black',
 };
 
@@ -129,9 +137,7 @@ class Display{
     this.canvas = g.canvas;
     this.g = g;
 
-    this.title = null;
-    this.texts = [];
-    this.btns = [];
+    this.elems = [];
     this.anims = [];
 
     this.initCtx();
@@ -149,38 +155,26 @@ class Display{
   }
 
   reset(){
-    this.title = null;
-    this.texts.length = 0;
-    this.btns.length = 0;
+    this.elems.length = 0;
     this.anims.length = 0;
 
     this.draw();
   }
 
   draw(){
-    var {w, h, g, title, texts} = this;
+    var {w, h, g, elems} = this;
 
     g.fillStyle = cols.bg;
     g.fillRect(0, 0, w, h);
 
-    var y = OFFSET;
+    var x = OFFSET;
+    var y = 0;
 
-    if(title !== null){
-      g.font(fonts.title);
-      g.fillStyle = cols.title;
-      g.fillText(title, OFFSET, y);
-      y += TITLE_OFFSET + fonts.title;
-    }
-
-    if(texts.length !== 0){
-      g.font(fonts.text);
-      g.fillStyle = cols.text;
-
-      texts.forEach(text => {
-        g.fillText(text, OFFSET, y);
-        y += OFFSET + fonts.text;
-      });
-    }
+    elems.forEach(elem => {
+      y += elem.ofs1();
+      elem.draw(x, y, g);
+      y += elem.height() + elem.ofs2();
+    });
   }
 
   render(){
@@ -197,24 +191,27 @@ class Display{
     O.raf(this.boundRender);
   }
 
-  setTitle(title=null){
-    this.title = title;
+  addHeading(val, col){
+    this.elems.push(new Heading(this, val, col));
     this.draw();
   }
 
-  removeTitle(){
-    this.title = null;
+  addTitle(val, col){
+    this.addHeading(val, col);
+  }
+
+  addText(val, col){
+    this.elems.push(new Text(this, val, col));
     this.draw();
   }
 
-  addText(text){
-    this.texts.push(text);
-    this.draw();
-  }
+  remove(index){
+    var {elems} = this;
 
-  removeText(index){
-    this.texts.splice(index, 1);
-    this.draw();
+    if(index instanceof Elem) index = elems.indexOf(index);
+    if(index === -1) return;
+
+    this.elems.splice(index, 1);
   }
 
   addAnim(anim){
@@ -228,6 +225,67 @@ class Display{
     if(index === -1) return;
     anims.splice(index, 1);
   }
+};
+
+class Elem{
+  constructor(D){
+    this.D = D;
+  }
+
+  draw(x, y, g){}
+
+  ofs1(){ return OFFSET; }
+  height(){ return 0; }
+  ofs2(){ return 0; }
+};
+
+class TextElem extends Elem{
+  constructor(D, val, col){
+    super(D);
+
+    this.val = val;
+    this.col = col;
+  }
+
+  set(val){
+    this.val = val;
+    this.D.draw();
+  }
+
+  setCol(col){
+    this.col = col;
+    this.D.draw();
+  }
+};
+
+class Heading extends TextElem{
+  constructor(D, val, col=cols.heading){
+    super(D, val, col);
+  }
+
+  draw(x, y, g){
+    g.font(fonts.heading);
+    g.fillStyle = this.col;
+    g.fillText(this.val, OFFSET, y);
+  }
+
+  height(){ return fonts.heading; }
+  ofs2(){ return offsets.heading; }
+};
+
+class Text extends TextElem{
+  constructor(D, val, col=cols.text){
+    super(D, val, col);
+  }
+
+  draw(x, y, g){
+    g.font(fonts.text);
+    g.fillStyle = this.col;
+    g.fillText(this.val, x, y);
+  }
+
+  height(){ return fonts.text; }
+  ofs2(){ return offsets.text; }
 };
 
 class Encryptor{
@@ -275,22 +333,18 @@ async function getPassword(attempted=0){
       break hasPass;
     }
 
-    D.setTitle('Loading password from cache');
-    D.addText('Please wait.');
-    await sleep(1e3);
-
     return ls.pass;
   }
 
-  D.setTitle('Enter password:');
+  D.addTitle('Enter password:');
 
   D.addText(getChar());
   D.addText('');
 
-  if(attempted)
-    D.addText('Wrong password. Try again.');
+  if(attempted) D.addText('Wrong password. Try again.', cols.error);
+  else D.addText('');
 
-  var ts = D.texts;
+  var es = D.elems;
 
   D.addAnim((w, h, g) => {
     updateText();
@@ -305,9 +359,6 @@ async function getPassword(attempted=0){
         case 'Enter':
           O.rel('keydown', onKeyDown);
           O.rel('keypress', onKeyPress);
-
-          D.texts[2] = 'Checking password. Please wait.';
-          await sleep(1e3);
 
           var t = getText();
           res(t);
@@ -336,12 +387,12 @@ async function getPassword(attempted=0){
   });
 
   function getText(){
-    var t = ts[0];
+    var t = es[1].val;
     return t.substring(0, t.length - 1);
   }
 
   function setText(text){
-    ts[0] = `${text}${getChar()}`;
+    es[1].set(`${text}${getChar()}`);
   }
 
   function updateText(){
@@ -354,12 +405,4 @@ async function getPassword(attempted=0){
 
     return chars[index];
   }
-}
-
-function sleep(time){
-  return new Promise(res => {
-    setTimeout(() => {
-      res();
-    }, time);
-  });
 }
