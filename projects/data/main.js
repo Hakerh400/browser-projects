@@ -1,8 +1,14 @@
 'use strict';
 
-const OFFSET = 5;
+const CLEAR_CONSOLE = 0;
+
+const OFFSET = 10;
 const TITLE_OFFSET = 25;
 const MAX_STR_LEN = 50;
+
+const SCROLL_DELTA = 100;
+const SCROLL_SPEED = 1;
+const SCROLL_FACTOR = .1;
 
 const baseUrl = 'http://localhost/projects/test/data';
 
@@ -15,14 +21,24 @@ const offsets = {
 const fonts = {
   heading: 32,
   text: 20,
+  btn: 24,
 };
 
 const cols = {
-  bg: 'darkgray',
+  bg: ['#87ceeb', '#effff0'],
+
   error: '#800000',
 
-  heading: 'black',
-  text: 'black',
+  heading: '#000000',
+  text: '#000000',
+
+  btn: '#00ff00',
+  btnSelected: '#ff8000',
+
+  plot: {
+    bg: '#ffffff',
+    fg: '#00ff00',
+  },
 };
 
 const ls = localStorage;
@@ -69,6 +85,11 @@ function aels(){
   });
 
   O.ael('keydown', evt => {
+    if(evt.ctrlKey){
+      pd(evt);
+      return;
+    }
+
     var code = evt.code;
 
     if(code === 'F5'){
@@ -104,6 +125,11 @@ function get(filePath, isBinary){
 
   return new Promise(res => {
     O.rf(url, (status, data) => {
+      if(status !== 200){
+        if(CLEAR_CONSOLE) console.clear();
+        return res(null);
+      }
+
       res(decrypt(data, isBinary));
     });
   });
@@ -137,6 +163,14 @@ class Display{
     this.canvas = g.canvas;
     this.g = g;
 
+    this.bgGradient = this.createBgGradient(cols.bg);
+
+    this.cx = -1;
+    this.cy = -1;
+
+    this.scrollY = 0;
+    this.scrollYTarget = 0;
+
     this.elems = [];
     this.anims = [];
 
@@ -145,30 +179,99 @@ class Display{
 
     this.boundRender = this.render.bind(this);
     this.render();
+
+    this.aels();
   }
 
   initCtx(){
     var {g} = this;
 
-    g.textBaseline = 'top';
-    g.textAlign = 'left';
+    this.align(0);
+  }
+
+  createBgGradient(cols){
+    var {w, h, g} = this;
+
+    var len = cols.length;
+    var len1 = len - 1;
+
+    var gradient = g.createLinearGradient(0, 0, 0, h);
+
+    cols.forEach((col, index) => {
+      gradient.addColorStop(index / len1, col);
+    });
+
+    return gradient;
   }
 
   reset(){
+    this.scrollY = 0;
+    this.scrollYTarget = 0;
+
     this.elems.length = 0;
     this.anims.length = 0;
 
     this.draw();
   }
 
+  aels(){
+    var {elems} = this;
+
+    O.ael('keydown', evt => {
+      switch(evt.code){
+        case 'Home': this.scrollYTarget = 0; break;
+      }
+    });
+
+    O.ael('mousemove', evt => {
+      if(this.checkElems(evt))
+        this.draw();
+    });
+
+    O.ael('click', evt => {
+      this.checkElems(evt);
+
+      var elem = elems.find(elem => elem.selected);
+
+      if(elem)
+        elem.onClick();
+    });
+
+    O.ael('wheel', evt => {
+      this.scrollYTarget += Math.sign(evt.deltaY) * SCROLL_DELTA;
+
+      if(this.scrollYTarget < 0)
+        this.scrollYTarget = 0;
+    });
+  }
+
+  checkElems(evt=null){
+    if(evt !== null){
+      this.cx = evt.clientX;
+      this.cy = evt.clientY;
+    }
+
+    var {cx, cy} = this;
+    var found = 0;
+
+    this.elems.forEach(elem => {
+      if(elem.onMouseMove(cx, cy))
+        found = 1;
+    });
+
+    return found;
+  }
+
   draw(){
     var {w, h, g, elems} = this;
 
-    g.fillStyle = cols.bg;
+    g.fillStyle = this.bgGradient;
     g.fillRect(0, 0, w, h);
 
+    this.checkElems();
+
     var x = OFFSET;
-    var y = 0;
+    var y = -this.scrollY;
 
     elems.forEach(elem => {
       y += elem.ofs1();
@@ -179,6 +282,26 @@ class Display{
 
   render(){
     var {w, h, g, anims} = this;
+
+    var sc1 = this.scrollY;
+    var sc2 = this.scrollYTarget;
+
+    if(sc1 !== sc2){
+      var dsc = sc2 - sc1;
+      var sign = Math.sign(dsc);
+      var abs = Math.abs(dsc);
+      var diff = abs * SCROLL_FACTOR;
+
+      if(diff < SCROLL_SPEED) diff = SCROLL_SPEED;
+      if(diff > abs) diff = abs;
+
+      this.scrollY += sign * diff;
+
+      if(Math.abs(sc2 - this.scrollY) < SCROLL_SPEED)
+        this.scrollY = sc2;
+
+      this.draw();
+    }
 
     if(anims.length !== 0){
       anims.forEach(anim => {
@@ -191,21 +314,38 @@ class Display{
     O.raf(this.boundRender);
   }
 
-  addHeading(val, col){
-    this.elems.push(new Heading(this, val, col));
+  align(type){
+    var {g} = this;
+
+    switch(type){
+      case 0:
+        g.textBaseline = 'top';
+        g.textAlign = 'left';
+        break;
+
+      case 1:
+        g.textBaseline = 'middle';
+        g.textAlign = 'center';
+        break;
+    }
+  }
+
+  addElem(ctor, args){
+    var elem = new ctor(this, ...args);
+
+    this.elems.push(elem);
     this.draw();
+
+    return elem;
   }
 
-  addTitle(val, col){
-    this.addHeading(val, col);
-  }
+  addHeading(...args){ return this.addElem(Heading, args); }
+  addTitle(...args){ return this.addElem(Heading, args); }
+  addText(...args){ return this.addElem(Text, args); }
+  addBtn(...args){ return this.addElem(Button, args); }
+  addPlot(...args){ return this.addElem(Plot, args); }
 
-  addText(val, col){
-    this.elems.push(new Text(this, val, col));
-    this.draw();
-  }
-
-  remove(index){
+  removeElem(index){
     var {elems} = this;
 
     if(index instanceof Elem) index = elems.indexOf(index);
@@ -230,12 +370,48 @@ class Display{
 class Elem{
   constructor(D){
     this.D = D;
+
+    this.x = null;
+    this.y = null;
+
+    this.selected = 0;
   }
 
-  draw(x, y, g){}
+  draw(x, y, g){
+    this.x = x;
+    this.y = y;
+  }
 
-  ofs1(){ return OFFSET; }
+  onMouseMove(cx, cy){
+    if(this.x === null) return;
+
+    var {D} = this;
+
+    var x1 = this.x;
+    var y1 = this.y;
+    var x2 = x1 + this.width();
+    var y2 = y1 + this.height();
+
+    var selected = cx >= x1 && cy >= y1 && cx < x2 && cy < y2;
+    var action = 0;
+
+    if(selected !== this.selected){
+      if(selected) action = this.onMouseEnter();
+      else action = this.onMouseLeave();
+    }
+
+    this.selected = selected;
+
+    return action;
+  }
+
+  onMouseEnter(evt){ return false; }
+  onMouseLeave(evt){ return false; }
+  onClick(evt){}
+
+  width(){ return 0; }
   height(){ return 0; }
+  ofs1(){ return OFFSET; }
   ofs2(){ return 0; }
 };
 
@@ -264,6 +440,9 @@ class Heading extends TextElem{
   }
 
   draw(x, y, g){
+    super.draw(x, y, g);
+
+    this.D.align(0);
     g.font(fonts.heading);
     g.fillStyle = this.col;
     g.fillText(this.val, OFFSET, y);
@@ -279,6 +458,9 @@ class Text extends TextElem{
   }
 
   draw(x, y, g){
+    super.draw(x, y, g);
+
+    this.D.align(0);
     g.font(fonts.text);
     g.fillStyle = this.col;
     g.fillText(this.val, x, y);
@@ -286,6 +468,155 @@ class Text extends TextElem{
 
   height(){ return fonts.text; }
   ofs2(){ return offsets.text; }
+};
+
+class Button extends TextElem{
+  constructor(D, val, onClick=O.nop, col=cols.btn, colSelected=cols.btnSelected){
+    super(D, val, col);
+
+    this.colSelected = colSelected;
+    this.onClick = onClick;
+  }
+
+  draw(x, y, g){
+    super.draw(x, y, g);
+
+    var w = this.width();
+    var h = this.height();
+
+    var hh = h / 2;
+    var whh = w - hh;
+
+    var gg = g;
+    g = gg.g;
+
+    g.translate(x + .5, y + .5);
+
+    g.fillStyle = this.selected ? this.colSelected : this.col;
+    g.beginPath();
+
+    g.arc(hh, hh, hh, O.pih, O.pi32);
+    g.lineTo(whh, 0);
+    g.arc(whh, hh, hh, O.pi32, O.pih);
+    g.lineTo(hh, h);
+
+    g.fill();
+    g.stroke();
+
+    g = gg;
+
+    this.D.align(1);
+    g.font(fonts.btn);
+    g.fillStyle = cols.text;
+    g.fillText(this.val, w / 2, h / 2);
+
+    g.resetTransform();
+  }
+
+  onMouseEnter(evt){ return 1; }
+  onMouseLeave(evt){ return 1; }
+
+  width(){ return 300; }
+  height(){ return 35; }
+
+  ofs1(){ return 10; }
+  ofs2(){ return 10; }
+};
+
+class Plot extends Elem{
+  constructor(D, w, h, bgCol=cols.plot.bg, fgCol=cols.plot.fg){
+    super(D);
+
+    this.w = w;
+    this.h = h;
+    this.bgCol = bgCol;
+    this.fgCol = fgCol;
+
+    this.arr = [];
+    this.max = 0;
+
+    this.scale = 1;
+    this.index = 0;
+    this.sum = 0;
+  }
+
+  draw(x, y, g){
+    super.draw(x, y, g);
+
+    var {w, h, arr, max, index} = this;
+
+    var len = arr.length
+    var len1 = len - 1;
+    var len2 = len1 + index / this.scale;
+
+    g.fillStyle = this.bgCol;
+    g.beginPath();
+    g.rect(x, y, w, h);
+    g.fill();
+    g.stroke();
+
+    if(len >= 2){
+      g = g.g;
+
+      g.translate(x + .5, y + .5);
+
+      g.fillStyle = this.fgCol;
+      g.beginPath();
+
+      g.moveTo(w, h);
+      g.lineTo(0, h);
+
+      arr.forEach((num, index) => {
+        var x = index / len2;
+        var y = 1 - num / max;
+
+        g.lineTo(x * w, y * h);
+      });
+
+      if(index === 0){
+        g.lineTo(w, (1 - arr[len1] / max) * h);
+      }else{
+        var s = 1 - this.sum / index / max;
+        if(s < 0) s = 0;
+        g.lineTo(w, s * h);
+      }
+
+      g.closePath();
+      g.fill();
+      g.stroke();
+
+      g.resetTransform();
+    }
+  }
+
+  add(num){
+    var {w, arr} = this;
+
+    this.sum += num;
+
+    if(++this.index === this.scale){
+      num = this.sum / this.scale;
+
+      this.index = 0;
+      this.sum = 0;
+
+      if(num > this.max) this.max = num;
+      arr.push(num);
+
+      if(arr.length === (w << 1)){
+        for(var i = 0, j = 0; i !== w; i++, j += 2)
+          arr[i] = (arr[j] + arr[j + 1]) / 2;
+
+        arr.length = w;
+        this.scale <<= 1;
+      }
+    }
+
+    this.D.draw();
+  }
+
+  width(){ return this.w; }
+  height(){ return this.h; }
 };
 
 class Encryptor{

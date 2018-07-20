@@ -16,6 +16,7 @@ var O = {
   pi: Math.PI,
   pi2: Math.PI * 2,
   pih: Math.PI / 2,
+  pi32: Math.PI * 3 / 2,
 
   /*
     Symbols
@@ -1125,7 +1126,7 @@ var O = {
       this.clearCanvas();
     }
 
-    clearCanvas(col = null){
+    clearCanvas(col=null){
       if(col !== null)
         this.fillStyle = col;
       
