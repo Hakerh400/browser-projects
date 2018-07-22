@@ -382,14 +382,14 @@ var O = {
   },
 
   sanl(str){
-    return str.split(/\r\n|\r|\n/gm);
+    return str.split(/\r\n|\r|\n/g);
   },
 
   sanll(str){
-    return str.split(/\r\n\r\n|\r\r|\n\n/gm);
+    return str.split(/\r\n\r\n|\r\r|\n\n/g);
   },
 
-  pad(str, len, char = '0'){
+  pad(str, len, char='0'){
     str += '';
     if(str.length >= len) return str;
     return char.repeat(len - str.length) + str;
