@@ -3,12 +3,13 @@
 const CLEAR_CONSOLE = 0;
 
 const OFFSET = 10;
-const TITLE_OFFSET = 25;
 const MAX_STR_LEN = 50;
 
 const SCROLL_DELTA = 100;
 const SCROLL_SPEED = 1;
 const SCROLL_FACTOR = .1;
+
+const PLOT_SCALE = .9;
 
 const baseUrl = 'http://localhost/projects/test/data';
 
@@ -62,6 +63,11 @@ async function main(){
     encryptor = new Encryptor(password);
 
     var script = await get('main.js');
+
+    if(script === null){
+      attempted = 1;
+      continue;
+    }
 
     try{
       var func = new Function('O', 'D', 'get', script);
@@ -136,6 +142,9 @@ function get(filePath, isBinary){
 }
 
 function encrypt(data){
+  if(data.length === 0)
+    return '';
+
   var buff = encryptor.encrypt(data);
   var str = buff.toString('hex');
 
@@ -264,20 +273,32 @@ class Display{
 
   draw(){
     var {w, h, g, elems} = this;
+    var len = elems.length;
 
     g.fillStyle = this.bgGradient;
     g.fillRect(0, 0, w, h);
 
     this.checkElems();
 
+    var yMin = -OFFSET;
+    var yMax = h + OFFSET;
+
     var x = OFFSET;
     var y = -this.scrollY;
 
-    elems.forEach(elem => {
+    for(var i = 0; i !== len; i++){
+      var elem = elems[i];
       y += elem.ofs1();
-      elem.draw(x, y, g);
-      y += elem.height() + elem.ofs2();
-    });
+
+      var yNext = y + elem.height() + elem.ofs2();
+
+      if(yNext >= yMin){
+        if(y <= yMax) elem.draw(x, y, g);
+        else break;
+      }
+
+      y = yNext;
+    }
   }
 
   render(){
@@ -423,14 +444,14 @@ class TextElem extends Elem{
     this.col = col;
   }
 
-  set(val){
+  set(val, draw=0){
     this.val = val;
-    this.D.draw();
+    if(draw) this.D.draw();
   }
 
-  setCol(col){
+  setCol(col, draw=0){
     this.col = col;
-    this.D.draw();
+    if(draw) this.D.draw();
   }
 };
 
@@ -524,11 +545,14 @@ class Button extends TextElem{
 };
 
 class Plot extends Elem{
-  constructor(D, w, h, bgCol=cols.plot.bg, fgCol=cols.plot.fg){
+  constructor(D, w, h, maxS=null, bgCol=cols.plot.bg, fgCol=cols.plot.fg){
     super(D);
 
     this.w = w;
     this.h = h;
+
+    this.maxS = maxS;
+
     this.bgCol = bgCol;
     this.fgCol = fgCol;
 
@@ -543,11 +567,14 @@ class Plot extends Elem{
   draw(x, y, g){
     super.draw(x, y, g);
 
-    var {w, h, arr, max, index} = this;
+    var {w, h, arr, max, maxS, index} = this;
 
     var len = arr.length
     var len1 = len - 1;
     var len2 = len1 + index / this.scale;
+
+    if(maxS === null)
+      maxS = max / PLOT_SCALE;
 
     g.fillStyle = this.bgCol;
     g.beginPath();
@@ -568,15 +595,15 @@ class Plot extends Elem{
 
       arr.forEach((num, index) => {
         var x = index / len2;
-        var y = 1 - num / max;
+        var y = 1 - num / maxS;
 
         g.lineTo(x * w, y * h);
       });
 
       if(index === 0){
-        g.lineTo(w, (1 - arr[len1] / max) * h);
+        g.lineTo(w, (1 - arr[len1] / maxS) * h);
       }else{
-        var s = 1 - this.sum / index / max;
+        var s = 1 - this.sum / index / maxS;
         if(s < 0) s = 0;
         g.lineTo(w, s * h);
       }
@@ -589,7 +616,7 @@ class Plot extends Elem{
     }
   }
 
-  add(num){
+  add(num, draw=0){
     var {w, arr} = this;
 
     this.sum += num;
@@ -612,7 +639,7 @@ class Plot extends Elem{
       }
     }
 
-    this.D.draw();
+    if(draw) this.D.draw();
   }
 
   width(){ return this.w; }

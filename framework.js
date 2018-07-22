@@ -385,6 +385,10 @@ var O = {
     return str.split(/\r\n|\r|\n/gm);
   },
 
+  sanll(str){
+    return str.split(/\r\n\r\n|\r\r|\n\n/gm);
+  },
+
   pad(str, len, char = '0'){
     str += '';
     if(str.length >= len) return str;
@@ -1378,7 +1382,7 @@ var O = {
   },
 
   BitStream: class{
-    constructor(arr = null, checksum = false){
+    constructor(arr=null, checksum=false){
       this.arr = new Uint8Array(0);
       this.len = 0;
       this.bits = '';
@@ -1393,7 +1397,7 @@ var O = {
       }
     }
 
-    parse(arr, checksum = false){
+    parse(arr, checksum=false){
       if(checksum){
         if(!this.checkArr(arr)){
           this.error = true;
@@ -1444,7 +1448,11 @@ var O = {
       }
     }
 
-    write(a, b = null){
+    writeBit(a){
+      this.write(a, 1);
+    }
+
+    write(a, b=null){
       if(b == null) b = (1 << O.binLen(a)) - 1;
 
       b = b.toString(2);
@@ -1462,36 +1470,6 @@ var O = {
       this.writeBits(a);
     }
 
-    pack(){
-      if(this.bits) this.writeBits('0'.repeat(8 - this.bits.length));
-    }
-
-    getArr(checksum = false){
-      var arr = O.ca(this.len + !!this.bits, i => {
-        if(i < this.len) return this.arr[i];
-        return parseInt(this.bits.padEnd(8, '0'), 2);
-      });
-
-      if(!checksum) return arr;
-
-      while(arr.length & 31){
-        arr.push(0);
-      }
-
-      arr.forEach((byte, index) => {
-        arr[index] = byte + this.getIndexValue(index, .9) & 255;
-      });
-
-      var csum = O.sha256(arr);
-
-      arr.forEach((byte, index) => {
-        var cs = csum[index & 31];
-        arr[index] ^= cs ^ this.getIndexValue(index ^ cs, .8);
-      });
-
-      return [...arr, ...csum];
-    }
-
     readByte(a){
       if(this.rIndex == this.arr.length) return 0;
       return this.arr[this.rIndex++];
@@ -1506,6 +1484,10 @@ var O = {
       this.rBits = this.rBits.substring(a);
 
       return bits;
+    }
+
+    readBit(){
+      return this.read(1);
     }
 
     read(b = 255){
@@ -1534,7 +1516,37 @@ var O = {
       return str.substring(2, 5) & 255;
     }
 
-    stringify(checksum = false){
+    pack(){
+      if(this.bits) this.writeBits('0'.repeat(8 - this.bits.length));
+    }
+
+    getArr(checksum=false){
+      var arr = O.ca(this.len + !!this.bits, i => {
+        if(i < this.len) return this.arr[i];
+        return parseInt(this.bits.padEnd(8, '0'), 2);
+      });
+
+      if(!checksum) return arr;
+
+      while(arr.length & 31){
+        arr.push(0);
+      }
+
+      arr.forEach((byte, index) => {
+        arr[index] = byte + this.getIndexValue(index, .9) & 255;
+      });
+
+      var csum = O.sha256(arr);
+
+      arr.forEach((byte, index) => {
+        var cs = csum[index & 31];
+        arr[index] ^= cs ^ this.getIndexValue(index ^ cs, .8);
+      });
+
+      return [...arr, ...csum];
+    }
+
+    stringify(checksum=false){
       var arr = this.getArr(checksum);
 
       return arr.map((byte, index) => {
@@ -1559,6 +1571,9 @@ var O = {
     }
 
     static from(data, encoding){
+      if(data.length === 0)
+        return O.Buffer.alloc(0);
+
       switch(encoding){
         case 'hex':
           data = data.match(/[0-9a-f]{2}/gi).map(a => parseInt(a, 16));
