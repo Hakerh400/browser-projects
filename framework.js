@@ -292,13 +292,17 @@ var O = {
     canvas.width = w;
     canvas.height = h;
 
+    var {style} = canvas;
+    style.position = 'absolute';
+    style.left = '0px';
+    style.top = '0px';
+
     g.fillStyle = 'white';
     g.strokeStyle = 'black';
     g.fillRect(0, 0, w, h);
 
-    if(enhanced){
+    if(enhanced)
       g = new O.EnhancedRenderingContext(g);
-    }
 
     return {w, h, g};
   },
@@ -395,8 +399,12 @@ var O = {
     return char.repeat(len - str.length) + str;
   },
 
-  capitalize(str){
+  cap(str){
     return `${str[0].toUpperCase()}${str.substring(1)}`;
+  },
+
+  capitalize(str){
+    return O.cap(str);
   },
 
   indent(str, indent){

@@ -164,15 +164,17 @@ function decrypt(data, isBinary=false){
 
 class Display{
   constructor(){
+    var {w, h, g: gBg} = O.ceCanvas(1);
     var {w, h, g} = O.ceCanvas(1);
 
     this.w = w;
     this.h = h;
 
+    this.canvasBg = gBg.canvas;
+    this.gBg = gBg;
+
     this.canvas = g.canvas;
     this.g = g;
-
-    this.bgGradient = this.createBgGradient(cols.bg);
 
     this.cx = -1;
     this.cy = -1;
@@ -184,6 +186,8 @@ class Display{
     this.anims = [];
 
     this.initCtx();
+    this.initBg();
+
     this.reset();
 
     this.boundRender = this.render.bind(this);
@@ -196,6 +200,14 @@ class Display{
     var {g} = this;
 
     this.align(0);
+  }
+
+  initBg(){
+    var {w, h, gBg} = this;
+    var bgGradient = this.createBgGradient(cols.bg);
+
+    gBg.fillStyle = bgGradient;
+    gBg.fillRect(0, 0, w, h);
   }
 
   createBgGradient(cols){
@@ -275,8 +287,7 @@ class Display{
     var {w, h, g, elems} = this;
     var len = elems.length;
 
-    g.fillStyle = this.bgGradient;
-    g.fillRect(0, 0, w, h);
+    g.clearRect(0, 0, w, h);
 
     this.checkElems();
 
