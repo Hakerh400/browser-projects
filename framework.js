@@ -507,6 +507,13 @@ var O = {
     return O.hsv(val - 1 / 64);
   },
 
+  dist(x1, y1, x2, y2){
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+
+    return Math.sqrt(dx * dx + dy * dy);
+  },
+
   binLen(a){ return a && (Math.log2(a) | 0) + 1; },
   raf(func){ return window.requestAnimationFrame(func); },
   obj(proto=null){ return Object.create(proto); },
