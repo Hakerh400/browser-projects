@@ -446,8 +446,10 @@ var O = {
     return Math.random() * a;
   },
 
-  randElem(arr){
-    return arr[O.rand(arr.length)];
+  randElem(arr, splice=0){
+    var index = O.rand(arr.length);
+    if(splice) return arr.splice(index, 1)[0];
+    return arr[index];
   },
 
   bound(val, min, max){
@@ -512,6 +514,16 @@ var O = {
     var dy = y2 - y1;
 
     return Math.sqrt(dx * dx + dy * dy);
+  },
+
+  enum(arr){
+    var obj = O.obj();
+
+    arr.forEach((name, index) => {
+      obj[name] = index;
+    });
+
+    return obj;
   },
 
   binLen(a){ return a && (Math.log2(a) | 0) + 1; },
