@@ -122,15 +122,7 @@ var O = {
     };
 
     global.log = logFunc;
-
-    Object.defineProperty(global, 'console', {
-      get(){
-        log(new Error('The console has been overriden').stack);
-        return console;
-      },
-    });
-
-    global.isConsoleOverriden = true;
+    global.isConsoleOverriden = 1;
   },
 
   inspect(arr){
