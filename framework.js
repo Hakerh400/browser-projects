@@ -31,6 +31,12 @@ var O = {
   project: null,
 
   /*
+    Cache
+  */
+
+  moduleCache: null,
+
+  /*
     Main functions
   */
 
@@ -51,6 +57,8 @@ var O = {
     if(!global.isConsoleOverriden)
       O.overrideConsole();
 
+    O.moduleCache = O.obj();
+
     if(loadProject){
       O.project = O.urlParam('project');
 
@@ -68,10 +76,7 @@ var O = {
           });
         });
       }else{
-        O.rf(`/projects/${O.project}/main.js`, (status, script) => {
-          if(status != 200) return O.error(`Failed to load script for project "${O.project}". Status code: ${status}.`);
-          new Function('O', script)(O);
-        });
+        O.req(`/projects/${O.project}/main`);
       }
     }
   },
@@ -311,7 +316,7 @@ var O = {
   rf(file, isBinary, cb=null){
     if(cb === null){
       cb = isBinary;
-      isBinary = false;
+      isBinary = 0;
     }
 
     var xhr = new window.XMLHttpRequest();
@@ -334,13 +339,79 @@ var O = {
     xhr.send(null);
   },
 
+  rfAsync(...args){
+    return new Promise(res => {
+      O.rf(...args, (status, code) => {
+        if(status !== 200) return res(null);
+        res(code);
+      });
+    });
+  },
+
+  async rfCache(...args){
+    var cache = O.moduleCache;
+    var path = args[0];
+
+    if(path in cache) return cache[path];
+
+    var data = await O.rfAsync(...args);
+    if(data === null) return null;
+
+    cache[path] = data;
+    return data;
+  },
+
   rfLocal(file, isBinary, cb=null){
     if(cb === null){
       cb = isBinary;
-      isBinary = false;
+      isBinary = 0;
     }
 
     O.rf(`/projects/${O.project}/${file}`, isBinary, cb);
+  },
+
+  async req(path){
+    var script;
+
+    if(path.endsWith('.js')) script = await O.rfCache(path);
+    else if((script = await O.rfCache(`${path}.js`)) !== null) path += '.js';
+    else script = await O.rfCache(path += '/index.js');
+
+    if(script === null){
+      O.error(`Failed to load script for project ${JSON.stringify(O.project)}.`);
+      return null;
+    }
+
+    path = path.split('/');
+    path.pop();
+
+    script = script.replace(/ \= require\(/g, ' \= await require(');
+    var AsyncFunction = (async () => {}).constructor;
+
+    var module = {exports: {}};
+    var {exports} = module;
+
+    var func = new AsyncFunction('O', 'require', 'module', 'exports', script);
+    await func(O, require, module, exports);
+
+    return module.exports;
+
+    async function require(newPath){
+      var oldPath = path.slice();
+
+      newPath.split('/').forEach(dir => {
+        switch(dir){
+          case '.': break;
+          case '..': oldPath.pop(); break;
+          default: oldPath.push(dir); break;
+        }
+      });
+
+      var resolvedPath = oldPath.join('/');
+      var exportedModule = await O.req(resolvedPath);
+
+      return exportedModule;
+    }
   },
 
   require(script, cb=O.nop){
@@ -430,11 +501,13 @@ var O = {
     for(var i = 0; i < num; i++) func(i);
   },
 
-  rand(a){
+  rand(a, b=null){
+    if(b !== null) return a + Math.random() * (b - a + 1) | 0;
     return Math.random() * a | 0;
   },
 
-  randf(a){
+  randf(a, b=null){
+    if(b !== null) return a + Math.random() * (b - a);
     return Math.random() * a;
   },
 
