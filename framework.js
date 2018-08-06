@@ -54,6 +54,11 @@ var O = {
     var isBrowser = O.isBrowser = env === 'browser';
     var isNode = O.isNode = env === 'node';
 
+    if(isBrowser){
+      if(navigator.vendor !== 'Google Inc.')
+        return O.error('Please use Chrome.');
+    }
+
     if(!global.isConsoleOverriden)
       O.overrideConsole();
 
@@ -638,7 +643,7 @@ var O = {
     return target.removeEventListener(type, func);
   },
 
-  pd(evt, stopPropagation = false){
+  pd(evt, stopPropagation=0){
     evt.preventDefault();
     if(stopPropagation) evt.stopPropagation();
   },

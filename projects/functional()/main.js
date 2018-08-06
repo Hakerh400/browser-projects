@@ -11,7 +11,7 @@ const tabNames = [
   ['compiled', 0],
 ];
 
-var openedTabs = [];
+var openTabs = [];
 var selectedTab = 'source';
 
 var functional;
@@ -20,15 +20,16 @@ window.setTimeout(main);
 
 async function main(){
   O.body.style.opacity = '0';
+
   injectStylesheet();
+  injectElems();
 
-  await injectElems();
   await loadFromRepo();
-
-  log(functional);
+  
+  aels();
 }
 
-async function injectElems(){
+function injectElems(){
   var div = O.ceDiv(O.body, 'container');
 
   var title = O.ce(div, 'h3');
@@ -46,7 +47,7 @@ async function injectElems(){
 
     if(checked){
       checkBtn.checked = 'true';
-      openedTabs.push(tabName);
+      openTabs.push(tabName);
     }
 
     var span = O.ce(elem, 'span', 'tabs-span');
@@ -55,10 +56,10 @@ async function injectElems(){
 
   var tabsBar = O.ceDiv(div, 'tabs-bar');
 
-  openedTabs.forEach(tabName => {
+  openTabs.forEach(tabName => {
     var tab = O.ceDiv(tabsBar, 'tab');
     tab.id = `tab-${tabName}`;
-    O.ceText(tab, O.cap(tabName));
+    tab.innerText = O.cap(tabName);
 
     if(tabName === selectedTab)
       tab.classList.add('selected');
@@ -68,6 +69,34 @@ async function injectElems(){
   ta.spellcheck = 'false';
   ta.autocorrect = 'off';
   ta.autocapitalize = 'none';
+}
+
+function aels(){
+  O.ael('keydown', evt => {
+    var ctrl = evt.ctrlKey;
+    var shift = evt.shiftKey;
+    var alt = evt.altKey;
+
+    switch(evt.code){
+      case 'Tab':
+        //if(!alt) break;
+        pd(evt);
+        switchTab(shift ? -1 : 1);
+        break;
+
+      case 'PageUp':
+        if(!alt) break;
+        pd(evt);
+        swapTabs(-1);
+        break;
+
+      case 'PageDown':
+        if(!alt) break;
+        pd(evt);
+        swapTabs(1);
+        break;
+    }
+  });
 }
 
 function injectStylesheet(){
@@ -97,4 +126,50 @@ function load(file){
 
 async function loadFromRepo(){
   functional = await require(URL);
+}
+
+function switchTab(dir){
+  var index = openTabs.indexOf(selectedTab);
+  var len = openTabs.length;
+
+  focusTab((index + dir + len) % len);
+}
+
+function swapTabs(dir){
+  var index = openTabs.indexOf(selectedTab);
+  var indexLimit = dir === -1 ? 0 : openTabs.length - 1;
+  if(index === indexLimit) return;
+
+  focusTab(index + dir, 1);
+}
+
+function focusTab(index, swap=0){
+  if(typeof index === 'string')
+    index = openTabs.indexOf(index);
+
+  var i1 = openTabs.indexOf(selectedTab);
+  var i2 = index;
+  var name1 = selectedTab;
+  var name2 = openTabs[i2];
+  var tab1 = gebi(`tab-${name1}`);
+  var tab2 = gebi(`tab-${name2}`);
+
+  tab1.classList.remove('selected');
+  tab2.classList.add('selected');
+
+  if(swap){
+    [openTabs[i1], openTabs[i2]] = [name2, name1];
+    [tab1.innerText, tab2.innerText] = [O.cap(name2), O.cap(name1)];
+    [tab1.id, tab2.id] = [tab2.id, tab1.id];
+  }else{
+    selectedTab = name2;
+  }
+}
+
+function gebi(id){
+  return O.doc.getElementById(id);
+}
+
+function pd(evt){
+  O.pd(evt, 1);
 }

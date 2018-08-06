@@ -1,5 +1,5 @@
 *{
-  font-family: arial;
+  font-family: Arial;
   color: #c0c0c0;
 }
 
@@ -19,7 +19,7 @@ h1, h2, h3, h4, h5, h6{
 
 input[type="text"], textarea{
   width: 100%;
-  padding: 4px 6px;
+  padding: 6px;
   border: 0px;
   resize: none;
   word-wrap: break-word;
