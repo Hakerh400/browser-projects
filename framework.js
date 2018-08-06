@@ -440,11 +440,16 @@ var O = {
     String functions
   */
 
+  buff2ascii(buff){
+    return [...buff].map(cc => {
+      return O.sfcc(cc);
+    }).join('');
+  },
+
   ascii(str){
-    return [...str].map(char => {
-      var charCode = char.charCodeAt(0);
-      if(charCode >= 32 && charCode <= 126) return char;
-      else return '?';
+    return str.split('').map(char => {
+      if(char >= ' ' && char <= '~') return char;
+      return '?';
     }).join('');
   },
 
