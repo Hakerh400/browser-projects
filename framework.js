@@ -165,7 +165,7 @@ var O = {
   nonCapWords: 'a,an,and,as,at,but,by,for,in,nor,of,on,or,the,to,up'.split(','),
 
   projectTest(project){
-    return /^[a-z0-9\.]+(?:\-[a-z0-9\.]+)*$/.test(project);
+    return /^[\!-\~]+$/.test(project);
   },
 
   projectToName(project){
@@ -385,7 +385,9 @@ var O = {
     path = path.split('/');
     path.pop();
 
+    script = script.replace(/^const (?:O|debug) .+/gm, '');
     script = script.replace(/ \= require\(/g, ' \= await require(');
+
     var AsyncFunction = (async () => {}).constructor;
 
     var module = {exports: {}};
@@ -397,17 +399,26 @@ var O = {
     return module.exports;
 
     async function require(newPath){
-      var oldPath = path.slice();
+      var resolvedPath;
 
-      newPath.split('/').forEach(dir => {
-        switch(dir){
-          case '.': break;
-          case '..': oldPath.pop(); break;
-          default: oldPath.push(dir); break;
-        }
-      });
+      if(/^https?\:\/\//.test(newPath)){
+        resolvedPath = newPath;
+      }else if(newPath.startsWith('.')){
+        var oldPath = path.slice();
 
-      var resolvedPath = oldPath.join('/');
+        newPath.split('/').forEach(dir => {
+          switch(dir){
+            case '.': break;
+            case '..': oldPath.pop(); break;
+            default: oldPath.push(dir); break;
+          }
+        });
+
+        resolvedPath = oldPath.join('/');
+      }else{
+        return null;
+      }
+
       var exportedModule = await O.req(resolvedPath);
 
       return exportedModule;

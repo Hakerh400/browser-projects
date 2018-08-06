@@ -1,7 +1,6 @@
-::-webkit-scrollbar{
-  display: none;
-  visibility: hidden;
-  opacity: 0;
+*{
+  overflow: hidden;
+  outline: none;
 }
 
 a,
@@ -17,6 +16,8 @@ a:active{
   margin: 0px;
 }
 
-*{
-  overflow: hidden;
+::-webkit-scrollbar{
+  display: none;
+  visibility: hidden;
+  opacity: 0;
 }
