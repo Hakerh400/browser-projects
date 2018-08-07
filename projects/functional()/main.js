@@ -12,9 +12,11 @@ const tabNames = [
 ];
 
 var openTabs = [];
-var selectedTab = 'source';
+var tabsContent = O.obj();
+var selectedTab = tabNames[0][0];
 
 var functional;
+var ta;
 
 window.setTimeout(main);
 
@@ -48,6 +50,7 @@ function injectElems(){
     if(checked){
       checkBtn.checked = 'true';
       openTabs.push(tabName);
+      tabsContent[tabName] = '';
     }
 
     var span = O.ce(elem, 'span', 'tabs-span');
@@ -65,7 +68,7 @@ function injectElems(){
       tab.classList.add('selected');
   });
 
-  var ta = O.ce(div, 'textarea');
+  ta = O.ce(div, 'textarea');
   ta.spellcheck = 'false';
   ta.autocorrect = 'off';
   ta.autocapitalize = 'none';
@@ -79,7 +82,6 @@ function aels(){
 
     switch(evt.code){
       case 'Tab':
-        //if(!alt) break;
         pd(evt);
         switchTab(shift ? -1 : 1);
         break;
@@ -161,9 +163,14 @@ function focusTab(index, swap=0){
     [openTabs[i1], openTabs[i2]] = [name2, name1];
     [tab1.innerText, tab2.innerText] = [O.cap(name2), O.cap(name1)];
     [tab1.id, tab2.id] = [tab2.id, tab1.id];
-  }else{
-    selectedTab = name2;
+
+    return;
   }
+
+  tabsContent[name1] = ta.value;
+  ta.value = tabsContent[name2];
+
+  selectedTab = name2;
 }
 
 function gebi(id){
