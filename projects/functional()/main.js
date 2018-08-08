@@ -1,22 +1,28 @@
 'use strict';
 
-const URL = 'https://raw.githubusercontent.com/Hakerh400/functional/master/src/index.js';
+const Content = require('./content');
 
-const tabNames = [
-  ['source', 1],
-  ['input', 1],
-  ['output', 1],
-  ['tokenized', 0],
-  ['parsed', 0],
-  ['compiled', 0],
+const repoUrl = 'https://raw.githubusercontent.com/Hakerh400/functional/master/src/index.js';
+
+const SYMBOL_X = '\u2a2f';
+const SYMBOL_O = '\u25cf';
+
+const tabsData = [
+  ['source',     0x01n],
+  ['input',      0x01n],
+  ['output',     0x01n],
+  ['tokenized',  0x00n],
+  ['parsed',     0x00n],
+  ['bytecode',   0x00n],
+  ['normalized', 0x00n],
 ];
 
 var openTabs = [];
 var tabsContent = O.obj();
-var selectedTab = tabNames[0][0];
+var selectedTab = 0;
 
-var functional;
-var ta;
+var functional = null;
+var ta = null;
 
 window.setTimeout(main);
 
@@ -26,7 +32,7 @@ async function main(){
   injectStylesheet();
   injectElems();
 
-  await loadFromRepo();
+  //await loadFromRepo();
   
   aels();
 }
@@ -41,30 +47,29 @@ function injectElems(){
   var tabsSpan = O.ce(tabsMenu, 'span', 'tabs-main-span');
   O.ceText(tabsSpan, 'Tabs:');
 
-  tabNames.forEach(([tabName, checked]) => {
-    var elem = O.ceDiv(tabsMenu, 'tabs-option');
+  var tabsOptions = O.ceDiv(tabsMenu, 'tabs-options');
+  var openTabs = [];
 
+  tabsData.forEach(tabData => {
+    var [name, flags] = tabData;
+
+    var elem = O.ceDiv(tabsOptions, 'tabs-option');
     var checkBtn = O.ce(elem, 'input');
     checkBtn.type = 'checkbox';
 
-    if(checked){
-      checkBtn.checked = 'true';
-      openTabs.push(tabName);
-      tabsContent[tabName] = '';
-    }
+    if(flags & 1n)
+      openTabs.push(name);
 
     var span = O.ce(elem, 'span', 'tabs-span');
-    O.ceText(span, O.cap(tabName));
+    O.ceText(span, O.cap(name));
   });
 
   var tabsBar = O.ceDiv(div, 'tabs-bar');
 
-  openTabs.forEach(tabName => {
-    var tab = O.ceDiv(tabsBar, 'tab');
-    tab.id = `tab-${tabName}`;
-    tab.innerText = O.cap(tabName);
+  openTabs.forEach((tabName, index) => {
+    var tab = openTab(index);
 
-    if(tabName === selectedTab)
+    if(index === selectedTab)
       tab.classList.add('selected');
   });
 
@@ -72,6 +77,8 @@ function injectElems(){
   ta.spellcheck = 'false';
   ta.autocorrect = 'off';
   ta.autocapitalize = 'none';
+
+  ta.focus();
 }
 
 function aels(){
@@ -97,6 +104,48 @@ function aels(){
         pd(evt);
         swapTabs(1);
         break;
+    }
+  });
+
+  O.ael('click', evt => {
+    var {target} = evt;
+    var e;
+
+    if(find('.tab-close-btn')){
+      var e1 = e.closest('.tab');
+      var index = [...e1.parentElement.children].indexOf(e1);
+      closeTab(index);
+      return;
+    }
+
+    if(find('.tabs-option input')){
+      var e1 = e.closest('.tabs-option');
+
+      if(e.checked){
+        var index = [...e1.parentElement.children].indexOf(e1);
+        openTab(index, 0);
+      }else{
+        if(openTabs.length === 1){
+          e.checked = 1;
+          return;
+        }
+
+        var name = qs(e1, '.tabs-span').textContent;
+        closeTab(name, 0);
+      }
+
+      return;
+    }
+
+    if(find('.tab')){
+      var index = [...e.parentElement.children].indexOf(e);
+      focusTab(index);
+      return;
+    }
+
+    function find(selector){
+      e = target.closest(selector);
+      return e;
     }
   });
 }
@@ -127,18 +176,66 @@ function load(file){
 }
 
 async function loadFromRepo(){
-  functional = await require(URL);
+  functional = await require(repoUrl);
+}
+
+function openTab(index, updateCheck=1){
+  var tabData = tabsData[index];
+  var name = tabData[0];
+
+  if(updateCheck) checkTab(name);
+  openTabs.push(name);
+
+  if(!(name in tabsContent))
+    tabsContent[name] = new Content(tabData);
+
+  var tabsBar = qs('.tabs-bar');
+  var tab = O.ceDiv(tabsBar, 'tab');
+
+  var span = O.ce(tab, 'span', 'tab-name');
+  span.textContent = O.cap(name);
+
+  var closeBtn = O.ceDiv(tab, 'tab-close-btn');
+  O.ceText(closeBtn, SYMBOL_X);
+
+  return tab;
+}
+
+function closeTab(index=selectedTab, updateCheck=1){
+  if(openTabs.length === 1) return;
+
+  index = getTabIndex(index);
+  if(updateCheck) uncheckTab(index);
+
+  qs(`.tab:nth-child(${index + 1})`).remove();
+  openTabs.splice(index, 1);
+
+  if(index <= selectedTab){
+    if(index === selectedTab){
+      if(index !== 0) index--;
+      else index = 0;
+
+      selectedTab = null;
+      focusTab(index);
+    }else{
+      if(selectedTab !== 0) selectedTab--;
+      else selectedTab = 0;
+    }
+  }
+}
+
+function saveTab(){
 }
 
 function switchTab(dir){
-  var index = openTabs.indexOf(selectedTab);
+  var index = selectedTab;
   var len = openTabs.length;
 
   focusTab((index + dir + len) % len);
 }
 
 function swapTabs(dir){
-  var index = openTabs.indexOf(selectedTab);
+  var index = selectedTab;
   var indexLimit = dir === -1 ? 0 : openTabs.length - 1;
   if(index === indexLimit) return;
 
@@ -146,35 +243,84 @@ function swapTabs(dir){
 }
 
 function focusTab(index, swap=0){
-  if(typeof index === 'string')
-    index = openTabs.indexOf(index);
+  if(typeof index === 'string') index = openTabs.indexOf(index);
+  if(index === selectedTab) return;
 
-  var i1 = openTabs.indexOf(selectedTab);
+  if(selectedTab !== null){
+    var i1 = selectedTab;
+    var name1 = openTabs[i1];
+    var tab1 = qs(`.tab:nth-child(${i1 + 1})`);
+    var tabName1 = qs(tab1, '.tab-name');
+
+    tab1.classList.remove('selected');
+    tabsContent[name1].setStr(ta.value);
+  }
+
   var i2 = index;
-  var name1 = selectedTab;
   var name2 = openTabs[i2];
-  var tab1 = gebi(`tab-${name1}`);
-  var tab2 = gebi(`tab-${name2}`);
+  var tab2 = qs(`.tab:nth-child(${i2 + 1})`);
+  var tabName2 = qs(tab2, '.tab-name');
 
-  tab1.classList.remove('selected');
   tab2.classList.add('selected');
+  selectedTab = i2;
 
   if(swap){
     [openTabs[i1], openTabs[i2]] = [name2, name1];
-    [tab1.innerText, tab2.innerText] = [O.cap(name2), O.cap(name1)];
-    [tab1.id, tab2.id] = [tab2.id, tab1.id];
+    [tabName1.textContent, tabName2.textContent] = [O.cap(name2), O.cap(name1)];
 
     return;
   }
 
-  tabsContent[name1] = ta.value;
-  ta.value = tabsContent[name2];
-
-  selectedTab = name2;
+  ta.value = tabsContent[name2].getStr();
 }
 
-function gebi(id){
-  return O.doc.getElementById(id);
+function checkTab(index){
+  updateChecked(index, 1);
+}
+
+function uncheckTab(index){
+  updateChecked(index, 0);
+}
+
+function updateChecked(index, checked){
+  var name = getTabName(index);
+
+  var tabOption = qsa('.tabs-option').find(e => {
+    e = qs(e, '.tabs-span');
+    return e.textContent.toLowerCase() === name;
+  });
+
+  qs(tabOption, 'input').checked = checked;
+}
+
+function getTabIndex(name){
+  if(typeof name === 'number') return name;
+  name = name.toLowerCase();
+  
+  var index = qsa('.tab-name').findIndex(e => {
+    return e.textContent.toLowerCase() === name;
+  });
+
+  return index;
+}
+
+function getTabName(index){
+  var name;
+
+  if(typeof index === 'string') name = index;
+  else name = qs(qs(`.tab:nth-child(${index + 1})`), '.tab-name').textContent;
+
+  return name.toLowerCase();
+}
+
+function qs(e, selector=null){
+  if(selector === null) selector = e, e = O.doc;
+  return e.querySelector(selector);
+}
+
+function qsa(e, selector=null){
+  if(selector === null) selector = e, e = O.doc;
+  return [...e.querySelectorAll(selector)];
 }
 
 function pd(evt){
