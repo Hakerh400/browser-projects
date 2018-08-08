@@ -383,7 +383,7 @@ var O = {
     else script = await O.rfCache(path += '/index.js');
 
     if(script === null){
-      O.error(`Failed to load script for project ${JSON.stringify(O.project)}.`);
+      O.error(`Failed to load script for project ${JSON.stringify(O.project)}`);
       return null;
     }
 
@@ -551,26 +551,6 @@ var O = {
     return val;
   },
 
-  bool(val){
-    return Boolean(O.int(val));
-  },
-
-  sortAsc(arr){
-    return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0);
-  },
-
-  sortDesc(arr){
-    return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0);
-  },
-
-  undupe(arr){
-    return arr.filter((a, b, c) => c.indexOf(a) === b);
-  },
-
-  rgb(...col){
-    return `#${col.map(val => O.pad((val | 0).toString(16), 2)).join('')}`;
-  },
-
   hsv(val, col=new Uint8Array(3)){
     var v = Math.round(val * (256 * 6 - 1)) | 0;
     var h = v & 255;
@@ -586,12 +566,8 @@ var O = {
   },
 
   hsvx(val){
-    if(val === 0)
-      return O.hsv(0);
-
-    while(val < 1 / 49)
-      val *= 49;
-
+    if(val === 0)return O.hsv(0);
+    while(val < 1 / 49)val *= 49;
     return O.hsv(val - 1 / 64);
   },
 
@@ -612,12 +588,18 @@ var O = {
     return obj;
   },
 
+  bool(val){ return Boolean(O.int(val)); },
+  sortAsc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0); },
+  sortDesc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0); },
+  undupe(arr){ return arr.filter((a, b, c) => c.indexOf(a) === b); },
+  rgb(...col){ return `#${col.map(val => O.pad((val | 0).toString(16), 2)).join('')}`; },
   binLen(a){ return a && (Math.log2(a) | 0) + 1; },
   raf(func){ return window.requestAnimationFrame(func); },
   obj(proto=null){ return Object.create(proto); },
-  keys(obj){ return Object.getOwnPropertyNames(obj); },
+  keys(obj){ return Reflect.ownKeys(obj); },
   cc(char){ return char.charCodeAt(0); },
   sfcc(cc){ return String.fromCharCode(cc); },
+  hex(val, bytesNum){ return val.toString(16).toUpperCase().padStart(bytesNum << 1, '0'); },
 
   /*
     Events
