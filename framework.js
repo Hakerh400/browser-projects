@@ -566,8 +566,8 @@ var O = {
   },
 
   hsvx(val){
-    if(val === 0)return O.hsv(0);
-    while(val < 1 / 49)val *= 49;
+    if(val === 0) return O.hsv(0);
+    while(val < 1 / 49) val *= 49;
     return O.hsv(val - 1 / 64);
   },
 
