@@ -1186,6 +1186,7 @@ var O = {
 
       this.fontSize = 32;
       this.fontScale = 1;
+      this.fontFamily = 'Arial';
       this.fontModifiers = '';
 
       this.pointsQueue = [];
@@ -1452,7 +1453,7 @@ var O = {
       var modifiers = this.fontModifiers;
       var strDelimiter = modifiers.length !== 0 ? ' ' : '';
 
-      this.g.font = `${modifiers}${strDelimiter}${this.fontSize * this.fontScale}px arial`;
+      this.g.font = `${modifiers}${strDelimiter}${this.fontSize * this.fontScale}px "${this.fontFamily}"`;
     }
 
     font(size){
