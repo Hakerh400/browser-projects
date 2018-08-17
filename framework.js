@@ -588,6 +588,14 @@ var O = {
     return obj;
   },
 
+  sleep(time){
+    return new Promise(res => {
+      setTimeout(() => {
+        res();
+      }, time);
+    });
+  },
+
   bool(val){ return Boolean(O.int(val)); },
   sortAsc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0); },
   sortDesc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0); },
@@ -600,6 +608,7 @@ var O = {
   cc(char){ return char.charCodeAt(0); },
   sfcc(cc){ return String.fromCharCode(cc); },
   hex(val, bytesNum){ return val.toString(16).toUpperCase().padStart(bytesNum << 1, '0'); },
+  hypot(x, y){ return Math.sqrt(x * x + y * y); },
 
   /*
     Events
