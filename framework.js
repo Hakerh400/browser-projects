@@ -596,6 +596,17 @@ var O = {
     });
   },
 
+  while(func){
+    return new Promise(res => {
+      var test = () => {
+        if(func()) return setTimeout(test);
+        res();
+      };
+
+      test();
+    });
+  },
+
   bool(val){ return Boolean(O.int(val)); },
   sortAsc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0); },
   sortDesc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0); },
@@ -845,6 +856,81 @@ var O = {
 
     toString(){
       return this.str;
+    }
+  },
+
+  SimpleGrid: class{
+    constructor(w, h, func=null){
+      this.w = w;
+      this.h = h;
+
+      this.d = O.ca(h, y => {
+        return O.ca(w, x =>{
+          if(func === null) return O.obj();
+          return func(x, y);
+        });
+      });
+    }
+
+    iterate(func){
+      var {w, h, d} = this;
+
+      for(var y = 0; y !== h; y++)
+        for(var x = 0; x !== w; x++)
+          func(x, y, d[y][x]);
+
+    }
+
+    iterAdj(x, y, func){
+      var {d} = this;
+
+      var visited = new O.Set2D();
+      var queue = [x, y];
+
+      while(queue.length !== 0){
+        x = queue.shift(), y = queue.shift();
+        if(visited.has(x, y)) continue;
+
+        visited.add(x, y);
+        if(!func(x, y, this.get(x, y))) continue;
+
+        this.adj(x, y, (x, y, d) => {
+          if(d === null) return;
+          if(!visited.has(x, y)) queue.push(x, y);
+        });
+      }
+    }
+
+    adj(x, y, func){
+      return func(x, y - 1, this.get(x, y - 1), 0) ||
+             func(x + 1, y, this.get(x + 1, y), 1) ||
+             func(x, y + 1, this.get(x, y + 1), 2) ||
+             func(x - 1, y, this.get(x - 1, y), 3);
+    }
+
+    nav(cs, dir){
+      switch(dir){
+        case 0: cs[1]--; break;
+        case 1: cs[0]++; break;
+        case 2: cs[1]++; break;
+        case 3: cs[0]--; break;
+      }
+
+      return this.get(cs[0], cs[1]);
+    }
+
+    get(x, y){
+      if(!this.includes(x, y)) return null;
+      return this.d[y][x];
+    }
+
+    set(x, y, val){
+      if(!this.includes(x, y)) return null;
+      this.d[y][x] = val;
+    }
+
+    includes(x, y){
+      return x >= 0 && y >= 0 && x < this.w && y < this.h;
     }
   },
 
@@ -1172,6 +1258,55 @@ var O = {
       func(x - 1, y, this.get(x - 1, y), 1);
       func(x, y + 1, this.get(x, y + 1), 2);
       func(x + 1, y, this.get(x + 1, y), 3);
+    }
+  },
+
+  Set2D: class{
+    constructor(){
+      this.d = O.obj();
+    }
+
+    add(x, y, val=1){
+      var {d} = this;
+
+      if(!(y in d)) d[y] = O.obj();
+      d[y][x] = val;
+    }
+
+    remove(x, y){
+      var {d} = this;
+
+      if(!(y in d)) return;
+      delete d[y][x];
+    }
+
+    get(x, y){
+      if(!this.has(x, y)) return null;
+      return this.d[y][x];
+    }
+
+    has(x, y){
+      var {d} = this;
+
+      if(!(y in d)) return 0;
+      return d[y][x];
+    }
+
+    getArr(){
+      var {d} = this;
+
+      var arr = [];
+
+      O.keys(d).forEach(y => {
+        y |= 0;
+
+        O.keys(d[y]).forEach(x => {
+          x |= 0;
+          arr.push([x, y]);
+        });
+      });
+
+      return arr;
     }
   },
 
