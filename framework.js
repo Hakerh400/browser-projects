@@ -588,7 +588,7 @@ var O = {
     return obj;
   },
 
-  sleep(time){
+  sleep(time=0){
     return new Promise(res => {
       setTimeout(() => {
         res();
