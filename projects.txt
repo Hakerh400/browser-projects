@@ -5,7 +5,6 @@ other-projects
 grid.io
 tasks
 text
-data
 functional()
 random-bits
 land
