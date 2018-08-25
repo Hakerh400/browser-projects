@@ -860,11 +860,11 @@ var O = {
   },
 
   SimpleGrid: class{
-    constructor(w, h, func=null){
+    constructor(w, h, func=null, d=null){
       this.w = w;
       this.h = h;
 
-      this.d = O.ca(h, y => {
+      this.d = d || O.ca(h, y => {
         return O.ca(w, x =>{
           if(func === null) return O.obj();
           return func(x, y);
@@ -873,17 +873,15 @@ var O = {
     }
 
     iterate(func){
-      var {w, h, d} = this;
+      var {w, h} = this;
 
       for(var y = 0; y !== h; y++)
         for(var x = 0; x !== w; x++)
-          func(x, y, d[y][x]);
+          func(x, y, this.get(x, y));
 
     }
 
     iterAdj(x, y, func){
-      var {d} = this;
-
       var visited = new O.Set2D();
       var queue = [x, y];
 
@@ -1371,11 +1369,9 @@ var O = {
     }
 
     clearCanvas(col=null){
-      if(col !== null)
-        this.fillStyle = col;
-      
-      this.resetTransform();
-      this.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      var {canvas, g} = this;
+      if(col !== null) g.fillStyle = col;
+      g.fillRect(0, 0, canvas.width, canvas.height);
     }
 
     createLinearGradient(...params){
@@ -1468,10 +1464,13 @@ var O = {
         g.fillStyle = fillStyle;
     }
 
-    resetTransform(){
-      this.s = 1;
+    resetTransform(resetScale=1){
+      if(resetScale)
+        this.s = 1;
+      
       this.tx = 0;
       this.ty = 0;
+      this.rot = 0;
 
       this.g.resetTransform();
     }
