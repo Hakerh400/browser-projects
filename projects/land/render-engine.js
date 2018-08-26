@@ -3,6 +3,8 @@
 const SPEED_FACTOR = .2;
 const SPEED_MIN = .02;
 
+const BG_COL = '#000000';
+
 class RenderEngine{
   constructor(grid, s){
     var {w, h, g} = O.ceCanvas(1);
@@ -27,7 +29,7 @@ class RenderEngine{
     var {g, grid} = this;
 
     g.resetTransform();
-    g.clearCanvas('#ffffff');
+    g.clearCanvas(BG_COL);
 
     g.translate(this.wh, this.hh);
     g.scale(this.s);

@@ -864,12 +864,16 @@ var O = {
       this.w = w;
       this.h = h;
 
-      this.d = d || O.ca(h, y => {
-        return O.ca(w, x =>{
-          if(func === null) return O.obj();
-          return func(x, y);
+      if(d === null){
+        d = O.ca(h, y => {
+          return O.ca(w, x =>{
+            if(func === null) return O.obj();
+            return func(x, y);
+          });
         });
-      });
+      }
+
+      this.d = d;
     }
 
     iterate(func){
