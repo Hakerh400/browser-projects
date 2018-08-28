@@ -5,7 +5,7 @@ const SPEED_MIN = .02;
 
 const BG_COL = '#000000';
 
-class RenderEngine{
+class RenderingEngine{
   constructor(grid, s){
     var {w, h, g} = O.ceCanvas(1);
 
@@ -68,4 +68,4 @@ class RenderEngine{
   }
 };
 
-module.exports = RenderEngine;
+module.exports = RenderingEngine;

@@ -6,7 +6,7 @@ const w = Math.floor(innerWidth / SCALE) + 4;
 const h = Math.floor(innerHeight / SCALE) + 4;
 
 const LandGrid = require('./land-grid');
-const RenderEngine = require('./render-engine');
+const RenderingEngine = require('./rendering-engine');
 
 var grid = null;
 var engine = null;
@@ -15,7 +15,7 @@ window.setTimeout(main);
 
 function main(){
   grid = new LandGrid(w, h);
-  engine = new RenderEngine(grid, SCALE);
+  engine = new RenderingEngine(grid, SCALE);
 
   engine.render();
 
