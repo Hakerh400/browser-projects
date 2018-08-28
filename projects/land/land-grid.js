@@ -1,9 +1,9 @@
 'use strict';
 
-const ExtensibleGrid = require('./extensible-grid');
+const ExpandableGrid = require('./expandable-grid');
 const Tile = require('./tile');
 
-class LandGrid extends ExtensibleGrid{
+class LandGrid extends ExpandableGrid{
   constructor(w, h, func=null, x=0, y=0){
     super(w, h, func, x, y);
 
@@ -23,16 +23,18 @@ class LandGrid extends ExtensibleGrid{
   }
 
   gen(x, y, force=0){
-    var adj = [];
+    var adj1 = [];
+    var adj2 = [];
 
     this.adj(x, y, (x, y, d) => {
-      if(d !== null) adj.push(d);
+      adj1.push(d);
+      if(d !== null) adj2.push(d);
     });
 
-    if(adj.length === 0 && !force)
+    if(adj2.length === 0 && !force)
       return null;
 
-    var d = new Tile(adj);
+    var d = new Tile(adj1, adj2);
     this.set(x, y, d);
 
     return d;
