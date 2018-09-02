@@ -7,15 +7,21 @@ class LandGrid extends ExpandableGrid{
   constructor(w, h, func=null, x=0, y=0){
     super(w, h, func, x, y);
 
+    this.generating = O.Map2D();
+
     this.gen(x, y, 1);
   }
 
   draw(x, y, g){
-    this.iterate(x, y, (x, y, d) => {
+    this.iterate(x, y, 1, (x, y, d) => {
       if(d === null){
         d = this.gen(x, y);
         if(d === null) return;
       }
+    });
+
+    this.iterate(x, y, (x, y, d) => {
+      if(d === null) return;
 
       g.fillStyle = d.a;
       g.fillRect(x, y, 1, 1);
@@ -34,7 +40,7 @@ class LandGrid extends ExpandableGrid{
     if(adj2.length === 0 && !force)
       return null;
 
-    var d = new Tile(adj1, adj2);
+    var d = new Tile(x, y, adj1, adj2);
     this.set(x, y, d);
 
     return d;

@@ -886,7 +886,7 @@ var O = {
     }
 
     iterAdj(x, y, func){
-      var visited = new O.Set2D();
+      var visited = new O.Map2D();
       var queue = [x, y];
 
       while(queue.length !== 0){
@@ -1263,7 +1263,7 @@ var O = {
     }
   },
 
-  Set2D: class{
+  Map2D: class{
     constructor(){
       this.d = O.obj();
     }

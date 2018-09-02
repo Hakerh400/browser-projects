@@ -1,6 +1,6 @@
 'use strict';
 
-class ExtensibleGrid extends O.SimpleGrid{
+class ExpandableGrid extends O.SimpleGrid{
   constructor(w, h, func=null, x=0, y=0){
     super(w, h, null, O.obj());
 
@@ -19,23 +19,31 @@ class ExtensibleGrid extends O.SimpleGrid{
   resize(w, h){
     this.w = w;
     this.h = h;
-    this.wh = w / 2;
-    this.hh = h / 2;
-    this.whi = w >> 1;
-    this.hhi = h >> 1;
   }
 
-  iterate(xs, ys, func=null){
-    if(func === null){
-      func = xs;
-      xs = this.x;
-      ys = this.y;
+  iterate(...args){
+    var xs = this.x;
+    var ys = this.y;
+    var expanded = 0;
+    var func;
+
+    switch(args.length){
+      case 1: [func] = args; break;
+      case 3: [xs, ys, func] = args; break;
+      case 4: [xs, ys, expanded, func] = args; break;
     }
 
-    var x1 = xs - this.whi;
-    var y1 = ys - this.hhi;
-    var x2 = x1 + this.w;
-    var y2 = y1 + this.h;
+    var {w, h} = this;
+
+    if(expanded){
+      w <<= 1;
+      h <<= 1;
+    }
+
+    var x1 = xs - (w >> 1);
+    var y1 = ys - (h >> 1);
+    var x2 = x1 + w;
+    var y2 = y1 + h;
 
     for(var y = y1; y !== y2; y++)
       for(var x = x1; x !== x2; x++)
@@ -64,4 +72,4 @@ class ExtensibleGrid extends O.SimpleGrid{
   }
 };
 
-module.exports = ExtensibleGrid;
+module.exports = ExpandableGrid;
