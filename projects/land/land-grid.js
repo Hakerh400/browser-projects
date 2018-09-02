@@ -7,7 +7,7 @@ class LandGrid extends ExpandableGrid{
   constructor(w, h, func=null, x=0, y=0){
     super(w, h, func, x, y);
 
-    this.generating = O.Map2D();
+    this.generating = new O.Map2D();
 
     this.gen(x, y, 1);
   }
