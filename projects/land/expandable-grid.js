@@ -29,6 +29,7 @@ class ExpandableGrid extends O.SimpleGrid{
 
     switch(args.length){
       case 1: [func] = args; break;
+      case 2: [expanded, func] = args; break;
       case 3: [xs, ys, func] = args; break;
       case 4: [xs, ys, expanded, func] = args; break;
     }
@@ -64,6 +65,16 @@ class ExpandableGrid extends O.SimpleGrid{
   includes(x, y){
     var {d} = this;
     return y in d && x in d[y];
+  }
+
+  adjNum(x, y){
+    var num = 0;
+
+    this.adj(x, y, (x, y, d) => {
+      if(d !== null) num++;
+    });
+
+    return num;
   }
 
   move(x, y){

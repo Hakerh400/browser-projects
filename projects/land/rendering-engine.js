@@ -37,6 +37,7 @@ class RenderingEngine{
     this.updateCoords();
     g.translate(-this.x - .5, -this.y - .5);
 
+    grid.tick();
     grid.draw(Math.floor(this.x), Math.floor(this.y), g);
 
     requestAnimationFrame(this.renderBound);

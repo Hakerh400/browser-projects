@@ -499,7 +499,7 @@ var O = {
     Array functions
   */
 
-  ca(len, func){
+  ca(len, func=O.nop){
     var arr = [];
     for(var i = 0; i < len; i++)
       arr.push(func(i));
