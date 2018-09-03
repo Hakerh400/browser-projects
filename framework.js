@@ -483,17 +483,13 @@ var O = {
     return char.repeat(len - str.length) + str;
   },
 
-  cap(str){
+  cap(str, lowerOthers=0){
+    if(lowerOthers) str = str.toLowerCase();
     return `${str[0].toUpperCase()}${str.substring(1)}`;
   },
 
-  capitalize(str){
-    return O.cap(str);
-  },
-
-  indent(str, indent){
-    return `${'  '.repeat(indent)}${str}`;
-  },
+  capitalize(str){ return O.cap(str); },
+  indent(str, indent){ return `${'  '.repeat(indent)}${str}`; },
 
   /*
     Array functions
@@ -580,6 +576,7 @@ var O = {
 
   enum(arr){
     var obj = O.obj();
+    obj.name = index => arr[index];
 
     arr.forEach((name, index) => {
       obj[name] = index;

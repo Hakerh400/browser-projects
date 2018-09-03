@@ -67,6 +67,20 @@ class ExpandableGrid extends O.SimpleGrid{
     return y in d && x in d[y];
   }
 
+  isVisible(x, y, expanded=0){
+    var {w, h, x: xs, y: ys} = this;
+
+    if(!expanded){
+      w = (w >> 1) + 1;
+      h = (h >> 1) + 1;
+    }
+
+    return x >= xs - w &&
+           y >= ys - h &&
+           x < xs + w &&
+           y < ys + h;
+  }
+
   adjNum(x, y){
     var num = 0;
 

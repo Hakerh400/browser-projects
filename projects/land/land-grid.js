@@ -4,6 +4,8 @@ const ExpandableGrid = require('./expandable-grid');
 const Tile = require('./tile');
 const CoordinatesCollection = require('./coords');
 
+var {stats} = Tile;
+
 class LandGrid extends ExpandableGrid{
   constructor(w, h, func=null, x=0, y=0){
     super(w, h, func, x, y);
@@ -17,7 +19,10 @@ class LandGrid extends ExpandableGrid{
   }
 
   tick(){
-    this.updateGen();
+    for(var i = 0; i < 100; i++){
+      if(!this.updateGen())
+        break;
+    }
 
     this.iterate(1, (x, y, d) => {
       if(d === null){
@@ -30,6 +35,8 @@ class LandGrid extends ExpandableGrid{
   draw(x, y, g){
     this.iterate(x, y, (x, y, d) => {
       if(d === null) return;
+      if(d.status === stats.GENERATING) return;
+      if(d.status === stats.READY) d.status = stats.DONE;
 
       g.fillStyle = d.a;
       g.fillRect(x, y, 1, 1);
@@ -37,19 +44,23 @@ class LandGrid extends ExpandableGrid{
   }
 
   updateGen(){
+    if(this.gen2.isEmpty()) return 0;
     var [x, y] = this.gen2.rand(this.cs);
 
-    var d = new Tile();
+    var d = new Tile(this, x, y);
     this.set(x, y, d);
 
     this.adj(x, y, (x, y) => {
       this.gen(x, y);
     });
+
+    return 1;
   }
 
   gen(x, y, force=0){
     var {gen1, gen2} = this;
 
+    if(!this.isVisible(x, y, 1)) return;
     if(this.get(x, y) !== null) return;
     if(gen2.has(x, y)) return;
 

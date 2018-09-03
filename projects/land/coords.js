@@ -41,6 +41,10 @@ class CoordinatesCollection{
 
     return cs;
   }
+
+  isEmpty(){
+    return this.arr.length === 0;
+  }
 };
 
 module.exports = CoordinatesCollection;
