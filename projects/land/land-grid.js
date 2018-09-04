@@ -4,6 +4,8 @@ const ExpandableGrid = require('./expandable-grid');
 const Tile = require('./tile');
 const CoordinatesCollection = require('./coords');
 
+const GEN_SPEED = 100;
+
 var {stats} = Tile;
 
 class LandGrid extends ExpandableGrid{
@@ -19,7 +21,7 @@ class LandGrid extends ExpandableGrid{
   }
 
   tick(){
-    for(var i = 0; i < 100; i++){
+    for(var i = 0; i < GEN_SPEED; i++){
       if(!this.updateGen())
         break;
     }

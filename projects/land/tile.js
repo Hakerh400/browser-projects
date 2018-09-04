@@ -10,19 +10,23 @@ const stats = O.enum([
 ]);
 
 class Tile{
-  constructor(grid, x, y){
-    var adj = [];
+  /*
+    prev - Tile that requested generating this tile
+    sti  - Index of the structure that performed the request
+    dir  - Direction to the "prev" relative to this tile
+  */
 
-    grid.adj(x, y, (x, y, d) => {
-      adj.push(d);
-    });
-
+  constructor(prev, sti, dir){
     this.status = stats.GENERATING;
+
     this.structs = [];
     this.content = [];
+    this.expandDirs = 0;
 
-    var k = adj.filter(a => a !== null).length / 5;
-    this.a = O.Color.from(O.hsv(k % 1)).toString();
+    this.update(prev, dir);
+  }
+
+  update(prev, sti, dir){
   }
 };
 

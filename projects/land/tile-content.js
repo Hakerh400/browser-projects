@@ -4,6 +4,7 @@ const types = O.enum([
   'FLOOR',
   'PICKUP',
   'WALL',
+  'OBJECT',
   'ENTITY',
 ]);
 

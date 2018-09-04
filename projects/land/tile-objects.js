@@ -39,6 +39,14 @@ class Wall extends TileObject{
   type(){ return types.WALL; }
 };
 
+class Object extends TileObject{
+  constructor(tex=null){
+    super(tex);
+  }
+
+  type(){ return types.OBJECT; }
+};
+
 class Entity extends TileObject{
   constructor(tex=null){
     super(tex);
@@ -52,5 +60,6 @@ module.exports = {
   Floor,
   Pickup,
   Wall,
+  Object,
   Entity,
 };

@@ -1,3 +1,4 @@
+blank
 image
 video
 games
