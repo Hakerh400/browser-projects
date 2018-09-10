@@ -1,9 +1,12 @@
 'use strict';
 
 class CoordinatesCollection{
-  constructor(){
+  constructor(x=null, y=null){
     this.map = new O.Map2D();
     this.arr = [];
+
+    if(x !== null)
+      this.add(x, y);
   }
 
   has(x, y){
@@ -44,6 +47,10 @@ class CoordinatesCollection{
 
   isEmpty(){
     return this.arr.length === 0;
+  }
+
+  len(){
+    return this.arr.length >> 1;
   }
 };
 

@@ -488,7 +488,6 @@ var O = {
     return `${str[0].toUpperCase()}${str.substring(1)}`;
   },
 
-  capitalize(str){ return O.cap(str); },
   indent(str, indent){ return `${'  '.repeat(indent)}${str}`; },
 
   /*
@@ -604,6 +603,27 @@ var O = {
     });
   },
 
+  commonProto(arr, calcProtos=1){
+    if(arr.length === 0) return null;
+
+    if(calcProtos) arr = arr.map(obj => O.proto(obj));
+    if(arr.length === 1) return arr[0];
+
+    return arr.reduce((prev, proto) => {
+      if(prev === null || proto === null) return null;
+      if(proto === prev) return prev;
+
+      if(proto instanceof prev.constructor) return prev;
+      if(prev instanceof proto.constructor) return proto;
+
+      do{
+        prev = O.proto(prev);
+      }while(!(prev === null || proto instanceof prev.constructor));
+
+      return prev;
+    });
+  },
+
   bool(val){ return Boolean(O.int(val)); },
   sortAsc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0); },
   sortDesc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0); },
@@ -617,6 +637,7 @@ var O = {
   sfcc(cc){ return String.fromCharCode(cc); },
   hex(val, bytesNum){ return val.toString(16).toUpperCase().padStart(bytesNum << 1, '0'); },
   hypot(x, y){ return Math.sqrt(x * x + y * y); },
+  proto(obj){ return Object.getPrototypeOf(obj); },
 
   /*
     Events
@@ -817,6 +838,15 @@ var O = {
 
     static from(rgb){
       return new O.Color(rgb[0], rgb[1], rgb[2]);
+    }
+
+    static rand(hsv=0){
+      var rgb;
+
+      if(!hsv) rgb = O.ca(3, () => O.rand(256));
+      else rgb = O.hsv(O.randf(1));
+
+      return O.Color.from(rgb);
     }
 
     clone(){
@@ -1261,8 +1291,11 @@ var O = {
   },
 
   Map2D: class{
-    constructor(){
+    constructor(x=null, y=null, val=1){
       this.d = O.obj();
+
+      if(x !== null)
+        this.add(x, y, val);
     }
 
     add(x, y, val=1){

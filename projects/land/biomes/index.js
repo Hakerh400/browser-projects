@@ -1,8 +1,12 @@
 'use strict';
 
-const biomes = await loadBiomes([
+const names = [
   'meadow',
-]);
+];
+
+const biomes = await loadBiomes(names);
+
+biomes.rand = rand;
 
 module.exports = biomes;
 
@@ -17,4 +21,11 @@ async function loadBiomes(names){
   }
 
   return biomes;
+}
+
+function rand(){
+  var name = O.randElem(names);
+  var ctor = biomes[name];
+
+  return ctor;
 }

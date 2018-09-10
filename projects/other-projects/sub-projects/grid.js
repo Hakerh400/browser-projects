@@ -740,7 +740,11 @@ function exportGrid(){
 }
 
 function importGrid(str, draw = true){
-  var arr = (`${str}`.match(/[0-9A-F]{1,2}/gi) || []).map(a => parseInt(a, 16));
+  var arr = (`${str}`.match(/[0-9a-f]{2}|\S/gi) || []).map(a => {
+    if(a.length === 2) return parseInt(a, 16);
+    return a.charCodeAt(0) & 255;
+  });
+
   var bs = new O.BitStream(arr, CHECKSUM_ENABLED);
 
   if(COORDS_ENABLED){

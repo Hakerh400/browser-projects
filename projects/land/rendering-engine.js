@@ -40,6 +40,13 @@ class RenderingEngine{
     grid.tick();
     grid.draw(Math.floor(this.x), Math.floor(this.y), g);
 
+    g.resetTransform();
+    g.font(32);
+    g.fillStyle = 'red';
+    g.textBaseline = 'top';
+    g.textAlign = 'left';
+    g.fillText(O.zz, 5, 5);
+
     requestAnimationFrame(this.renderBound);
   }
 
