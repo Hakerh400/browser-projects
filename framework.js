@@ -362,7 +362,6 @@ var O = {
     var data = await O.rfAsync(...args);
     if(data === null) return null;
 
-    cache[path] = data;
     return data;
   },
 
@@ -376,11 +375,22 @@ var O = {
   },
 
   async req(path){
+    var cache = O.moduleCache;
+    var pathOrig = path;
     var script;
 
-    if(path.endsWith('.js')) script = await O.rfCache(path);
-    else if((script = await O.rfCache(`${path}.js`)) !== null) path += '.js';
-    else script = await O.rfCache(path += '/index.js');
+    if(path in cache) return cache[path];
+    
+    if(path.endsWith('.js')){
+      script = await O.rfAsync(path);
+    }else if((script = await O.rfAsync(`${path}.js`)) !== null){
+      path += '.js';
+      if(path in cache) return cache[path];
+    }else{
+      path += '/index.js';
+      if(path in cache) return cache[path];
+      script = await O.rfAsync(path);
+    }
 
     if(script === null){
       O.error(`Failed to load script for project ${JSON.stringify(O.project)}`);
@@ -401,7 +411,7 @@ var O = {
     var func = new AsyncFunction('O', 'require', 'module', 'exports', script);
     await func(O, require, module, exports);
 
-    return module.exports;
+    return cache[pathOrig] = module.exports;
 
     async function require(newPath){
       var resolvedPath;

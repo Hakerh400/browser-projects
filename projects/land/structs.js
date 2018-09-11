@@ -3,26 +3,53 @@
 const TileContent = require('./tile-content');
 const objs = require('./tile-objects');
 
-const STAB_DIFF_MIN = -.11;
+const STAB_DIFF_MIN = -.15;
 const STAB_DIFF_MAX = .1;
 const STAB_DIFF = STAB_DIFF_MAX - STAB_DIFF_MIN;
 
+var id = -1;
+
 class Structure{
-  constructor(dirs=0){
+  constructor(id=null, dirs=0){
+    this.id = id !== null ? id : getID();
     this.dirs = dirs;
     this.content = new TileContent();
   }
 
-  static gen(prev, dir){ return null; }
+  static gen(stPrev, st, dir, prev, d){ return null; }
+  static combine(stPrev, st, prev, d){ return null; }
 
+  static choose(stPrev, st, drift=.5){
+    var ctor1 = stPrev.ctor;
+    var ctor2 = st.ctor;
+
+    if(O.randf(1) < drift)
+      [ctor1, ctor2] = [ctor2, ctor1];
+
+    if(st.pri() < stPrev.pri()) return st.constructor;
+    if(stPrev.pri() < st.pri()) return stPrev.constructor;
+
+    if(st.id > stPrev.id) return st.constructor;
+    if(stPrev.id > st.id) return stPrev.constructor;
+  }
+
+  same(st){ return st.constructor === this.constructor; }
   pri(){ return .5; }
 };
 
 class ExpandableStructure extends Structure{
-  constructor(dirs, stab=1){
-    super(dirs);
+  constructor(id, dirs, stab=1){
+    super(id, dirs);
 
     this.stab = stab;
+  }
+
+  static combine(stPrev, st, prev, d){
+    var stab = (stPrev.stab + st.stab) / 2;
+    stPrev.stab = stab;
+    st.stab = stab;
+
+    return null;
   }
 
   static nextStab(stab){
@@ -33,16 +60,8 @@ class ExpandableStructure extends Structure{
 };
 
 class Biome extends ExpandableStructure{
-  constructor(stab){
-    super(15, stab);
-  }
-
-  static gen(stPrev, st, dir, prev, d){
-    var stCurr = O.randf(st.stab + stPrev.stab) < st.stab ? st : stPrev;
-    var stab = ExpandableStructure.nextStab(stCurr.stab);
-
-    var ctorNew = stab !== 0 ? stCurr.constructor : structs.randBiome();
-    return ctorNew.get(stPrev, st, dir, prev, d);
+  constructor(id, stab){
+    super(id, 15, stab);
   }
 };
 
@@ -53,3 +72,7 @@ const structs = {
 };
 
 module.exports = structs;
+
+function getID(){
+  return id = id + 1 | 0;
+}

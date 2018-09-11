@@ -14,6 +14,8 @@ const stats = O.enum([
 
 initStructs();
 
+var z = require('./structs');
+
 class Tile{
   constructor(){
     this.status = stats.READY;
@@ -28,7 +30,7 @@ class Tile{
   static initial(){
     var d = new Tile();
 
-    var st = new initialBiome(1);
+    var st = new initialBiome();
     d.addStruct(st);
 
     return d;
@@ -37,7 +39,14 @@ class Tile{
   tick(){}
 
   draw(g){
-    this.content.draw(g);
+    var {content} = this;
+
+    if(content === null){
+      var contentArr = this.structs.map(st => st.content);
+      content = TileContent.concat(contentArr, 0);
+    }
+
+    content.draw(g);
   }
 
   addStruct(st){
@@ -55,8 +64,17 @@ class Tile{
     this.updateStatus();
   }
 
+  setDirs(dirs){
+    if(this.status === stats.DONE) err('setDirs');
+
+    var st = this.structs[this.sti];
+    st.dirs = dirs;
+
+    this.updateStatus();
+  }
+
   /*
-    prev - Tile that requested generating this tile
+    prev - The tile that requested generating this tile
     sti  - Index of the structure that performed the request
     dir  - Direction to the "prev" relative to this tile
   */
@@ -64,13 +82,28 @@ class Tile{
   update(prev, sti, dir){
     if(this.status === stats.DONE) err('update');
     var {structs} = this;
+    var structsPrev = prev.structs;
 
     var stPrev = prev.structs[sti];
     var hasStruct = sti < structs.length;
     var ctor, newSts;
 
+    for(var i = 0; i !== sti; i++){
+      // If the parent structures are different,
+      // then stop expanding child structures
+
+      if(!structsPrev[i].same(structs[i]))
+        return;
+    }
+
     if(!hasStruct){
       // This tile has no structure at index `sti`
+
+      if(sti !== structs.length){
+        // The parent structure doesn't want to expand,
+        // so the child structure stops here
+        return;
+      }
 
       ctor = stPrev.constructor;
       newSts = ctor.gen(stPrev, null, dir, prev, this);
@@ -78,27 +111,30 @@ class Tile{
       // This tile has a structure at index `sti`
 
       var st = structs[sti];
-      if(st.pri() < stPrev.pri()) return;
 
-      ctor = commonCtor(stPrev, st);
-      if(ctor === null) return;
+      if(st.same(stPrev)){
+        newSts = st.constructor.combine(stPrev, st, prev, this);
+        if(newSts === null) return;
+      }else{
+        ctor = commonCtor(stPrev, st);
+        if(ctor === null) return;
 
-      newSts = ctor.gen(stPrev, st, dir, prev, this);
-      if(newSts === null) return;
+        if(ctor === st.constructor){
+          newSts = ctor.combine(stPrev, st, prev, this);
+          if(newSts === null) return;
+        }else{
+          newSts = ctor.gen(stPrev, st, dir, prev, this);
+          if(newSts === null) return;
+
+          if(newSts.length !== 0 && newSts[0].same(st))
+            newSts[0].id = st.id;
+        }
+      }
 
       structs.length = sti;
     }
 
     this.addStructs(newSts);
-  }
-
-  updateDirs(dirs){
-    if(this.status === stats.DONE) err('updateDirs');
-
-    var st = this.structs[this.sti];
-    st.dirs = dirs;
-
-    this.updateStatus();
   }
 
   updateStatus(){
@@ -124,7 +160,7 @@ class Tile{
     if(this.status !== stats.READY) err('done');
 
     var contentArr = this.structs.map(st => st.content);
-    this.content = TileContent.concat(contentArr);
+    this.content = TileContent.concat(contentArr, 0);
 
     this.structs = null;
     this.status = stats.DONE;
@@ -140,14 +176,12 @@ function initStructs(){
   structs.randBiome = biomes.rand;
 }
 
-function commonCtor(st1, st2){
-  var proto1 = O.proto(st1);
-  var proto2 = O.proto(st2);
+function commonCtor(stPrev, st){
+  var proto1 = O.proto(stPrev);
+  var proto2 = O.proto(st);
 
-  if(proto1 === proto2)
-    return null;
-
-  return O.commonProto([proto1, proto2], 0).constructor;
+  var ctor = O.commonProto([proto1, proto2], 0).constructor;
+  return ctor.choose(stPrev, st);
 }
 
 function err(msg){

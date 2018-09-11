@@ -2,6 +2,7 @@
 
 const names = [
   'meadow',
+  'lake',
 ];
 
 const biomes = await loadBiomes(names);
@@ -23,9 +24,14 @@ async function loadBiomes(names){
   return biomes;
 }
 
-function rand(){
-  var name = O.randElem(names);
-  var ctor = biomes[name];
+function rand(ctorOld=null){
+  if(names.length === 1)
+    return biomes[O.projectToName(names[0])];
+
+  do{
+    var name = O.randElem(names);
+    var ctor = biomes[O.projectToName(name)];
+  }while(ctor === ctorOld);
 
   return ctor;
 }

@@ -11,59 +11,66 @@ class LandGrid extends ExpandableGrid{
     super(w, h, func, x, y);
 
     this.set(0, 0, Tile.initial());
+
+    O.ael('keydown',a=>a.code==='Space'&&(O.z^=1))
   }
 
   tick(){
+    if(O.z) return;
     var genColl = new CoordinatesCollection();
     var cs = [0, 0];
-    var x, y;
 
     this.iterate(1, (x, y, d) => {
       if(d === null) return;
 
-      if(d.status === stats.GENERATING){
-        genColl.add(x, y);
-        return;
-      }
+      if(d.status === stats.GENERATING) genColl.add(x, y);
     });
 
-    O.zz = genColl.len();
-
     while(!genColl.isEmpty()){
-      [x, y] = genColl.rand(cs);
+      var [x, y] = genColl.rand(cs);
+      if(!this.isVisible(x, y, 1)) continue;
 
       var d = this.get(x, y);
-      if(d.status === stats.DONE) continue;
+      if(d.status !== stats.GENERATING) continue;
 
       var {sti, dirs} = d;
-      var dir = randDir(dirs);
 
-      d.updateDirs(dirs & ~(1 << dir));
-      dir = dir + 2 & 3;
+      do{
+        var dir = randDir(dirs);
+        dirs &= ~(1 << dir);
 
-      if(dir === 0) y--;
-      else if(dir === 1) x++;
-      else if(dir === 2) y++;
-      else if(dir === 3) x--;
+        dir = dir + 2 & 3;
+        var x1 = x, y1 = y;
 
-      var dNew = this.get(x, y);
+        if(dir === 0) y1--;
+        else if(dir === 1) x1++;
+        else if(dir === 2) y1++;
+        else if(dir === 3) x1--;
 
-      if(dNew === null){
-        dNew = new Tile();
-        this.set(x, y, dNew);
-      }else if(dNew.status === stats.DONE){
-        continue;
-      }
+        var dNew = this.get(x1, y1);
 
-      dNew.update(d, sti, dir);
+        if(dNew === null){
+          dNew = new Tile();
+          this.set(x1, y1, dNew);
+        }else if(dNew.status === stats.DONE){
+          continue;
+        }
+
+        dNew.update(d, sti, dir);
+        if(dNew.status === stats.GENERATING && this.isVisible(x1, y1, 1))
+          genColl.add(x1, y1);
+      }while(dirs !== 0);
+
+      d.setDirs(0);
+      if(d.status === stats.GENERATING) genColl.add(x, y);
     }
   }
 
   draw(x, y, g){
     this.iterate(x, y, (x, y, d) => {
       if(d === null) return;
-      if(d.status === stats.GENERATING) return;
-      if(d.status === stats.READY) d.done();
+      //if(d.status === stats.GENERATING) return;
+      //if(d.status === stats.READY) d.done();
 
       g.translate(x, y);
       d.draw(g);

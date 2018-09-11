@@ -23,6 +23,8 @@ class RenderingEngine{
     this.speed = new O.Vector(0, 0);
 
     this.renderBound = this.render.bind(this);
+
+    g.font(16);
   }
 
   render(){
@@ -40,14 +42,7 @@ class RenderingEngine{
     grid.tick();
     grid.draw(Math.floor(this.x), Math.floor(this.y), g);
 
-    g.resetTransform();
-    g.font(32);
-    g.fillStyle = 'red';
-    g.textBaseline = 'top';
-    g.textAlign = 'left';
-    g.fillText(O.zz, 5, 5);
-
-    requestAnimationFrame(this.renderBound);
+    O.raf(this.renderBound);
   }
 
   move(x, y){
