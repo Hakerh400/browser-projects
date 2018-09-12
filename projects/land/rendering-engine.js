@@ -22,9 +22,16 @@ class RenderingEngine{
     this.y = grid.y;
     this.speed = new O.Vector(0, 0);
 
-    this.renderBound = this.render.bind(this);
+    this.boundRender = this.render.bind(this);
+  }
 
-    g.font(16);
+  start(){
+    var {g}  =this;
+
+    g.resetTransform();
+    g.clearCanvas(BG_COL);
+
+    O.raf(this.boundRender);
   }
 
   render(){
@@ -39,10 +46,10 @@ class RenderingEngine{
     this.updateCoords();
     g.translate(-this.x - .5, -this.y - .5);
 
-    grid.tick();
     grid.draw(Math.floor(this.x), Math.floor(this.y), g);
+    grid.tick();
 
-    O.raf(this.renderBound);
+    O.raf(this.boundRender);
   }
 
   move(x, y){

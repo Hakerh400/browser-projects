@@ -11,12 +11,9 @@ class LandGrid extends ExpandableGrid{
     super(w, h, func, x, y);
 
     this.set(0, 0, Tile.initial());
-
-    O.ael('keydown',a=>a.code==='Space'&&(O.z^=1))
   }
 
   tick(){
-    if(O.z) return;
     var genColl = new CoordinatesCollection();
     var cs = [0, 0];
 
@@ -63,6 +60,8 @@ class LandGrid extends ExpandableGrid{
 
       d.setDirs(0);
       if(d.status === stats.GENERATING) genColl.add(x, y);
+
+      break;
     }
   }
 

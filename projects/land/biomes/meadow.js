@@ -17,7 +17,6 @@ class Meadow extends structs.Biome{
       var id = stPrev.id;
       var stab = structs.ExpandableStructure.nextStab(stPrev.stab);
       if(stab === 0) return structs.randBiome(Meadow).gen(stPrev, st, dir, prev, d);
-      if(st !== null && st.stab > stab * O.randf(1)) return null;
     }else{
       if(st !== null && O.randf(stPrev.stab + st.stab) < stPrev.stab)
         return null;
@@ -28,8 +27,8 @@ class Meadow extends structs.Biome{
 
     var sts = [new Meadow(id, stab)];
 
-    //var n = 2 + O.rand(15);
-    //if(O.rand(1) === 0) sts.push(new Forest(null, n, O.rand(n), O.rand(n)));
+    var n = 2 + O.rand(15);
+    if(O.rand(200) === 0) sts.push(new Forest(null, n, O.rand(n), O.rand(n)));
 
     return sts;
   }
@@ -50,7 +49,7 @@ class Forest extends structs.Structure{
     this.y = y;
 
     var {content} = this;
-    if(1||x === 0 || y === 0 || x === n - 1 || y === n - 1)
+    if(x === 0 || y === 0 || x === n - 1 || y === n - 1)
       content.set(new Tree());
   }
 
@@ -86,8 +85,6 @@ class Grass extends objs.Floor{
 
     g.fillStyle = this.col;
     g.fillRect(0, 0, 1, 1);
-    g.fillStyle = 'red';
-    g.fillText(this.st.stab * 100 | 0, .5, .5);
   }
 };
 

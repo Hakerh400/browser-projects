@@ -17,7 +17,6 @@ class Lake extends structs.Biome{
       var id = stPrev.id;
       var stab = structs.ExpandableStructure.nextStab(stPrev.stab);
       if(stab === 0) return structs.randBiome(Lake).gen(stPrev, st, dir, prev, d);
-      if(st !== null && st.stab > stab * O.randf(1)) return null;
     }else{
       if(st !== null && O.randf(stPrev.stab + st.stab) < stPrev.stab)
         return null;
@@ -44,9 +43,6 @@ class Water extends objs.Floor{
 
     g.fillStyle = this.col;
     g.fillRect(0, 0, 1, 1);
-
-    g.fillStyle = 'red';
-    g.fillText(this.st.stab * 100 | 0, .5, .5);
   }
 };
 

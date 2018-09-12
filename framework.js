@@ -408,8 +408,8 @@ var O = {
     var module = {exports: {}};
     var {exports} = module;
 
-    var func = new AsyncFunction('O', 'require', 'module', 'exports', script);
-    await func(O, require, module, exports);
+    var func = new AsyncFunction('window', 'document', 'Function', 'O', 'require', 'module', 'exports', script);
+    await func(window, document, Function, O, require, module, exports);
 
     return cache[pathOrig] = module.exports;
 
@@ -1563,7 +1563,7 @@ var O = {
         return;
       }
 
-      this.g.fillRect(Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty), Math.round(w * this.s) | 0, Math.round(h * this.s) | 0);
+      this.g.fillRect(Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty), Math.round(w * this.s) + 1, Math.round(h * this.s) + 1);
     }
 
     moveTo(x, y){
