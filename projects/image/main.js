@@ -18,7 +18,7 @@ addEventListener('keydown', evt => {
   }
 });
 
-main();
+window.setTimeout(main);
 
 function main(){
   O.body.style.margin = '0px';

@@ -9,3 +9,4 @@ text
 functional()
 random-bits
 land
+rand
