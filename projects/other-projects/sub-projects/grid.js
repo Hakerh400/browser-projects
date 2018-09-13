@@ -3,11 +3,12 @@
 const IS_BROWSER = O.isBrowser;
 const IS_NODE = O.isNode;
 
-const MAX_COORD = (1 << 16) - 1;
+const CHECK_SNAPSHOT = 1;
 const RAINBOW_ENABLED = 0;
 const CHECKSUM_ENABLED = 0;
 const COORDS_ENABLED = 0;
-const CHECK_SNAPSHOT = 1;
+
+const MAX_COORD = (1 << 16) - 1;
 
 var size = 40;
 var diameter = .7;
@@ -77,6 +78,8 @@ function addEventListeners(){
 
     switch(evt.code){
       case 'Enter': applyAlgorithms(); break;
+      case 'Space': test(); break;
+
       case 'KeyR': resetGrid(); break;
       case 'KeyC': closeGrid(); break;
       case 'KeyD': divideGrid(); break;
@@ -280,6 +283,16 @@ function addEventListeners(){
     var dir = (a2 << 1) | (a1 ^ a2);
 
     return [x, y, dir];
+  }
+
+  function test(){
+    var str = exportGrid();
+
+    str = O.sanl(str).join('');
+    str = str.substring(64);
+
+    importGrid(str, 1);
+    applyAlgorithms();
   }
 
   function ael(type, func){
@@ -658,7 +671,7 @@ class Fragment{
   Import and export functions
 */
 
-function showTextArea(evt = null){
+function showTextArea(evt=null){
   if(!(O.static in showTextArea)){
     var obj = Object.create(null);
     showTextArea[O.static] = obj;
@@ -739,7 +752,7 @@ function exportGrid(){
   return bs.stringify(CHECKSUM_ENABLED);
 }
 
-function importGrid(str, draw = true){
+function importGrid(str, draw=1){
   var arr = (`${str}`.match(/[0-9a-f]{2}|\S/gi) || []).map(a => {
     if(a.length === 2) return parseInt(a, 16);
     return a.charCodeAt(0) & 255;

@@ -64,6 +64,9 @@ var O = {
 
     O.moduleCache = O.obj();
 
+    O.randState = O.Buffer.from(O.ca(32, () => Math.random() * 256));
+    O.random();
+
     if(loadProject){
       O.project = O.urlParam('project');
 
@@ -167,18 +170,8 @@ var O = {
     Project functions
   */
 
-  nonCapWords: 'a,an,and,as,at,but,by,for,in,nor,of,on,or,the,to,up'.split(','),
-
-  projectTest(project){
-    return /^[\!-\~]+$/.test(project);
-  },
-
-  projectToName(project){
-    return project.replace(/\-/g, ' ').replace(/[a-z0-9\.]+/g, word => {
-      if(O.nonCapWords.indexOf(word) == -1) return word[0].toUpperCase() + word.substring(1);
-      else return word;
-    });
-  },
+  projectToName(project){ return O.cap(project.replace(/\-/g, ' ')); },
+  projectTest(project){ return /^[\!-\~]+$/.test(project); },
 
   /*
     URL functions
@@ -523,24 +516,48 @@ var O = {
     Other functions
   */
 
-  repeat(num, func){
-    for(var i = 0; i < num; i++) func(i);
+  random(){
+    var st = O.randState;
+    var val = read();
+
+    write(Date.now());
+    write(Math.random() * 2 ** 64);
+
+    O.randState = O.sha256(st);
+    return val / 2 ** 64;
+
+    function read(){
+      var val = st[7];
+      for(var i = 6; i !== -1; i--)
+        val = val * 256 + st[i];
+      return val;
+    }
+
+    function write(val){
+      st[0] ^= val;
+      for(var i = 1; i !== 8; i++)
+        st[i] ^= val /= 256;
+    }
   },
 
   rand(a, b=null){
-    if(b !== null) return a + Math.random() * (b - a + 1) | 0;
-    return Math.random() * a | 0;
+    if(b !== null) return a + O.random() * (b - a + 1) | 0;
+    return O.random() * a | 0;
   },
 
   randf(a, b=null){
-    if(b !== null) return a + Math.random() * (b - a);
-    return Math.random() * a;
+    if(b !== null) return a + O.random() * (b - a);
+    return O.random() * a;
   },
 
   randElem(arr, splice=0){
     var index = O.rand(arr.length);
     if(splice) return arr.splice(index, 1)[0];
     return arr[index];
+  },
+
+  repeat(num, func){
+    for(var i = 0; i < num; i++) func(i);
   },
 
   bound(val, min, max){
