@@ -37,6 +37,12 @@ var O = {
   moduleCache: null,
 
   /*
+    Other parameters
+  */
+
+  enhancedRNG: 0,
+
+  /*
     Main functions
   */
 
@@ -516,7 +522,14 @@ var O = {
     Other functions
   */
 
+  enhanceRNG(){
+    this.enhancedRNG = 1;
+  },
+
   random(){
+    if(!this.enhancedRNG)
+      return Math.random();
+
     var st = O.randState;
     var val = read();
 
@@ -540,14 +553,20 @@ var O = {
     }
   },
 
-  rand(a, b=null){
+  rand(a=2, b=null){
     if(b !== null) return a + O.random() * (b - a + 1) | 0;
     return O.random() * a | 0;
   },
 
-  randf(a, b=null){
+  randf(a=1, b=null){
     if(b !== null) return a + O.random() * (b - a);
     return O.random() * a;
+  },
+
+  randInt(start, prob){
+    var num = start;
+    while(O.randf() < prob) num++;
+    return num;
   },
 
   randElem(arr, splice=0){
@@ -557,7 +576,7 @@ var O = {
   },
 
   repeat(num, func){
-    for(var i = 0; i < num; i++) func(i);
+    for(var i = 0; i !== num; i++) func(i);
   },
 
   bound(val, min, max){
@@ -566,7 +585,7 @@ var O = {
     return val;
   },
 
-  int(val, min = null, max = null){
+  int(val, min=null, max=null){
     if(typeof val == 'object') val = 0;
     else val |= 0;
     if(min != null) val = O.bound(val, min, max);
