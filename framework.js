@@ -46,7 +46,7 @@ var O = {
     Main functions
   */
 
-  init(loadProject=true){
+  init(loadProject=1){
     var global = O.global = new Function('return this;')();
     var env = String(global);
 
@@ -184,7 +184,7 @@ var O = {
   */
 
   href(){
-    return window.location.href;
+    return window.VIRTUAL_URL || window.location.href;
   },
 
   urlParam(param){
@@ -338,6 +338,9 @@ var O = {
         }
       }
     };
+
+    if(file.startsWith('/') && window.VIRTUAL_URL_BASE)
+      file = `${window.VIRTUAL_URL_BASE}${file.substring(1)}`;
 
     xhr.open('GET', O.urlTime(file));
     xhr.send(null);
