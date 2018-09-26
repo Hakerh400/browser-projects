@@ -8,14 +8,16 @@ const RAINBOW_ENABLED = 0;
 const CHECKSUM_ENABLED = 0;
 const COORDS_ENABLED = 0;
 
-const MAX_COORD = (1 << 16) - 1;
+const MAX_COORDS = (1 << 16) - 1;
 
-var size = 40;
+var size = O.urlParam('size', 40);
 var diameter = .7;
 var radius = diameter / 2;
 
 var w = 1920 / size | 0;
 var h = 1080 / size | 0;
+
+var autoDraw = IS_BROWSER;
 
 var tileParams = [
   'dir',
@@ -40,8 +42,6 @@ var drawFuncs = [
   drawTile,
   drawFrameLines,
 ];
-
-var autoDraw = IS_BROWSER;
 
 var grid = null;
 var canvas = null;
@@ -86,6 +86,11 @@ function addEventListeners(){
       case 'KeyI': updateInternals(); break;
       case 'Escape': showTextArea(evt); break;
       case 'Digit1': drawGrid(1); break;
+
+      case 'ArrowUp': move(0); break;
+      case 'ArrowLeft': move(1); break;
+      case 'ArrowDown': move(2); break;
+      case 'ArrowRight': move(3); break;
     }
   });
 
@@ -222,6 +227,27 @@ function addEventListeners(){
     drawGrid();
   }
 
+  function move(dir){
+    var tiles = new Set();
+
+    iterate(1, (x, y, d) => {
+      if(d.circ !== 1) return;
+      if(gdir(x, y, dir, 1)) return;
+
+      var d1 = ndir(x, y, dir, 1).d;
+      if(d1 === null || d1.void) return;
+
+      d.circ = 0;
+      tiles.add(d1);
+    });
+
+    tiles.forEach(d => {
+      d.circ = 1;
+    });
+
+    drawGrid();
+  }
+
   function setOrRemoveObjects(evt, type, mode){
     var g = grid.g;
 
@@ -313,7 +339,7 @@ function createGrid(){
   resetGrid();
 }
 
-function resetGrid(draw = true){
+function resetGrid(draw=1){
   blackCirc = null;
 
   iterate(1, (x, y, d) => {
@@ -325,8 +351,7 @@ function resetGrid(draw = true){
     d.internal = 0;
   });
 
-  if(draw)
-    drawGrid();
+  if(draw) drawGrid();
 }
 
 function closeGrid(){
@@ -375,9 +400,8 @@ function clearGrid(){
   g.fillRect(0, 0, w, h);
 }
 
-function drawGrid(important = false){
-  if(!(autoDraw || important))
-    return;
+function drawGrid(important=0){
+  if(!(autoDraw || important)) return;
 
   clearGrid();
 
@@ -597,7 +621,7 @@ function findFragments(){
   });
 }
 
-function iterate(advanced, func = null){
+function iterate(advanced, func=null){
   if(func === null){
     func = advanced;
     advanced = 0;
@@ -607,7 +631,7 @@ function iterate(advanced, func = null){
   else activeFragment.iterate(func);
 }
 
-function adjacent(x, y, advanced, func = null){
+function adjacent(x, y, advanced, func=null){
   if(func === null){
     func = advanced;
     advanced = 0;
@@ -636,7 +660,8 @@ class Fragment{
 
     this.externalTiles = [];
     this.internalTiles = [];
-    this.tilesObj = Object.create(null);
+
+    this.tilesObj = new O.Map2D();
   }
 
   addExternalTile(x, y){
@@ -645,7 +670,7 @@ class Fragment{
 
   addInternalTile(x, y){
     this.internalTiles.push([x, y, get(x, y, 1)]);
-    this.tilesObj[this.stringifyCoords(x, y)] = 1;
+    this.tilesObj.set(x, y);
   }
 
   sort(){
@@ -659,11 +684,7 @@ class Fragment{
   }
 
   includes(x, y){
-    return this.tilesObj[this.stringifyCoords(x, y)] === 1;
-  }
-
-  stringifyCoords(x, y){
-    return `${x},${y}`;
+    return this.tilesObj.has(x, y);
   }
 };
 
@@ -721,8 +742,8 @@ function exportGrid(){
   var bs = new O.BitStream();
 
   if(COORDS_ENABLED){
-    bs.write(w, MAX_COORD);
-    bs.write(h, MAX_COORD);
+    bs.write(w, MAX_COORDS);
+    bs.write(h, MAX_COORDS);
   }
 
   iterate(1, (x, y, d) => {
@@ -753,7 +774,7 @@ function exportGrid(){
 }
 
 function importGrid(str, draw=1){
-  var arr = (`${str}`.match(/[0-9a-f]{2}|\S/gi) || []).map(a => {
+  var arr = (String(str).match(/[0-9a-f]{2}|\S/gi) || []).map(a => {
     if(a.length === 2) return parseInt(a, 16);
     return a.charCodeAt(0) & 255;
   });
@@ -761,8 +782,8 @@ function importGrid(str, draw=1){
   var bs = new O.BitStream(arr, CHECKSUM_ENABLED);
 
   if(COORDS_ENABLED){
-    w = bs.read(MAX_COORD);
-    h = bs.read(MAX_COORD);
+    w = bs.read(MAX_COORDS);
+    h = bs.read(MAX_COORDS);
   }
 
   resetGrid(draw);
@@ -926,7 +947,7 @@ function putExternalLines(){
     }
   });
 
-  function followDir(x, y, dir, count, dirs = 0){
+  function followDir(x, y, dir, count, dirs=0){
     count--;
 
     var {x: x1, y: y1, d} = ndir(x, y, dir);
@@ -935,7 +956,7 @@ function putExternalLines(){
 
     if(d === null) return 0;
 
-    var found = false;
+    var found = 0;
     dirs |= 1 << dir;
 
     O.repeat(2, i => {
@@ -943,20 +964,24 @@ function putExternalLines(){
       dir1 ^= i + 1;
 
       if(((1 << dir1) & dirs) === 0){
+        var goFurther = 0;
+
         if(gdir(x1, y1, dir1)){
           d1 = ndir(x1, y1, dir1).d;
 
           if(!d.internal){
             if(d1 === null || d1.wall || !d1.internal)
-              found = true;
+              found = 1;
           }else{
-            if(d1 !== null && d1.wall)
-              found = true;
+            if(d1 !== null && d1.wall) found = 1;
+            else goFurther = 1;
           }
-        }else if(count !== 0 && !d.internal){
-          if(followDir(x1, y1, dir1, count, dirs))
-            found = true;
+        }else if(!d.internal){
+          goFurther = 1;
         }
+
+        if(goFurther && count !== 0 && followDir(x1, y1, dir1, count, dirs))
+          found = 1;
       }
     });
 

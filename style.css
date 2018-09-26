@@ -1,5 +1,5 @@
 *{
-  overflow: hidden;
+  /*overflow: hidden;*/
   outline: none;
 }
 
@@ -16,8 +16,8 @@ a:active{
   margin: 0px;
 }
 
-::-webkit-scrollbar{
+/*::-webkit-scrollbar{
   display: none;
   visibility: hidden;
   opacity: 0;
-}
+}*/

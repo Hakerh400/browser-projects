@@ -1,0 +1,40 @@
+body{
+  margin: 0px;
+  padding-top: 25px;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+input[type="text"]{
+  width: 500px;
+}
+
+.input{
+  margin: 8px 0px;
+}
+
+.msgs{
+  height: 300px;
+  margin-bottom: 25px;
+  overflow-y: scroll;
+  background-color: #eee;
+}
+
+.msg{
+  margin: 8px 0px;
+}
+
+.msg-date{
+  color: #888;
+  font-size: 12px;
+}
+
+.msg-name{
+  font-weight: bold;
+  display: inline-block;
+  margin-right: 5px;
+}
+
+.msg-body{
+  display: inline-block;
+}

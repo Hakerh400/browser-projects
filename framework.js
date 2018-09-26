@@ -176,7 +176,20 @@ var O = {
     Project functions
   */
 
-  projectToName(project){ return O.cap(project.replace(/\-/g, ' ')); },
+  uppercaseWords: ['fs', '2d', '3d'],
+
+  projectToName(project){
+    return project.split(/\-/g).map((word, index) => {
+      if(index === 0){
+        if(O.shouldUpper(word)) word = word.toUpperCase();
+        else word = O.cap(word);
+      }
+
+      return word;
+    }).join(' ');
+  },
+
+  shouldUpper(word){ return O.uppercaseWords.includes(word); },
   projectTest(project){ return /^[\!-\~]+$/.test(project); },
 
   /*
@@ -187,7 +200,7 @@ var O = {
     return window.VIRTUAL_URL || window.location.href;
   },
 
-  urlParam(param){
+  urlParam(param, defaultVal=null){
     var url = O.href();
     var match = url.match(new RegExp(`[\\?\\&]${param}=([^\\&]*)`));
 
@@ -198,6 +211,7 @@ var O = {
       match = window.unescape(match[1]);
     }
 
+    if(match === null) return defaultVal;
     return match;
   },
 
@@ -207,6 +221,15 @@ var O = {
 
   ge(selector){
     return O.doc.getElementById(selector);
+  },
+
+  qsa(parent, selector=null){
+    if(selector === null){
+      selector = parent;
+      parent = O.doc;
+    }
+
+    return parent.querySelectorAll(selector);
   },
 
   ce(parent, tag, classNames=null){
@@ -1031,7 +1054,7 @@ var O = {
   PathTile: class{
     constructor(wall){
       this.wall = wall;
-      this.visited = false;
+      this.visited = 0;
       this.heuristicDist = 0;
       this.pathDist = 0;
       this.totalDist = 0;
@@ -1040,9 +1063,9 @@ var O = {
   },
 
   TilesGrid: class{
-    constructor(g = null){
+    constructor(g=null){
       this.isNode = O.env === 'node';
-      this.bgEnabled = true;
+      this.bgEnabled = 1;
 
       this.w = 1;
       this.h = 1;
@@ -1051,7 +1074,7 @@ var O = {
       this.tileParams = [];
       this.drawFunc = O.nop;
 
-      this.g = g === null ? O.ceCanvas(true).g : g;
+      this.g = g !== null ? g : O.ceCanvas(1).g;
 
       this.iw = this.g.g.canvas.width;
       this.ih = this.g.g.canvas.height;
@@ -1117,7 +1140,7 @@ var O = {
       canvas.height = ih;
     }
 
-    create(func = this.emptyFunc){
+    create(func=this.emptyFunc){
       var d = this.d;
       d.length = this.w;
       d.fill(null);
@@ -1221,7 +1244,7 @@ var O = {
 
     drawTube(x, y, dirs, size, round){
       var {g} = this;
-      g.concaveMode = true;
+      g.concaveMode = 1;
 
       var s1 = (1 - size) / 2;
       var s2 = 1 - s1;
@@ -1239,7 +1262,7 @@ var O = {
           var phi2 = phi1 + O.pi2 - size / radius * O.pih;
 
           var dphi = 0;
-          var foundArc = true;
+          var foundArc = 1;
 
           switch(dirs){
             case 0:
@@ -1278,7 +1301,7 @@ var O = {
               break;
 
             default:
-              foundArc = false;
+              foundArc = 0;
               break;
           }
 
@@ -1314,7 +1337,7 @@ var O = {
 
       if(foundArc){
         if(dirs !== 0)
-          g.arc(x + .5, y + .5, radius, phi2 + dphi, phi1 + dphi, true);
+          g.arc(x + .5, y + .5, radius, phi2 + dphi, phi1 + dphi, 1);
       }else{
         g.closePath();
       }
@@ -1322,7 +1345,7 @@ var O = {
       g.fill();
       g.stroke();
 
-      g.concaveMode = false;
+      g.concaveMode = 0;
     }
 
     get(x, y){
@@ -1347,11 +1370,20 @@ var O = {
         this.add(x, y, val);
     }
 
-    add(x, y, val=1){
+    get(x, y){
+      if(!this.has(x, y)) return null;
+      return this.d[y][x];
+    }
+
+    set(x, y, val=1){
       var {d} = this;
 
       if(!(y in d)) d[y] = O.obj();
       d[y][x] = val;
+    }
+
+    add(x, y, val=1){
+      this.set(x, y, val);
     }
 
     remove(x, y){
@@ -1359,11 +1391,6 @@ var O = {
 
       if(!(y in d)) return;
       delete d[y][x];
-    }
-
-    get(x, y){
-      if(!this.has(x, y)) return null;
-      return this.d[y][x];
     }
 
     has(x, y){
