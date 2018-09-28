@@ -3,11 +3,12 @@
 const dom = require('./dom');
 
 const REMOTE = 1;
-const VERSION = 8;
+const VERSION = 2;
 
 const UPDATE_INTERVAL = 1e3;
+const RETRY_NUM = 5;
 
-const URL = REMOTE ? 'https://e8kkzbh.herokuapp.com/'
+const URL = REMOTE ? 'https://e8kkzbh-encrypted-data-transfer.193b.starter-ca-central-1.openshiftapps.com/'
                    : 'http://localhost:5000/';
 
 var pass = null;
@@ -15,9 +16,6 @@ var pass = null;
 window.setTimeout(main);
 
 async function main(){
-  O.body.innerHTML = '<h2>The server is paused</h2>'
-  return;
-
   await injectStyle();
   await ping();
 
@@ -162,18 +160,25 @@ function xor(buff){
   return buff;
 }
 
-function send(data={}, throwOnError=1){
+function send(data={}, throwOnError=1, retryNum=RETRY_NUM){
   data.v = VERSION;
 
   return new Promise(res => {
     var xhr = new window.XMLHttpRequest();
 
-    xhr.onreadystatechange = () => {
+    xhr.onreadystatechange = async () => {
       if(xhr.readyState === 4){
         var {status} = xhr;
 
         if(status !== 200){
-          if(status === 0) return error('The server is unavailable');
+          if(status === 0){
+            if(retryNum === 0)
+              return error('The server is unavailable');
+
+            res(await send(data, throwOnError, retryNum - 1));
+            return;
+          }
+
           return error(`The server responded with status code ${status}`);
         }
 
