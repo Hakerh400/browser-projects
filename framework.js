@@ -180,10 +180,8 @@ var O = {
 
   projectToName(project){
     return project.split(/\-/g).map((word, index) => {
-      if(index === 0){
-        if(O.shouldUpper(word)) word = word.toUpperCase();
-        else word = O.cap(word);
-      }
+      if(O.shouldUpper(word)) word = word.toUpperCase();
+      else if(index === 0) word = O.cap(word);
 
       return word;
     }).join(' ');
@@ -531,16 +529,23 @@ var O = {
 
   ca(len, func=O.nop){
     var arr = [];
-    for(var i = 0; i < len; i++)
+
+    for(var i = 0; i !== len; i++)
       arr.push(func(i));
+
     return arr;
   },
 
   shuffle(arr){
-    var arr1 = arr.slice();
-    arr.length = 0;
-    while(arr1.length !== 0)
-      arr.push(arr1.splice(O.rand(arr1.length), 1)[0]);
+    var len = arr.length;
+
+    for(var i = 0; i !== len; i++){
+      var j = i + O.rand(len - i);
+      var t = arr[i];
+      arr[i] = arr[j];
+      arr[j] = t;
+    }
+    
     return arr;
   },
 
@@ -923,6 +928,13 @@ var O = {
 
     clone(){
       return O.Color.from(this);
+    }
+
+    from(col){
+      this[0] = col[0];
+      this[1] = col[1];
+      this[2] = col[2];
+      this.updateStr();
     }
 
     set(r, g, b){
