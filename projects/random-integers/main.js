@@ -27,31 +27,38 @@ function main(){
 }
 
 function aels(){
-  var str = O.ca(MAX_LENGTH, () => {
-    return O.rand(2);
-  }).join('');
+  var strs = O.ca(9, i => {
+    return O.ca(MAX_LENGTH, () => {
+      return O.rand(i + 2);
+    }).join('');
+  });
 
-  updateStr();
+  updateStrs();
 
   O.ael('keydown', evt => {
     switch(evt.code){
       case 'ArrowRight':
-        str = str.substring(1);
-        str += O.rand(2);
-        updateStr();
+        strs.forEach((str, i) => {
+          strs[i] = `${str.substring(1)}${O.rand(i + 2)}`;
+        });
+
+        updateStrs();
         break;
     }
   });
 
-  function updateStr(){
+  function updateStrs(){
     clearCanvas();
-    drawStr(str, cols.text);
+
+    strs.forEach((str, i) => {
+      drawStr(`${i + 1} - ${str}`, i, cols.text);
+    });
   }
 }
 
-function drawStr(str, col=null){
-  if(col !== null)g.fillStyle = col;
-  g.fillText(str, OFFSET, OFFSET);
+function drawStr(str, i=0, col=null){
+  if(col !== null) g.fillStyle = col;
+  g.fillText(str, OFFSET, OFFSET + FONT_SIZE * i);
 }
 
 function clearCanvas(){

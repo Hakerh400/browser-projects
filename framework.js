@@ -1919,6 +1919,58 @@ var O = {
     }
   },
 
+  IntStream: class{
+    constructor(d=null){
+      if(d === null) d = 0n;
+      else if(typeof d === 'number') d = BigInt(d);
+      else if(typeof d === 'string') d = BigInt(d);
+      else if(Array.isArray(d)) d = O.IntStream.parse(d);
+
+      this.d = d;
+      this.multiplier = 1n;
+    }
+
+    static parse(arr){
+      var len = BigInt(arr.length);
+      var d = 0n;
+
+      for(var i = 0n; i !== len; i++)
+        d += (1n << (i << 3n)) * BigInt(arr[i]);
+
+      return d;
+    }
+
+    hasMore(){
+      return this.d !== 0n;
+    }
+
+    read(base, modify=1, toInt=1){
+      base = BigInt(base);
+      var val = this.d % base;
+      if(modify) this.d /= base;
+      if(toInt) val = Number(val);
+      return val;
+    }
+
+    write(base, val){
+      this.d += this.multiplier * BigInt(val);
+      this.multiplier *= BigInt(base);
+    }
+
+    pack(){
+      var {d} = this;
+      var arr = [];
+
+      while(d !== 0n){
+        var val = Number(d & 255n);
+        arr.push(val);
+        d >>= 8n;
+      }
+
+      return arr;
+    }
+  },
+
   Buffer: class extends Uint8Array{
     constructor(...params){
       if(params.length === 1 && typeof params[0] === 'string')

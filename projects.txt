@@ -7,7 +7,7 @@ grid.io
 tasks
 text
 functional()
-random-bits
+random-integers
 land
 rand
 encrypted-data-transfer
