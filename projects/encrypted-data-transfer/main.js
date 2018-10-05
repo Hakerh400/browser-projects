@@ -3,7 +3,7 @@
 const dom = require('./dom');
 
 const REMOTE = 1;
-const VERSION = 3;
+const VERSION = 4;
 
 const UPDATE_INTERVAL = 1e3;
 const RETRY_NUM = 5;
