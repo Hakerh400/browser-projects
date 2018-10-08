@@ -70,8 +70,10 @@ var O = {
 
     O.moduleCache = O.obj();
 
+    O.enhancedRNG = 1;
     O.randState = O.Buffer.from(O.ca(32, () => Math.random() * 256));
     O.random();
+    O.enhancedRNG = 0;
 
     if(loadProject){
       O.project = O.urlParam('project');
