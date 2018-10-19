@@ -16,6 +16,8 @@ var pass = null;
 window.setTimeout(main);
 
 async function main(){
+  return;
+  
   await injectStyle();
   await ping();
 

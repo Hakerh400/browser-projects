@@ -15,6 +15,8 @@ const {w, h, g} = O.ceCanvas(1);
 window.setTimeout(main);
 
 function main(){
+  O.enhanceRNG();
+
   g.textBaseline = 'top';
   g.textAlign = 'left';
 
