@@ -25,19 +25,32 @@ class Vector{
   div(k){ if(k){ this.x /= k, this.y /= k, this.z /= k; } return this; }
 
   rot_(rx, ry, rz){
-    var x = this.x, y = this.y, z = this.z;
+    const x = this.x, y = this.y, z = this.z;
 
-    var s = Math.sin(rx), c = Math.cos(rx);
-    var x1 = x, y1 = y * c - z * s, z1 = y * s + z * c;
+    const sx = Math.sin(rx), cx = Math.cos(rx);
+    const y1 = y * cx - z * sx, z1 = y * sx + z * cx;
 
-    s = Math.sin(ry), c = Math.cos(ry);
-    var x2 = x1 * c + z1 * s, y2 = y1, z2 = z1 * c - x1 * s;
+    const sy = Math.sin(ry), cy = Math.cos(ry);
+    const x2 = x * cy + z1 * sy, z2 = z1 * cy - x * sy;
 
-    s = Math.sin(rz), c = Math.cos(rz);
-    return this.set_(x2 * c - y2 * s, x2 * s + y2 * c, z2);
+    const sz = Math.sin(rz), cz = Math.cos(rz);
+    this.x = x2 * cz - y1 * sz, this.y = x2 * sz + y1 * cz, this.z = z2;
+
+    return this;
+  }
+
+  rotsc_(sx, cx, sy, cy, sz, cz){
+    const x = this.x, y = this.y, z = this.z;
+    const y1 = y * cx - z * sx, z1 = y * sx + z * cx;
+    const x2 = x * cy + z1 * sy, z2 = z1 * cy - x * sy;
+
+    this.x = x2 * cz - y1 * sz, this.y = x2 * sz + y1 * cz, this.z = z2;
+
+    return this;
   }
 
   rotn_(rx, ry, rz){ return this.rot_(-rx, -ry, -rz); }
+  rotnsc_(sx, cx, sy, cy, sz, cz){ return this.rotnsc_(-sx, cx, -sy, cy, -sz, cz); }
 
   lt_(x, y, z){ return this.x < x && this.y < y && this.z < z; }
   gt_(x, y, z){ return this.x > x && this.y > y && this.z > z; }
@@ -49,7 +62,9 @@ class Vector{
   add(v){ return this.add_(v.x, v.y, v.z); }
   sub(v){ return this.sub_(v.x, v.y, v.z); }
   rot(v){ return this.rot_(v.x, v.y, v.z); }
+  rotsc(v){ return this.rotsc_(v.x, v.y, v.z); }
   rotn(v){ return this.rotn_(v.x, v.y, v.z); }
+  rotnsc(v){ return this.rotnsc_(v.x, v.y, v.z); }
   lt(v){ return this.lt_(v.x, v.y, v.z); }
   gt(v){ return this.gt_(v.x, v.y, v.z); }
 };

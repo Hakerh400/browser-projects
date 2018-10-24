@@ -4,19 +4,34 @@ const Vector = require('./vector');
 const Ray = require('./ray');
 const Camera = require('./camera');
 
-const CAM_SPEED = 1;
+const SCALE = .2;
+const VIEW_DISTANCE = 100;
+const TARGET_FPS = 55;
+const CAM_SPEED = .5;
 
-const w = Math.round(window.innerWidth / 10);
-const h = Math.round(window.innerHeight / 10);
+const targetDt = 1e3 / TARGET_FPS;
+
+const w = Math.round(window.innerWidth * SCALE);
+const h = Math.round(window.innerHeight * SCALE);
 
 const [wh, hh] = [w, h].map(a => a / 2);
+
+const pixelsNum = w * h;
+var pixelsPerFrame = 1e3;
 
 const g = createContext();
 const imgd = g.createImageData(w, h);
 const {data} = imgd;
 
-const cam = new Camera(0, 0, 0, 0, 0, 0, 0, 0, 0);
+const pixels = [];
+var pixelIndex = 0;
+
+const cam = new Camera(5, -10, -22, 0, 0, 0, 0, 0);
 const {vel} = cam;
+
+const text = createText(O.projectToName(O.project));
+
+var time = Date.now();
 
 window.setTimeout(main);
 
@@ -27,6 +42,14 @@ function main(){
 
   for(var i = 3; i < data.length; i += 4)
     data[i] = 255;
+
+  for(var i = 0, y = 0; y !== h; y++){
+    for(var x = 0; x !== w; x++, i += 4){
+      pixels.push([(x - wh) / wh, (y - hh) / wh, i]);
+    }
+  }
+
+  O.shuffle(pixels);
 
   aels();
   render();
@@ -82,34 +105,98 @@ function createContext(){
   return canvas.getContext('2d');
 }
 
-function render(){
-  cam.tick();
+function createText(str){
+  const canvas = O.doc.createElement('canvas');
+  const g = canvas.getContext('2d');
+  const size = 15;
 
-  const {x: cx, y: cy, z: cz, yaw, pitch} = cam;
+  g.font = `${size}px Arial`;
+  var w = Math.ceil(g.measureText(str).width) + 10;
+  var h = size + 10;
+
+  canvas.width = w;
+  canvas.height = h;
+
+  g.font = `${size}px Arial`;
+  g.textBaseline = 'top';
+  g.textAlign = 'left';
+
+  g.fillText(str, 5, 5);
+  var data = g.getImageData(0, 0, w, h).data;
+
+  var map = new O.Map2D();
+
+  for(var i = 0, y = 0; y !== h; y++){
+    for(var x = 0; x !== w; x++, i += 4){
+      if(data[i + 3] > 123 || x === 0 || y === 0 || x === w - 1 || y === h - 1)
+        map.add(x, y);
+    }
+  }
+
+  return map;
+}
+
+function render(t){
+  if((t - time) > targetDt){
+    pixelsPerFrame /= 1.1;
+  }else{
+    pixelsPerFrame *= 1.1;
+  }
+
+  pixelsPerFrame = Math.round(pixelsPerFrame);
+  if(pixelsPerFrame > pixelsNum) pixelsPerFrame = pixelsNum;
+
+  time = t;
+
+  cam.tick();
+  const {x: camX, y: camY, z: camZ, yaw, pitch} = cam;
+
+  const sx = Math.sin(pitch);
+  const cx = Math.cos(pitch);
+  const sy = Math.sin(yaw);
+  const cy = Math.cos(yaw);
 
   const ray = new Ray(0, 0, 0, 0, 0, 0);
   const vec = new Vector(0, 0, 0);
 
-  for(var i = 0, yy = 0; yy !== h; yy++){
-    for(var xx = 0; xx !== w; xx++, i += 4){
-      vec.set_((xx - wh) / wh, (yy - hh) / wh, 1).
-        rot_(pitch, yaw, 0).
-        setLen(1);
+  for(let i = 0; i !== pixelsPerFrame; i++){
+    const pixelData = pixels[pixelIndex++];
+    if(pixelIndex === pixelsNum) pixelIndex = 0;
 
-      ray.reset(cam.x, cam.y, cam.z, vec.x, vec.y, vec.z);
+    const xx = pixelData[0];
+    const yy = pixelData[1];
+    const i = pixelData[2];
 
-      data[i] = 0;
-      data[i + 1] = 0;
-      data[i + 2] = 0;
+    vec.set_(xx, yy, 1).rotsc_(sx, cx, sy, cy, 0, 1).setLen(1);
+    ray.reset(camX, camY, camZ, vec.x, vec.y, vec.z);
 
-      for(var j = 0; j !== 100; j++){
-        ray.move();
-        var {x, y, z} = ray;
+    data[i] = 0;
+    data[i + 1] = 0;
+    data[i + 2] = 0;
 
-        if((x ^ y ^ z) === 0){
-          data[i + Math.abs(ray.dir) - 1] = ray.dir > 0 ? 255 : 128;
+    for(var j = 0; j !== VIEW_DISTANCE; j++){
+      ray.move();
+      var {x, y, z} = ray;
+
+      if(
+        x === 10 && text.has(-z, y + 10) ||
+        x === -20 || x === 20 ||
+        y === -20 || y === 20 ||
+        z === 10 || z === -100
+      ){
+        var k = 1 - j / VIEW_DISTANCE;
+
+        if(x === 10 && text.has(-z, y + 10)){
+          data[i] = 255 * k;
+          data[i + 1] = 255 * k;
+          data[i + 2] = 255 * k;
           break;
         }
+
+        var col = (ray.dir > 0 ? 255 : 128) * k;
+        data[i + Math.abs(ray.dir) - 1] = col;
+
+        break;
       }
     }
   }
