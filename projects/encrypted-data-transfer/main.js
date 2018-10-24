@@ -3,7 +3,7 @@
 const dom = require('./dom');
 
 const REMOTE = 1;
-const VERSION = 5;
+const VERSION = 6;
 
 const UPDATE_INTERVAL = 1e3;
 const RETRY_NUM = 5;
@@ -16,8 +16,6 @@ var pass = null;
 window.setTimeout(main);
 
 async function main(){
-  return;
-  
   await injectStyle();
   await ping();
 
