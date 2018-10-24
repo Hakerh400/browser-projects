@@ -9,7 +9,7 @@
       init: function(){
         var noscript = document.querySelector('noscript');
 
-        if(navigator.vendor != 'Google Inc.'){
+        if(window.navigator.vendor != 'Google Inc.'){
           var html = noscript.innerHTML.split(/\r\n|\r|\n/);
           html = html.map(function(a){ return a.trim(); });
           html = html.filter(function(a){ return a.length; });

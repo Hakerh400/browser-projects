@@ -4,10 +4,16 @@ const Vector = require('./vector');
 const Ray = require('./ray');
 const Camera = require('./camera');
 
-const SCALE = .2;
-const VIEW_DISTANCE = 100;
-const TARGET_FPS = 55;
-const CAM_SPEED = .5;
+const IS_BROWSER = O.env === 'browser';
+const IS_NODE = O.env === 'node';
+
+const STABILIZE_FPS = IS_BROWSER;
+const USE_BUFF = IS_NODE;
+
+const SCALE = IS_BROWSER ? .2 : 1;
+const VIEW_DISTANCE = IS_BROWSER ? 100 : 100;
+const TARGET_FPS = IS_BROWSER ? 50 : 30;
+const CAM_SPEED = IS_BROWSER ? .5 : .05;
 
 const targetDt = 1e3 / TARGET_FPS;
 
@@ -17,7 +23,7 @@ const h = Math.round(window.innerHeight * SCALE);
 const [wh, hh] = [w, h].map(a => a / 2);
 
 const pixelsNum = w * h;
-var pixelsPerFrame = 1e3;
+var pixelsPerFrame = STABILIZE_FPS ? 1e3 : pixelsNum;
 
 const g = createContext();
 const imgd = g.createImageData(w, h);
@@ -26,12 +32,12 @@ const {data} = imgd;
 const pixels = [];
 var pixelIndex = 0;
 
-const cam = new Camera(5, -10, -22, 0, 0, 0, 0, 0);
+const cam = new Camera(100.5, 100.5, 100.5, 0, O.pi / 3, Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE);
 const {vel} = cam;
 
-const text = createText(O.projectToName(O.project));
-
 var time = Date.now();
+
+var buff = null;
 
 window.setTimeout(main);
 
@@ -52,7 +58,7 @@ function main(){
   O.shuffle(pixels);
 
   aels();
-  render();
+  O.raf(render);
 }
 
 function aels(){
@@ -92,6 +98,14 @@ function aels(){
       case 'ShiftLeft': vel.y = 0; break;
     }
   });
+
+  O.ael('_msg', evt => {
+    switch(evt.type){
+      case 'setBuff':
+        buff = evt.buff;
+        break;
+    }
+  });
 }
 
 function createContext(){
@@ -105,48 +119,16 @@ function createContext(){
   return canvas.getContext('2d');
 }
 
-function createText(str){
-  const canvas = O.doc.createElement('canvas');
-  const g = canvas.getContext('2d');
-  const size = 15;
-
-  g.font = `${size}px Arial`;
-  var w = Math.ceil(g.measureText(str).width) + 10;
-  var h = size + 10;
-
-  canvas.width = w;
-  canvas.height = h;
-
-  g.font = `${size}px Arial`;
-  g.textBaseline = 'top';
-  g.textAlign = 'left';
-
-  g.fillText(str, 5, 5);
-  var data = g.getImageData(0, 0, w, h).data;
-
-  var map = new O.Map2D();
-
-  for(var i = 0, y = 0; y !== h; y++){
-    for(var x = 0; x !== w; x++, i += 4){
-      if(data[i + 3] > 123 || x === 0 || y === 0 || x === w - 1 || y === h - 1)
-        map.add(x, y);
-    }
-  }
-
-  return map;
-}
-
 function render(t){
-  if((t - time) > targetDt){
-    pixelsPerFrame /= 1.1;
-  }else{
-    pixelsPerFrame *= 1.1;
+  if(STABILIZE_FPS){
+    if((t - time) > targetDt) pixelsPerFrame /= 1.1;
+    else pixelsPerFrame *= 1.1;
+
+    pixelsPerFrame = Math.round(pixelsPerFrame);
+    if(pixelsPerFrame > pixelsNum) pixelsPerFrame = pixelsNum;
+
+    time = t;
   }
-
-  pixelsPerFrame = Math.round(pixelsPerFrame);
-  if(pixelsPerFrame > pixelsNum) pixelsPerFrame = pixelsNum;
-
-  time = t;
 
   cam.tick();
   const {x: camX, y: camY, z: camZ, yaw, pitch} = cam;
@@ -159,6 +141,8 @@ function render(t){
   const ray = new Ray(0, 0, 0, 0, 0, 0);
   const vec = new Vector(0, 0, 0);
 
+  const d = USE_BUFF ? buff : data;
+
   for(let i = 0; i !== pixelsPerFrame; i++){
     const pixelData = pixels[pixelIndex++];
     if(pixelIndex === pixelsNum) pixelIndex = 0;
@@ -167,41 +151,37 @@ function render(t){
     const yy = pixelData[1];
     const i = pixelData[2];
 
+    const col = new Uint8Array(3);
+
     vec.set_(xx, yy, 1).rotsc_(sx, cx, sy, cy, 0, 1).setLen(1);
     ray.reset(camX, camY, camZ, vec.x, vec.y, vec.z);
 
-    data[i] = 0;
-    data[i + 1] = 0;
-    data[i + 2] = 0;
+    d[i] = 0;
+    d[i + 1] = 0;
+    d[i + 2] = 0;
 
     for(var j = 0; j !== VIEW_DISTANCE; j++){
       ray.move();
       var {x, y, z} = ray;
 
       if(
-        x === 10 && text.has(-z, y + 10) ||
-        x === -20 || x === 20 ||
-        y === -20 || y === 20 ||
-        z === 10 || z === -100
+        ((x * y + z ^ y * z + x ^ z * x + y) & Math.sin(x ^ y ^ z) * 255) === 0
       ){
         var k = 1 - j / VIEW_DISTANCE;
+        var kk = (ray.dir - 1) / 4 + Math.sin(x) + Math.sin(y) + Math.sin(z);
+        O.hsv((kk % 1 + 1) % 1, col);
 
-        if(x === 10 && text.has(-z, y + 10)){
-          data[i] = 255 * k;
-          data[i + 1] = 255 * k;
-          data[i + 2] = 255 * k;
-          break;
-        }
-
-        var col = (ray.dir > 0 ? 255 : 128) * k;
-        data[i + Math.abs(ray.dir) - 1] = col;
+        d[i] = col[0] * k;
+        d[i + 1] = col[1] * k;
+        d[i + 2] = col[2] * k;
 
         break;
       }
     }
   }
 
-  g.putImageData(imgd, 0, 0);
+  if(!USE_BUFF)
+    g.putImageData(imgd, 0, 0);
 
   O.raf(render);
 }

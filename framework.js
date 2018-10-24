@@ -61,7 +61,7 @@ var O = {
     var isNode = O.isNode = env === 'node';
 
     if(isBrowser){
-      if(navigator.vendor !== 'Google Inc.')
+      if(global.navigator.vendor !== 'Google Inc.')
         return O.error('Please use Chrome.');
     }
 
