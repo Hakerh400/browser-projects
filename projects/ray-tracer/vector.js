@@ -42,16 +42,16 @@ class Vector{
   lt_(x, y, z){ return this.x < x && this.y < y && this.z < z; }
   gt_(x, y, z){ return this.x > x && this.y > y && this.z > z; }
 
-  set(v){ return this.set_(v[0], v[1], v[2]); }
-  dist(v){ return this.dist_(v[0], v[1], v[2]); }
-  dists(v){ return this.dists_(v[0], v[1], v[2]); }
-  distm(v){ return this.distm_(v[0], v[1], v[2]); }
-  add(v){ return this.add_(v[0], v[1], v[2]); }
-  sub(v){ return this.sub_(v[0], v[1], v[2]); }
-  rot(v){ return this.rot_(v[0], v[1], v[2]); }
-  rotn(v){ return this.rotn_(v[0], v[1], v[2]); }
-  lt(v){ return this.lt_(v[0], v[1], v[2]); }
-  gt(v){ return this.gt_(v[0], v[1], v[2]); }
+  set(v){ return this.set_(v.x, v.y, v.z); }
+  dist(v){ return this.dist_(v.x, v.y, v.z); }
+  dists(v){ return this.dists_(v.x, v.y, v.z); }
+  distm(v){ return this.distm_(v.x, v.y, v.z); }
+  add(v){ return this.add_(v.x, v.y, v.z); }
+  sub(v){ return this.sub_(v.x, v.y, v.z); }
+  rot(v){ return this.rot_(v.x, v.y, v.z); }
+  rotn(v){ return this.rotn_(v.x, v.y, v.z); }
+  lt(v){ return this.lt_(v.x, v.y, v.z); }
+  gt(v){ return this.gt_(v.x, v.y, v.z); }
 };
 
 module.exports = Vector;
