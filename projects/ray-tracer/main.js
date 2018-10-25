@@ -12,7 +12,7 @@ const USE_BUFF = IS_NODE;
 
 const SCALE = IS_BROWSER ? .2 : 1;
 const VIEW_DISTANCE = IS_BROWSER ? 100 : 100;
-const TARGET_FPS = IS_BROWSER ? 50 : 30;
+const TARGET_FPS = IS_BROWSER ? 30 : 30;
 const CAM_SPEED = IS_BROWSER ? .5 : .05;
 
 const targetDt = 1e3 / TARGET_FPS;
@@ -32,10 +32,11 @@ const {data} = imgd;
 const pixels = [];
 var pixelIndex = 0;
 
-const cam = new Camera(O.randf(-100, 100), O.randf(-100, 100), O.randf(-100, 100), 0, O.randf(O.pi2), Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE);
+const cam = new Camera(O.randf(-5, 5), O.randf(-5, 5), O.randf(-5, 5), O.randf(-O.pih, O.pih), O.randf(O.pi2), Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE);
 const {vel} = cam;
 
-const funcs = O.ca(3, createFunc);
+const func = createFunc();
+const blocks = new O.Map3D();
 
 var time = Date.now();
 
@@ -87,6 +88,7 @@ function aels(){
       case 'KeyD': vel.x = CAM_SPEED; break;
       case 'Space': vel.y = -CAM_SPEED; break;
       case 'ShiftLeft': vel.y = CAM_SPEED; break;
+      case 'KeyE': prompt(getCode(), getCode()); break;
     }
   });
 
@@ -122,22 +124,55 @@ function createContext(){
 }
 
 function createFunc(){
-  while(1){
-    try{
-      var code = `return(${elem()})<(${elem()})`;
-      break;
-    }catch{}
+  return (x, y, z, t) => {
+    return (
+      (
+        (y <= 0)
+      ) || (
+        (y === 1) &&
+        ((t % x ^ t % z) === 0)
+      )
+    );
+  };
+
+  const arr = [];
+
+  while(arr.length !== 20){
+    while(1){
+      try{
+        var expr1 = elem();
+        if(expr1.length < 100) continue;
+        
+        var expr2 = elem();
+        if(expr2.length < 100) continue;
+
+        arr.push(`(${expr1})<(${expr2})`);
+        break;
+      }catch{
+        continue;
+      }
+    }
   }
 
-  var func = new Function('x', 'y', 'z', code);
+  const code = `return${arr.join('^')}`;
+  const func = new Function('x', 'y', 'z', code);
 
   return func;
 
   function elem(){
     if(r()){
-      var op = e(['', '-', '~', '!']);
-      var n = r() ? e(['x', 'y', 'z']) : +String(O.randf(-20, 20).toFixed(3));
-      return op ? `${op}(${n})` : n;
+      var type = O.rand(3);
+      var opnd;
+
+      if(type === 0){
+        opnd = String(+O.randf(-20, 20).toFixed(3));
+      }else if(type === 1){
+        opnd = e(['x', 'y', 'z']);
+      }else if(type === 2){
+        opnd = 'Math.random()';
+      }
+
+      return op ? `${op}(${opnd})` : opnd;
     }
 
     var type = O.rand(4);
@@ -193,14 +228,20 @@ function createFunc(){
 
 function render(t){
   if(STABILIZE_FPS){
-    if((t - time) > targetDt) pixelsPerFrame /= 1.1;
-    else pixelsPerFrame *= 1.1;
+    const fps = Math.round(t - time);
+
+    if(fps !== TARGET_FPS){
+      if(fps > targetDt) pixelsPerFrame /= 1.1;
+      else pixelsPerFrame *= 1.1;
+    }
 
     pixelsPerFrame = Math.round(pixelsPerFrame);
     if(pixelsPerFrame > pixelsNum) pixelsPerFrame = pixelsNum;
 
     time = t;
   }
+
+  t /= 1e3;
 
   cam.tick();
   const {x: camX, y: camY, z: camZ, yaw, pitch} = cam;
@@ -236,14 +277,34 @@ function render(t){
       ray.move();
       var {x, y, z} = ray;
 
-      var m = 0;
-      for(var v = 0; v !== funcs.length; v++)
-        m ^= funcs[v](x, y, z);
+      /*if(blocks.has(x, y, z)){
+        var m = blocks.get(x, y, z) === 2;
+      }else{
+        var m = func(x, y, z);
+        blocks.set(x, y, z, m ? 2 : 1);
+      }*/
 
-      if(m){
+      if(func(x, -y, z, t)){
+        const {dir} = ray;
+        const adir = dir & 3;
+
         var k = 1 - j / VIEW_DISTANCE;
-        var kk = (ray.dir - 1) / 4 + Math.sin(x) + Math.sin(y) + Math.sin(z);
-        O.hsv((kk % 1 + 1) % 1, col);
+
+        if((x ^ y ^ z) & 1){
+          col[0] = ((y & 7) << 4) + (adir === 1) * ((y & 7) << 4);
+          col[1] = 128 + (adir === 2) * 128;
+          col[2] = 128 + (adir === 3) * 128;
+        }else{
+          col[0] = ((y & 7) << 4) + (adir === 2) * ((y & 7) << 4);
+          col[1] = 128 + (adir === 3) * 128;
+          col[2] = 128 + (adir === 1) * 128;
+        }
+
+        if(dir < 0){
+          col[0] >>= 1;
+          col[1] >>= 1;
+          col[2] >>= 1;
+        }
 
         d[i] = col[0] * k;
         d[i + 1] = col[1] * k;
@@ -258,6 +319,13 @@ function render(t){
     g.putImageData(imgd, 0, 0);
 
   O.raf(render);
+}
+
+function getCode(){
+  var lines = O.sanl(func.toString()).slice(2);
+  lines.pop();
+
+  return lines.join('\n').substring(6);
 }
 
 function isCurLocked(){

@@ -1421,10 +1421,77 @@ var O = {
 
       O.keys(d).forEach(y => {
         y |= 0;
-
         O.keys(d[y]).forEach(x => {
           x |= 0;
           arr.push([x, y]);
+        });
+      });
+
+      return arr;
+    }
+  },
+
+  Map3D: class{
+    constructor(x=null, y=null, z = null, val=1){
+      this.d = O.obj();
+
+      if(x !== null)
+        this.add(x, y, z, val);
+    }
+
+    get(x, y, z){
+      if(!this.has(x, y, z)) return null;
+      return this.d[z][y][x];
+    }
+
+    set(x, y, z, val=1){
+      var {d} = this;
+
+      if(!(z in d)) d[z] = O.obj();
+      d = d[z];
+
+      if(!(y in d)) d[y] = O.obj();
+      d[y][x] = val;
+    }
+
+    add(x, y, z, val=1){
+      this.set(x, y, z, val);
+    }
+
+    remove(x, y, z){
+      var {d} = this;
+
+      if(!(z in d)) return;
+      d = d[z];
+
+      if(!(y in d)) return;
+      delete d[y][x];
+    }
+
+    has(x, y, z){
+      var {d} = this;
+
+      if(!(z in d)) return 0;
+      d = d[z];
+
+      
+      if(!(y in d)) return 0;
+      return d[y][x];
+    }
+
+    getArr(){
+      var {d} = this;
+
+      var arr = [];
+
+      O.keys(d).forEach(z => {
+        z |= 0;
+        O.keys(d = d[z]).forEach(y => {
+          y |= 0;
+          O.keys(d[y]).forEach(x => {
+            x |= 0;
+            arr.push([x, y, z]);
+          });
         });
       });
 
