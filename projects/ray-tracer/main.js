@@ -32,8 +32,10 @@ const {data} = imgd;
 const pixels = [];
 var pixelIndex = 0;
 
-const cam = new Camera(100.5, 100.5, 100.5, 0, O.pi / 3, Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE);
+const cam = new Camera(O.randf(-100, 100), O.randf(-100, 100), O.randf(-100, 100), 0, O.randf(O.pi2), Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE);
 const {vel} = cam;
+
+const funcs = O.ca(3, createFunc);
 
 var time = Date.now();
 
@@ -119,6 +121,76 @@ function createContext(){
   return canvas.getContext('2d');
 }
 
+function createFunc(){
+  while(1){
+    try{
+      var code = `return(${elem()})<(${elem()})`;
+      break;
+    }catch{}
+  }
+
+  var func = new Function('x', 'y', 'z', code);
+
+  return func;
+
+  function elem(){
+    if(r()){
+      var op = e(['', '-', '~', '!']);
+      var n = r() ? e(['x', 'y', 'z']) : +String(O.randf(-20, 20).toFixed(3));
+      return op ? `${op}(${n})` : n;
+    }
+
+    var type = O.rand(4);
+
+    if(type === 0){
+      var op = e([
+        '+', '-', '/', '*', '%', '**',
+        '<', '>', '<=', '>=', '==', '!==',
+        '<<', '>>', '>>>',
+        '&', '|', '^',
+        '&&', '||',
+      ]);
+      return `(${elem()})${op}(${elem()})`;
+    }
+
+    if(type === 1){
+      var func = e([
+        'abs', 'acos', 'acosh', 'asin', 'asinh',
+        'atan', 'atanh', 'cbrt', 'ceil', 'clz32',
+        'cos', 'cosh', 'exp', 'expm1', 'floor',
+        'fround', 'log', 'log1p', 'log10', 'log2',
+        'round', 'sign', 'sin', 'sinh', 'sqrt',
+        'tan', 'tanh', 'trunc',
+      ]);
+      return `Math.${func}(${elem()})`;
+    }
+
+    if(type === 2){
+      var func = e([
+        'atan2', 'imul', 'pow',
+      ]);
+      return `Math.${func}(${elem()},${elem()})`;
+    }
+
+    if(type === 3){
+      if(r()) return `(${elem()})<(${elem()})?(${elem()}):(${elem()})`;
+      var func = e([
+        'hypot', 'max', 'min',
+      ]);
+      var opnds = O.ca(O.randInt(2, .5), () => elem());
+      return `Math.${func}(${opnds.join(',')})`;
+    }
+  }
+
+  function e(arr){
+    return O.randElem(arr);
+  }
+
+  function r(v){
+    return O.rand(v);
+  }
+}
+
 function render(t){
   if(STABILIZE_FPS){
     if((t - time) > targetDt) pixelsPerFrame /= 1.1;
@@ -164,9 +236,11 @@ function render(t){
       ray.move();
       var {x, y, z} = ray;
 
-      if(
-        ((x * y + z ^ y * z + x ^ z * x + y) & Math.sin(x ^ y ^ z) * 255) === 0
-      ){
+      var m = 0;
+      for(var v = 0; v !== funcs.length; v++)
+        m ^= funcs[v](x, y, z);
+
+      if(m){
         var k = 1 - j / VIEW_DISTANCE;
         var kk = (ray.dir - 1) / 4 + Math.sin(x) + Math.sin(y) + Math.sin(z);
         O.hsv((kk % 1 + 1) % 1, col);
