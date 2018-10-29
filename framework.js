@@ -538,6 +538,15 @@ var O = {
     return arr;
   },
 
+  async caa(len, func){
+    var arr = [];
+
+    for(var i = 0; i !== len; i++)
+      arr.push(await func(i));
+
+    return arr;
+  },
+
   shuffle(arr){
     var len = arr.length;
 
@@ -547,9 +556,30 @@ var O = {
       arr[i] = arr[j];
       arr[j] = t;
     }
-    
+
     return arr;
   },
+
+  flatten(arr){
+    var a = [];
+
+    arr = arr.slice();
+
+    while(arr.length !== 0){
+      var e = arr.shift();
+
+      if(!Array.isArray(e)){
+        a.push(e);
+        continue;
+      }
+
+      e.forEach((a, b) => arr.splice(b, 0, a));
+    }
+
+    return a;
+  },
+
+  last(arr){ return arr[arr.length - 1]; },
 
   /*
     Other functions
@@ -610,6 +640,10 @@ var O = {
 
   repeat(num, func){
     for(var i = 0; i !== num; i++) func(i);
+  },
+
+  async repeata(num, func){
+    for(var i = 0; i !== num; i++) await func(i);
   },
 
   bound(val, min, max){
