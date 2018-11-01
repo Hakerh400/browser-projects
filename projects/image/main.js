@@ -4,19 +4,7 @@ var format = 'png';
 var imageFile = `/projects/${O.project}/1.${format}`;
 
 var image = null;
-var loaded = false;
-
-addEventListener('keydown', evt => {
-  if(!loaded) return;
-
-  switch(evt.key){
-    case 'F5':
-      evt.preventDefault();
-      loaded = false;
-      image.src = O.urlTime(imageFile);
-      break;
-  }
-});
+var loaded = 0;
 
 window.setTimeout(main);
 
@@ -30,6 +18,22 @@ function main(){
   image.style.top = '50%';
   image.style.left = '50%';
   image.style.transform = 'translate(-50%, -50%)';
-  image.addEventListener('load', () => { loaded = true; });
+  image.addEventListener('load', () => { loaded = 1; });
   image.src = O.urlTime(imageFile);
+
+  aels();
+}
+
+function aels(){
+  O.ael('keydown', evt => {
+    if(!loaded) return;
+
+    switch(evt.key){
+      case 'F5':
+        evt.preventDefault();
+        loaded = 0;
+        image.src = O.urlTime(imageFile);
+        break;
+    }
+  });
 }

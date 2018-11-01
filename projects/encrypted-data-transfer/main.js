@@ -1,15 +1,19 @@
 'use strict';
 
+O.ceText(O.ce(O.body, 'h1'), 'Loading...');
+
 const dom = require('./dom');
 
 const REMOTE = 1;
-const VERSION = 6;
+const VERSION = 8;
 
 const UPDATE_INTERVAL = 1e3;
 const RETRY_NUM = 5;
 
 const URL = REMOTE ? 'https://e8kkzbh-encrypted-data-transfer.193b.starter-ca-central-1.openshiftapps.com/'
                    : 'http://localhost:8080/';
+
+const ERR_MSG = null;
 
 var pass = null;
 
@@ -18,9 +22,12 @@ window.setTimeout(main);
 async function main(){
   await injectStyle();
   await ping();
+  O.body.innerHTML = '';
 
   pass = await getPass();
+
   displayMsgs();
+  displayErrMsg();
 
   var form = dom.form();
   form.input('name', 'Your name');
@@ -158,6 +165,11 @@ function formatMsg(elem, str){
 
   if(str.length !== 0)
     O.ceText(elem, str);
+}
+
+function displayErrMsg(){
+  if(ERR_MSG === null) return;
+  dom.err(`ERROR: ${ERR_MSG}`);
 }
 
 function encrypt(str){
