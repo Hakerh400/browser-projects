@@ -1418,6 +1418,11 @@ var O = {
         this.add(x, y, val);
     }
 
+    reset(){
+      this.d = O.obj();
+      return this;
+    }
+
     get(x, y){
       if(!this.has(x, y)) return null;
       return this.d[y][x];

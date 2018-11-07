@@ -4,77 +4,125 @@ const ExpandableGrid = require('./expandable-grid');
 const Tile = require('./tile');
 const CoordinatesCollection = require('./coords');
 
-var {stats} = Tile;
+const {stats} = Tile;
 
 class LandGrid extends ExpandableGrid{
   constructor(w, h, func=null, x=0, y=0){
     super(w, h, func, x, y);
 
-    this.set(0, 0, Tile.initial());
+    this.generatingTiles = new CoordinatesCollection();
+    this.activeTiles = new CoordinatesCollection();
+
+    var initialTile = Tile.initial();
+    this.set(0, 0, initialTile);
+    this.generatingTiles.add(0, 0); // TODO: move this line to the overriden set() method
   }
 
   tick(){
-    var genColl = new CoordinatesCollection();
-    var cs = [0, 0];
+    this.expandRandTile();
 
-    this.iterate(1, (x, y, d) => {
-      if(d === null) return;
-
-      if(d.status === stats.GENERATING) genColl.add(x, y);
-    });
-
-    while(!genColl.isEmpty()){
-      var [x, y] = genColl.rand(cs);
-      if(!this.isVisible(x, y, 1)) continue;
-
+    this.activeTiles.forEach((x, y) => {
       var d = this.get(x, y);
-      if(d.status !== stats.GENERATING) continue;
-
-      var {sti, dirs} = d;
-
-      do{
-        var dir = randDir(dirs);
-        dirs &= ~(1 << dir);
-
-        dir = dir + 2 & 3;
-        var x1 = x, y1 = y;
-
-        if(dir === 0) y1--;
-        else if(dir === 1) x1++;
-        else if(dir === 2) y1++;
-        else if(dir === 3) x1--;
-
-        var dNew = this.get(x1, y1);
-
-        if(dNew === null){
-          dNew = new Tile();
-          this.set(x1, y1, dNew);
-        }else if(dNew.status === stats.DONE){
-          continue;
-        }
-
-        dNew.update(d, sti, dir);
-        if(dNew.status === stats.GENERATING && this.isVisible(x1, y1, 1))
-          genColl.add(x1, y1);
-      }while(dirs !== 0);
-
-      d.setDirs(0);
-      if(d.status === stats.GENERATING) genColl.add(x, y);
-
-      break;
-    }
+      //d.tick();
+    });
   }
 
   draw(x, y, g){
     this.iterate(x, y, (x, y, d) => {
       if(d === null) return;
-      //if(d.status === stats.GENERATING) return;
-      //if(d.status === stats.READY) d.done();
+      d.draw(g);
+      return;
+      if(d === null || d.status !== stats.READY)
+        return;
 
       g.translate(x, y);
       d.draw(g);
       g.translate(-x, -y);
     });
+  }
+
+  generate(){
+    var nullTilesNum = 0;
+
+    this.iterate(1, (x, y, d) => {
+      if(d === null) nullTilesNum++;
+    });
+
+    while(nullTilesNum !== 0){
+      if(this.expandRandTile(1))
+        nullTilesNum--;
+    }
+
+    this.updateTiles();
+  }
+
+  expandRandTile(includeNulls=0){
+    var tiles = this.generatingTiles;
+    if(tiles.isEmpty()) return;
+
+    var v = new O.Vector();
+    tiles.rand(v);
+
+    var d = this.get(v);
+    var dir = randDir(d.dirs);
+    ndir(v, dir);
+
+    var d1 = this.get(v);
+    if(!includeNulls && d1 === null) return;
+    if(!this.isVisible(v, 1)) return;
+
+    var newTile = d.expand(dir, d1);
+    this.set(v, newTile);
+
+    if(includeNulls) return d1 === null;
+  }
+
+  set(x, y, d){
+    var gen = this.generatingTiles;
+    var act = this.activeTiles;
+
+    var old = this.get(x, y);
+    if(old !== null){
+      if(old.status === stats.GENERATING) gen.remove(x, y);
+      if(old.active) act.remove(x, y);
+    }
+
+    if(d.status === stats.GENERATING) gen.add(x, y);
+    if(d.active) act.add(x, y);
+
+    return super.set(x, y, d);
+  }
+
+  onMove(){
+    this.updateTiles(1);
+  }
+
+  updateTiles(reqGen=0){
+    // TODO: iterate only through edges, not on the whole visible region,
+    // except in case resetting is explicitly required
+
+    var gen = this.generatingTiles.reset();
+    var act = this.activeTiles.reset();
+    var shouldGenerate = 0;
+
+    this.iterate(1, (x, y, d) => {
+      if(d === null){
+        if(reqGen && this.isVisible(x, y))
+          shouldGenerate = 1;
+        return;
+      }
+
+      if(d.status === stats.GENERATING){
+        gen.add(x, y);
+        return;
+      }
+
+      if(d.active) act.add(x, y);
+      if(d.status === stats.READY && this.isVisible(x, y)) d.done();
+    });
+
+    if(shouldGenerate)
+      this.generate();
   }
 };
 
@@ -90,4 +138,17 @@ function randDir(dirs){
   }
 
   return i;
+}
+
+function ndir(vec, dir){
+  var {x, y} = vec;
+
+  switch(dir){
+    case 0: y--; break;
+    case 1: x++; break;
+    case 2: y++; break;
+    case 3: x--; break;
+  }
+
+  return vec.set(x, y);
 }

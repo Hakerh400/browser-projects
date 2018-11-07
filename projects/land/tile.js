@@ -25,6 +25,8 @@ class Tile{
 
     this.sti = -1;
     this.dirs = 0;
+
+    this.active = 0;
   }
 
   static initial(){
@@ -36,17 +38,26 @@ class Tile{
     return d;
   }
 
-  tick(){}
+  tick(){
+    `
+    assert that it is active
+    delegate tick() to the content
+    `
+  }
 
   draw(g){
-    var {content} = this;
+    g.fillStyle = ['#f00', '#ff0', '#0f0'][this.status];
+    g.fillRect(0, 0, 1, 1);
+    return;
+
+    /*var {content} = this;
 
     if(content === null){
       var contentArr = this.structs.map(st => st.content);
       content = TileContent.concat(contentArr, 0);
     }
 
-    content.draw(g);
+    content.draw(g);*/
   }
 
   addStruct(st){
@@ -73,13 +84,7 @@ class Tile{
     this.updateStatus();
   }
 
-  /*
-    prev - The tile that requested generating this tile
-    sti  - Index of the structure that performed the request
-    dir  - Direction to the "prev" relative to this tile
-  */
-
-  update(prev, sti, dir){
+  /*update(prev, sti, dir){
     if(this.status === stats.DONE) err('update');
     var {structs} = this;
     var structsPrev = prev.structs;
@@ -135,6 +140,10 @@ class Tile{
     }
 
     this.addStructs(newSts);
+  }*/
+
+  expand(dir, d){
+    
   }
 
   updateStatus(){
@@ -164,6 +173,8 @@ class Tile{
 
     this.structs = null;
     this.status = stats.DONE;
+
+    return this;
   }
 };
 
@@ -185,5 +196,6 @@ function commonCtor(stPrev, st){
 }
 
 function err(msg){
+  // TODO: Remove this and all checks
   throw new Error(msg);
 }

@@ -48,26 +48,31 @@ class ExpandableGrid extends O.SimpleGrid{
 
     for(var y = y1; y !== y2; y++)
       for(var x = x1; x !== x2; x++)
-        func(x, y, this.get(x, y));
+        if(func(x, y, this.get(x, y)) === null)
+          return;
   }
 
   get(x, y){
+    if(x instanceof O.Vector) ({x, y} = x);
     if(!this.includes(x, y)) return null;
     return this.d[y][x];
   }
 
   set(x, y, val){
+    if(x instanceof O.Vector) (val = y, {x, y} = x);
     var {d} = this;
     if(!(y in d)) d[y] = O.obj();
     d[y][x] = val;
   }
 
   includes(x, y){
+    if(x instanceof O.Vector) ({x, y} = x);
     var {d} = this;
     return y in d && x in d[y];
   }
 
   isVisible(x, y, expanded=0){
+    if(x instanceof O.Vector) (expanded = y, {x, y} = x);
     var {w, h, x: xs, y: ys} = this;
 
     if(!expanded){
@@ -82,6 +87,7 @@ class ExpandableGrid extends O.SimpleGrid{
   }
 
   adjNum(x, y){
+    if(x instanceof O.Vector) ({x, y} = x);
     var num = 0;
 
     this.adj(x, y, (x, y, d) => {
@@ -92,9 +98,13 @@ class ExpandableGrid extends O.SimpleGrid{
   }
 
   move(x, y){
+    if(x instanceof O.Vector) ({x, y} = x);
     this.x += x;
     this.y += y;
+    this.onMove();
   }
+
+  onMove(){}
 };
 
 module.exports = ExpandableGrid;
