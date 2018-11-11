@@ -108,4 +108,8 @@ class Tree extends objs.Wall{
   }
 };
 
+Meadow.Forest = Forest;
+Meadow.Grass = Grass;
+Meadow.Tree = Tree;
+
 module.exports = Meadow;

@@ -14,8 +14,6 @@ const stats = O.enum([
 
 initStructs();
 
-var z = require('./structs');
-
 class Tile{
   constructor(){
     this.status = stats.READY;
@@ -35,44 +33,68 @@ class Tile{
     var st = new initialBiome();
     d.addStruct(st);
 
+    if(O.rand(100) === 0){
+      var forest = new biomes.Meadow.Forest();
+      forest.content.set(new biomes.Meadow.Tree());
+      d.addStruct(forest);
+    }
+
     return d;
   }
 
   tick(){
-    `
-    assert that it is active
-    delegate tick() to the content
-    `
+    if(!this.active) err('tick');
+    this.content.tick();
   }
 
   draw(g){
-    g.fillStyle = ['#f00', '#ff0', '#0f0'][this.status];
+    /*const {dirs} = this;
+    g.fillStyle = ['#f00', '#f80', '#ff0', '#0f0', '#0ff'][4 - (
+      (dirs & 1) +
+      ((dirs >> 1) & 1) +
+      ((dirs >> 2) & 1) +
+      ((dirs >> 3) & 1)
+    )];
     g.fillRect(0, 0, 1, 1);
-    return;
+    return;*/
 
-    /*var {content} = this;
+    var {content} = this;
 
     if(content === null){
       var contentArr = this.structs.map(st => st.content);
       content = TileContent.concat(contentArr, 0);
     }
 
-    content.draw(g);*/
+    content.draw(g);
+  }
+
+  expand(dir, d){
+    if(this.status === stats.DONE) err('expand 1');
+    if((this.dirs & (1 << dir)) === 0) err('expand 2');
+
+    var {sti} = this;
+    this.structs[sti].dirs &= ~(1 << dir);
+    this.updateStatus();
+
+    if(d === null) d = new Tile();
+    if(d.status === stats.DONE) return d;
+
+    return Tile.initial();
   }
 
   addStruct(st){
     if(this.status === stats.DONE) err('addStruct');
 
     this.structs.push(st);
-    this.updateStatus();
+    return this.updateStatus();
   }
 
   addStructs(sts){
     if(this.status === stats.DONE) err('addStructs');
-    var {structs} = this;
+    const {structs} = this;
 
     sts.forEach(st => structs.push(st));
-    this.updateStatus();
+    return this.updateStatus();
   }
 
   setDirs(dirs){
@@ -81,74 +103,13 @@ class Tile{
     var st = this.structs[this.sti];
     st.dirs = dirs;
 
-    this.updateStatus();
-  }
-
-  /*update(prev, sti, dir){
-    if(this.status === stats.DONE) err('update');
-    var {structs} = this;
-    var structsPrev = prev.structs;
-
-    var stPrev = prev.structs[sti];
-    var hasStruct = sti < structs.length;
-    var ctor, newSts;
-
-    for(var i = 0; i !== sti; i++){
-      // If the parent structures are different,
-      // then stop expanding child structures
-
-      if(!structsPrev[i].same(structs[i]))
-        return;
-    }
-
-    if(!hasStruct){
-      // This tile has no structure at index `sti`
-
-      if(sti !== structs.length){
-        // The parent structure doesn't want to expand,
-        // so the child structure stops here
-        return;
-      }
-
-      ctor = stPrev.constructor;
-      newSts = ctor.gen(stPrev, null, dir, prev, this);
-    }else{
-      // This tile has a structure at index `sti`
-
-      var st = structs[sti];
-
-      if(st.same(stPrev)){
-        newSts = st.constructor.combine(stPrev, st, prev, this);
-        if(newSts === null) return;
-      }else{
-        ctor = commonCtor(stPrev, st);
-        if(ctor === null) return;
-
-        if(ctor === st.constructor){
-          newSts = ctor.combine(stPrev, st, prev, this);
-          if(newSts === null) return;
-        }else{
-          newSts = ctor.gen(stPrev, st, dir, prev, this);
-          if(newSts === null) return;
-
-          if(newSts.length !== 0 && newSts[0].same(st))
-            newSts[0].id = st.id;
-        }
-      }
-
-      structs.length = sti;
-    }
-
-    this.addStructs(newSts);
-  }*/
-
-  expand(dir, d){
-    
+    return this.updateStatus();
   }
 
   updateStatus(){
     if(this.status === stats.DONE) err('updateStatus');
-    var {structs} = this;
+
+    const {structs} = this;
     var sti, dirs;
 
     var sti = structs.findIndex(st => {
@@ -163,10 +124,12 @@ class Tile{
 
     this.sti = sti;
     this.dirs = dirs;
+
+    return this;
   }
 
-  done(){
-    if(this.status !== stats.READY) err('done');
+  finish(){
+    if(this.status !== stats.READY) err('finish');
 
     var contentArr = this.structs.map(st => st.content);
     this.content = TileContent.concat(contentArr, 0);

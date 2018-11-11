@@ -7,7 +7,7 @@ const BG_COL = '#000000';
 
 class RenderingEngine{
   constructor(grid, s){
-    var {w, h, g} = O.ceCanvas(1);
+    const {w, h, g} = O.ceCanvas(1);
 
     this.w = w;
     this.h = h;
@@ -26,7 +26,7 @@ class RenderingEngine{
   }
 
   start(){
-    var {g}  =this;
+    const {g} = this;
 
     g.resetTransform();
     g.clearCanvas(BG_COL);
@@ -35,7 +35,7 @@ class RenderingEngine{
   }
 
   render(){
-    var {g, grid} = this;
+    const {g, grid} = this;
 
     g.resetTransform();
     g.clearCanvas(BG_COL);
@@ -57,8 +57,8 @@ class RenderingEngine{
   }
 
   updateCoords(){
-    var {x, y} = this;
-    var {x: tx, y: ty} = this.grid;
+    const {x, y} = this;
+    const {x: tx, y: ty} = this.grid;
     if(x === tx && y === ty) return;
 
     var sp = this.speed;

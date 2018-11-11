@@ -109,6 +109,11 @@ var O = {
     var indent = 0;
 
     var logFunc = (...args) => {
+      if(args.length === 0){
+        logOrig('');
+        return;
+      }
+
       if(isNode){
         var indentStr = '  '.repeat(indent);
         var str = O.inspect(args);
@@ -735,6 +740,12 @@ var O = {
 
       return prev;
     });
+  },
+
+  proxify(oldFunc, newFunc){
+    return (...args) => {
+      return newFunc(oldFunc, args);
+    };
   },
 
   bool(val){ return Boolean(O.int(val)); },
@@ -2399,7 +2410,7 @@ var O = {
   })(),
 
   /*
-    Function which does nothing
+    Function that does nothing
   */
 
   nop(){}
