@@ -24,7 +24,7 @@ input[type="text"]{
   margin: 8px 0px;
 }
 
-.msg-date{
+.msg-info{
   color: #888;
   font-size: 12px;
 }
@@ -37,4 +37,9 @@ input[type="text"]{
 
 .msg-body{
   display: inline-block;
+}
+
+button{
+  display: block;
+  margin: 8px 0px;
 }

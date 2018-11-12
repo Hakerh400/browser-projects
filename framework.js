@@ -757,7 +757,7 @@ var O = {
   raf(func){ return window.requestAnimationFrame(func); },
   obj(proto=null){ return Object.create(proto); },
   keys(obj){ return Reflect.ownKeys(obj); },
-  cc(char){ return char.charCodeAt(0); },
+  cc(char, index=0){ return char.charCodeAt(index); },
   sfcc(cc){ return String.fromCharCode(cc); },
   hex(val, bytesNum){ return val.toString(16).toUpperCase().padStart(bytesNum << 1, '0'); },
   hypot(x, y){ return Math.sqrt(x * x + y * y); },
@@ -2093,7 +2093,7 @@ var O = {
   Buffer: class extends Uint8Array{
     constructor(...params){
       if(params.length === 1 && typeof params[0] === 'string')
-        params[0] = [...params[0]].map(a => a.charCodeAt(0));
+        params[0] = [...params[0]].map(a => O.cc(a));
 
       super(...params);
     }
@@ -2163,6 +2163,119 @@ var O = {
       this[offset + 1] = val >> 16;
       this[offset + 2] = val >> 8;
       this[offset + 3] = val;
+    }
+  },
+
+  Storage: class{
+    constructor(obj=null, path=null, prefix=null){
+      if(obj === null) obj = O.obj();
+
+      this.obj = obj;
+      this.prefix = prefix;
+
+      if(path !== null){
+        var obj1 = this.get(path);
+
+        if(!this.isObj(obj1)){
+          obj1 = O.obj();
+          this.set(path, obj1);
+        }
+
+        this.obj = obj1;
+      }
+    }
+
+    reset(){
+      const {obj} = this;
+
+      for(var key of O.keys(obj))
+        if(this.isOwnKey(key))
+          delete obj[key];
+    }
+
+    has(path){
+      var {obj} = this;
+
+      return this.iterPath(path, key => {
+        if(!(key in obj)) return;
+        obj = obj[key];
+        return 1;
+      });
+    }
+
+    get(path, defaultVal=null){
+      var {obj} = this;
+
+      var found = this.iterPath(path, key => {
+        if(!(key in obj)) return;
+        obj = obj[key];
+        return 1;
+      });
+
+      if(!found) return defaultVal;
+      return obj;
+    }
+
+    set(path, val){
+      var {obj} = this;
+      var last;
+
+      this.iterPath(path, (key, index, arr) => {
+        if(index === arr.length - 1){
+          last = key;
+          return 1;
+        }
+
+        if(!this.isObj(obj[key])) obj[key] = O.obj();
+        obj = obj[key];
+        return 1;
+      });
+
+      obj[last] = val;
+    }
+
+    remove(path){
+      var {obj} = this;
+      var last;
+
+      var found = this.iterPath(path, (key, index, arr) => {
+        if(index === arr.length - 1){
+          last = O.last(arr);
+          return;
+        }
+
+        if(!(key in obj)) return;
+        obj = obj[key];
+        return 1;
+      });
+
+      if(!found) return;
+      delete obj[last];
+    }
+
+    iterPath(path, func){
+      return path.split('.').every((key, index, arr) => {
+        if(index === 0) key = this.format(key);
+        return func(key, index, arr);
+      });
+    }
+
+    format(key){
+      const {prefix} = this;
+
+      if(prefix === null) return key;
+      return `${prefix}_${key}`;
+    }
+
+    isOwnKey(key){
+      const {prefix} = this;
+
+      if(prefix === null) return 1;
+      return key.startsWith(`${prefix}_`);
+    }
+
+    isObj(val){
+      return typeof val === 'object' && val !== null;
     }
   },
 

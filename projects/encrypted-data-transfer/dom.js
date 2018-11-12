@@ -1,15 +1,56 @@
 'use strict';
 
 const EventEmitter = require('./event-emitter');
+const Event = require('./event');
 
-const {body} = O;
+class DOM extends EventEmitter{
+  constructor(parent, remote){
+    super();
+
+    this.parent = parent;
+    this.remote = remote;
+  }
+
+  reset(){
+    for(var e of O.qsa(this.parent, '*'))
+      e.remove();
+
+    if(!this.remote){
+      this.warn('[LOCAL]');
+      this.br(2);
+    }
+  }
+
+  form(){
+    return new Form(this);
+  }
+
+  msg(text, col='black'){
+    var label = this.ce('span');
+    label.style.color = col;
+    O.ceText(label, text);
+    return label;
+  }
+
+  succ(text){ return this.msg(text, '#00a000'); }
+  warn(text){ return this.msg(text, '#888800'); }
+  err(text){ return this.msg(text, '#a00000'); }
+  ce(tag){ return O.ce(this.parent, tag); }
+  div(parent, style){ return O.ce(parent, 'div', style); }
+  br(num){ return O.ceBr(this.parent, num); }
+};
 
 class Form extends EventEmitter{
-  constructor(){
+  constructor(dom){
     super();
+
+    this.dom = dom;
+    this.parent = dom.parent;
 
     this.active = 1;
     this.inputs = O.obj();
+
+    this.submitFunc = O.nop;
   }
 
   pause(){ this.active = 0; }
@@ -22,28 +63,46 @@ class Form extends EventEmitter{
       inputs[inputName].value = '';
   }
 
-  input(name, label){
-    var elem = div(body, 'input');
+  input(name, label, focus=0){
+    var elem = this.dom.div(this.parent, 'input');
     var labelElem = O.ce(elem, 'span');
     O.ceText(labelElem, `${label}: `);
 
     var input = O.ce(elem, 'input');
     input.type = 'text';
+    if(focus) input.focus();
 
-    O.ael(input, 'keydown', evt => {
-      if(evt.code !== 'Enter') return;
-      this.submit();
-    });
+    O.ael(input, 'keydown', this.evt(0, evt => {
+      if(evt.orig.code !== 'Enter') return;
+      this.submitFunc();
+    }));
 
     this.inputs[name] = input;
     return input;
   }
 
-  btn(label='Submit'){
-    var btn = ce('button');
+  btn(label=null, submit=0){
+    if(label === null){
+      label = 'Submit';
+      submit = 1;
+    }
+
+    var btn = this.dom.ce('button');
     O.ceText(btn, label);
 
-    O.ael(btn, 'click', this.submit.bind(this));
+    var func;
+    if(!submit){
+      func = this.evt(1, evt => {
+        evt.name = evt.orig.target.innerText.trim();
+        this.emit('btn', evt);
+      });
+    }else{
+      func = this.evt(1, evt => {
+        this.emit('submit', evt);
+      });
+      this.submitFunc = func;
+    }
+    O.ael(btn, 'click', func);
 
     return btn;
   }
@@ -57,59 +116,31 @@ class Form extends EventEmitter{
     return elem.value;
   }
 
-  submit(){
-    if(!this.active) return;
-    this.emit('submit');
+  focus(input, value=null){
+    var elem = this.get(input, 1);
+    elem.focus();
+    if(value !== null) elem.value = value;
+    return elem;
+  }
+
+  val(input, value){
+    this.get(input, 1).value = value;
+  }
+
+  evt(pause, func){
+    return orig => {
+      if(!this.active) return;
+      if(pause) this.pause();
+
+      var evt = new Event(orig);
+      func(evt);
+
+      if(pause && !evt.defaultPrevented)
+        this.resume();
+    };
   }
 };
 
-function reset(){
-  for(var e of O.qsa(body, '*'))
-    e.remove();
-}
+DOM.Form = Form;
 
-function form(){
-  return new Form();
-}
-
-function succ(text){
-  return msg(text, '#00a000');
-}
-
-function err(text){
-  return msg(text, '#a00000');
-}
-
-function msg(text, col='black'){
-  var label = ce('span');
-  label.style.color = col;
-  O.ceText(label, text);
-  return label;
-}
-
-function ce(tag){
-  return O.ce(body, tag);
-}
-
-function div(parent, style){
-  return O.ce(parent, 'div', style);
-}
-
-function br(num){
-  return O.ceBr(body, num);
-}
-
-module.exports = {
-  Form,
-
-  reset,
-  form,
-
-  succ,
-  err,
-  msg,
-
-  ce,
-  div,
-  br,
-};
+module.exports = DOM;
