@@ -1,49 +1,93 @@
 'use strict';
 
 const REMOTE = 1;
-const VERSION = 9;
+const VERSION = '1.0.0';
 
 if(REMOTE) O.ceText(O.ce(O.body, 'h1'), 'Loading...');
 
 const DOM = require('./dom');
 
 const PROJECT_NAME = 'e8kkzbh';
+const HTTP_METHOD = 'POST';
 
 const UPDATE_INTERVAL = 1e3;
 const RETRY_NUM = 5;
 
-const URL = REMOTE ? 'https://e8kkzbh-encrypted-data-transfer.193b.starter-ca-central-1.openshiftapps.com/'
-                   : 'http://localhost:8080/';
+const WEBSITE_URL = 'https://e8kkzbh.github.io/';
+const SERVER_URL = REMOTE ? 'https://e8kkzbh-encrypted-data-transfer.193b.starter-ca-central-1.openshiftapps.com/'
+                          : 'http://localhost:8080/';
 
-const ERR_MSG = null;
+const ERR_MSG = 'Intermittent HTTP 503 via exposed routes';
 
-const dom = new DOM(O.body, REMOTE);
-const storage = new O.Storage(localStorage, null, PROJECT_NAME);
+var dom = null;;
+var storage = null;;
 
 var userName = null;
-var pass = storage.get('pass');
+var pass = null;
 
 var secretKey = null;
 
-window.setTimeout(main);
+window.setTimeout(() => init().catch(onErr));
+
+async function init(){
+  if(REMOTE && window.location.href !== WEBSITE_URL){
+    window.location.href = WEBSITE_URL;
+    return;
+  }
+
+  dom = new DOM(O.body, REMOTE);
+  dom.on('reset', onDomReset);
+
+  storage = createStorage();
+
+  if(storage.get('ver') !== VERSION){
+    for(var key in localStorage)
+      delete localStorage[key];
+
+    storage = createStorage();
+    storage.set('ver', VERSION);
+
+    refreshPage();
+    return;
+  }
+
+  pass = storage.get('pass');
+
+  await main();
+}
 
 async function main(){
   await injectStyle();
   await ping();
-  O.body.innerHTML = '';
 
   pass = await getPass();
   userName = encrypt(storage.get('name', ''));
 
   displayMsgs();
-  displayErrMsg();
+  if(ERR_MSG !== null) displayErrMsg();
   displayForm();
+}
+
+function onErr(err){
+  setTimeout(() => {
+    throw err;
+  });
+}
+
+function onDomReset(){
+  if(!REMOTE) dom.warn('[LOCAL]');
+  dom.msg(`Version: ${VERSION}`);
+  dom.br();
+}
+
+function createStorage(){
+  return new O.Storage(localStorage, null, PROJECT_NAME);
 }
 
 function injectStyle(){
   return new Promise(res => {
     O.rfLocal('style.css', (status, data) => {
-      if(status !== 200) return O.error('Unable to load style');
+      if(status !== 200) return O.error('Unable to load CSS');
 
       var style = O.ce(O.head, 'style');
       style.innerHTML = data;
@@ -88,7 +132,7 @@ async function getPass(){
       form.btn();
 
       if(!first){
-        dom.br(2);
+        dom.br();
         dom.err('Wrong password. Try again.');
       }
 
@@ -170,6 +214,7 @@ function displayForm(){
   var form = dom.form();
   form.input('name', 'Your name');
   form.input('msg', 'Message');
+
   form.btn();
   form.btn('Reset storage');
 
@@ -181,9 +226,9 @@ function displayForm(){
     form.focus('msg');
   }
 
-  form.on('btn', async evt => {
+  form.on('input', async evt => {
     switch(evt.name){
-      case 'Reset storage': resetStorage(1); break;
+      case 'name': form.focus('msg'); break;
     }
   });
 
@@ -197,11 +242,16 @@ function displayForm(){
     userName = encrypt(name);
     await send({type: 'post_msg', name: userName, msg: encrypt(msg)});
   });
+
+  form.on('btn', async evt => {
+    switch(evt.name){
+      case 'Reset storage': resetStorage(1); break;
+    }
+  });
 }
 
 function displayErrMsg(){
-  if(ERR_MSG === null) return;
-  dom.err(`ERROR: ${ERR_MSG}`);
+  dom.err(`ERROR: ${ERR_MSG}`, 1);
 }
 
 function resetStorage(askUserToConfirm){
@@ -274,7 +324,7 @@ function send(data={}, throwOnError=1, retryNum=RETRY_NUM){
       }
     };
 
-    xhr.open('POST', URL);
+    xhr.open(HTTP_METHOD, SERVER_URL);
     xhr.send(JSON.stringify(data));
   });
 }

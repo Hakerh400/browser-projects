@@ -4,38 +4,34 @@ const EventEmitter = require('./event-emitter');
 const Event = require('./event');
 
 class DOM extends EventEmitter{
-  constructor(parent, remote){
+  constructor(parent){
     super();
 
     this.parent = parent;
-    this.remote = remote;
   }
 
   reset(){
     for(var e of O.qsa(this.parent, '*'))
       e.remove();
-
-    if(!this.remote){
-      this.warn('[LOCAL]');
-      this.br(2);
-    }
+    this.emit('reset');
   }
 
   form(){
     return new Form(this);
   }
 
-  msg(text, col='black'){
-    var label = this.ce('span');
+  msg(text, col='black', br=0){
+    var label = this.ce('span', 'site-msg');
     label.style.color = col;
     O.ceText(label, text);
+    this.br(br);
     return label;
   }
 
-  succ(text){ return this.msg(text, '#00a000'); }
-  warn(text){ return this.msg(text, '#888800'); }
-  err(text){ return this.msg(text, '#a00000'); }
-  ce(tag){ return O.ce(this.parent, tag); }
+  succ(text, br){ return this.msg(text, '#00a000', br); }
+  warn(text, br){ return this.msg(text, '#888800', br); }
+  err(text, br){ return this.msg(text, '#a00000', br); }
+  ce(tag, style){ return O.ce(this.parent, tag, style); }
   div(parent, style){ return O.ce(parent, 'div', style); }
   br(num){ return O.ceBr(this.parent, num); }
 };
@@ -49,6 +45,7 @@ class Form extends EventEmitter{
 
     this.active = 1;
     this.inputs = O.obj();
+    this.lastInput = null;
 
     this.submitFunc = O.nop;
   }
@@ -74,10 +71,21 @@ class Form extends EventEmitter{
 
     O.ael(input, 'keydown', this.evt(0, evt => {
       if(evt.orig.code !== 'Enter') return;
-      this.submitFunc();
+
+      if(input !== this.lastInput){
+        this.evt(1, evt => {
+          evt.name = name;
+          evt.val = input.value;
+          this.emit('input', evt);
+        })(evt.orig);
+      }else{
+        this.submitFunc();
+      }
     }));
 
     this.inputs[name] = input;
+    this.lastInput = input;
+
     return input;
   }
 

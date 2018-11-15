@@ -2240,8 +2240,8 @@ var O = {
 
       var found = this.iterPath(path, (key, index, arr) => {
         if(index === arr.length - 1){
-          last = O.last(arr);
-          return;
+          last = key;
+          return 1;
         }
 
         if(!(key in obj)) return;
@@ -2345,6 +2345,7 @@ var O = {
       }
     }
   },
+  
   sha256: (() => {
     const MAX_UINT = 2 ** 32;
 

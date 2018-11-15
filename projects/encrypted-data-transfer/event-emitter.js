@@ -19,6 +19,7 @@ class EventEmitter{
     var {ls} = this;
     if(!(type in ls)) ls[type] = new Set();
     ls[type].add(func);
+    return this;
   }
 
   emit(type, ...args){
