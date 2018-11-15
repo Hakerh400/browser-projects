@@ -136,6 +136,12 @@ class Form extends EventEmitter{
   }
 
   evt(pause, func){
+    /**
+     * TODO: Improve event handling
+     *   This currently doesn't work as expected.
+     *   These functions should be async and should await the result.
+     */
+
     return orig => {
       if(!this.active) return;
       if(pause) this.pause();
