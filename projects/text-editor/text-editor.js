@@ -341,6 +341,8 @@ class TextEditor{
           this.historyIndex++;
         }
       }
+    }else{
+      this.pos = null;
     }
 
     function insert(str, move=1, addTabs=1){
@@ -405,7 +407,7 @@ class TextEditor{
       var end = getLineEnd();
       var s = ta.value.slice(start, end);
 
-      var len = s.match(/^\s*/)[0].length / TAB_SIZE | 0;
+      var len = s.match(/^ */)[0].length / TAB_SIZE | 0;
       return TAB.repeat(len);
     }
 
@@ -421,7 +423,7 @@ class TextEditor{
         return -1;
       });
 
-      if(pos !== 0 && pos !== ta.value.length) pos++;
+      if(!/[0-9a-zA-Z_\$]/.test(val[pos])) pos++;
       return pos;
     }
 
@@ -439,28 +441,32 @@ class TextEditor{
     function getLineStart(force=0){
       var val = ta.value;
       var pos = getPos();
-      var first = 1;
+      var start;
 
-      var start = find(c => {
-        if(first === 1){first = 0; return -1; }
-        if(c === null) return -1;
-        if(c === '\n') return 0;
-        return -1;
-      });
+      if(pos === 0 || val[pos - 1] === '\n'){
+        start = pos;
+      }else{
+        start = find((c, dpos) => {
+          if(dpos === 0) return -1;
+          if(c === null) return -1;
+          if(c === '\n') return 0;
+          return -1;
+        });
+        if(start !== 0 || (pos !== 0 && val[0] === '\n')) start++;
+      }
 
-      if(start !== 0) start++;
       if(force) return start;
 
       if(pos === start){
         var end = getLineEnd();
         var s = val.slice(start, end);
-        return start + s.match(/^\s*/)[0].length;
+        return start + s.match(/^ */)[0].length;
       }
 
       var s = val.slice(start, pos);
-      if(/^\s*$/.test(s)) return start;
+      if(/^ *$/.test(s)) return start;
 
-      return start + s.match(/^\s*/)[0].length;
+      return start + s.match(/^ */)[0].length;
     }
 
     function getLineEnd(){
