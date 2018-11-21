@@ -528,7 +528,7 @@ var O = {
     return `${str[0].toUpperCase()}${str.substring(1)}`;
   },
 
-  indent(str, indent){ return `${'  '.repeat(indent)}${str}`; },
+  indent(str, indent){ return `${' '.repeat(indent << 1)}${str}`; },
 
   /*
     Array functions
@@ -587,7 +587,7 @@ var O = {
   last(arr){ return arr[arr.length - 1]; },
 
   /*
-    Other functions
+    Random number generator
   */
 
   enhanceRNG(){
@@ -642,6 +642,10 @@ var O = {
     if(splice) return arr.splice(index, 1)[0];
     return arr[index];
   },
+
+  /*
+    Other functions
+  */
 
   repeat(num, func){
     for(var i = 0; i !== num; i++) func(i);
@@ -712,8 +716,8 @@ var O = {
 
   while(func){
     return new Promise(res => {
-      var test = () => {
-        if(func()) return setTimeout(test);
+      var test = async () => {
+        if(await func()) return setTimeout(test);
         res();
       };
 
