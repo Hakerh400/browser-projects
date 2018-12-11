@@ -37,6 +37,12 @@ var O = {
   moduleCache: null,
 
   /*
+    Storage
+  */
+
+  storage: null,
+
+  /*
     Other parameters
   */
 
@@ -47,6 +53,8 @@ var O = {
   */
 
   init(loadProject=1){
+    O.storage = O.obj();
+
     var global = O.global = new Function('return this;')();
     var env = String(global);
 
@@ -584,7 +592,10 @@ var O = {
     return a;
   },
 
-  last(arr){ return arr[arr.length - 1]; },
+  last(arr, defaultVal=null){
+    if(arr.length === 0) return defaultVal;
+    return arr[arr.length - 1];
+  },
 
   /*
     Random number generator
@@ -1438,8 +1449,8 @@ var O = {
       return this;
     }
 
-    get(x, y){
-      if(!this.has(x, y)) return null;
+    get(x, y, defaultVal=null){
+      if(!this.has(x, y)) return defaultVal;
       return this.d[y][x];
     }
 
@@ -1822,7 +1833,7 @@ var O = {
         y = this.rty + yy * this.rcos + xx * this.rsin;
       }
 
-      this.g.fillText(text, Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty));
+      this.g.fillText(text, Math.round(x * this.s + this.tx) + 1, Math.round(y * this.s + this.ty) + 1);
     }
 
     strokeText(text, x, y){
@@ -1834,7 +1845,7 @@ var O = {
         y = this.rty + yy * this.rcos + xx * this.rsin;
       }
 
-      this.g.strokeText(text, Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty));
+      this.g.strokeText(text, Math.round(x * this.s + this.tx) + 1, Math.round(y * this.s + this.ty) + 1);
     }
 
     updateFont(){

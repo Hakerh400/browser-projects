@@ -27,11 +27,5 @@ function displayProjects(){
 }
 
 function loadProject(subProject){
-  O.rfLocal(`sub-projects/${subProject}.js`, (status, data) => {
-    if(status !== 200)
-      return O.error('Cannot load sub-project.');
-
-    var func = new Function('O', data);
-    func(O);
-  });
+  require(`./sub-projects/${subProject}/main`);
 }

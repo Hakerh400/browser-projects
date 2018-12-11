@@ -1,8 +1,12 @@
 'use strict';
 
 const REMOTE = 1;
-const VERSION = '1.0.0';
+const VERSION = '2.0.2';
 
+const PUBLIC = 1;
+const ADMIN = 'admin' in localStorage;
+
+if(!PUBLIC && !ADMIN) return O.error('The server is under maintenance');
 if(REMOTE) O.ceText(O.ce(O.body, 'h1'), 'Loading...');
 
 const DOM = require('./dom');
@@ -17,17 +21,17 @@ const WEBSITE_URL = 'https://e8kkzbh.github.io/';
 const SERVER_URL = REMOTE ? 'https://e8kkzbh-encrypted-data-transfer.193b.starter-ca-central-1.openshiftapps.com/'
                           : 'http://localhost:8080/';
 
-const ERR_MSG = 'Intermittent HTTP 503 via exposed routes';
+const ERR_MSG = null;
+
+const M = VERSION.match(/^\d+/) | 0;
 
 var dom = null;;
 var storage = null;;
-
 var userName = null;
 var pass = null;
-
 var secretKey = null;
 
-window.setTimeout(() => init().catch(onErr));
+window.setTimeout(() => init().catch(onError));
 
 async function init(){
   if(REMOTE && window.location.href !== WEBSITE_URL){
@@ -35,17 +39,18 @@ async function init(){
     return;
   }
 
+  O.ael('error', onError);
+
   dom = new DOM(O.body, REMOTE);
   dom.on('reset', onDomReset);
 
   storage = createStorage();
 
-  if(storage.get('ver') !== VERSION){
-    for(var key in localStorage)
-      delete localStorage[key];
+  if((storage.get('M') | 0) !== M){
+    storage.reset();
 
     storage = createStorage();
-    storage.set('ver', VERSION);
+    storage.set('M', M);
 
     refreshPage();
     return;
@@ -68,14 +73,19 @@ async function main(){
   displayForm();
 }
 
-function onErr(err){
+function onError(err){
+  O.rel('error', onError);
+
   setTimeout(() => {
-    throw err;
+    if(!REMOTE) throw err;
+    O.error(err);
   });
 }
 
 function onDomReset(){
   if(!REMOTE) dom.warn('[LOCAL]');
+  if(!PUBLIC) dom.warn('[PRIVATE]');
+
   dom.msg(`Version: ${VERSION}`);
   dom.br();
 }
@@ -153,7 +163,7 @@ function displayMsgs(){
   var msgsElem = dom.div(O.body, 'msgs');
   var id = 0;
 
-  update();
+  update().catch(onError);
 
   async function update(){
     var msgs = await send({type: 'get_msgs', name: userName, id});
@@ -163,16 +173,16 @@ function displayMsgs(){
       addMsg(msg);
     });
 
-    setTimeout(update, UPDATE_INTERVAL);
+    setTimeout(() => update().catch(onError), UPDATE_INTERVAL);
   }
 
   function addMsg(message){
     var {name, msg, date, seen} = message;
     var msgElem = dom.div(msgsElem, 'msg');
 
-    seen = seen.map(a => decrypt(a));
+    seen = O.sortAsc(seen.map(a => decrypt(a)));
 
-    var msgInfo = new Date(date).toGMTString();
+    var msgInfo = new Date(date * 1e3).toGMTString();
     msgInfo += `; seen by: ${seen.join(', ')}`;
     
     O.ceText(dom.div(msgElem, 'msg-info'), msgInfo);
@@ -220,10 +230,10 @@ function displayForm(){
 
   var name = storage.get('name');
   if(name === null){
-    form.focus('name');
+    if(!ADMIN) form.focus('name');
   }else{
     form.val('name', name);
-    form.focus('msg');
+    if(!ADMIN) form.focus('msg');
   }
 
   form.on('input', async evt => {
