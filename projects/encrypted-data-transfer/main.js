@@ -1,7 +1,7 @@
 'use strict';
 
 const REMOTE = 1;
-const VERSION = '2.0.2';
+const VERSION = '2.1.0';
 
 const PUBLIC = 1;
 const ADMIN = 'admin' in localStorage;
@@ -222,11 +222,11 @@ function formatMsg(elem, str){
 
 function displayForm(){
   var form = dom.form();
-  form.input('name', 'Your name');
-  form.input('msg', 'Message');
+  form.input('name', 'Your name').disabled = 1;
+  form.input('msg', 'Message').disabled = 1;
 
-  form.btn();
-  form.btn('Reset storage');
+  form.btn().disabled = 1;
+  form.btn('Reset storage').disabled = 1;
 
   var name = storage.get('name');
   if(name === null){
