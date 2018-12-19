@@ -578,7 +578,7 @@ class Game{
 
   random(){
     if(!PSEUDO_RANDOM)
-      return Math.random();
+      return O.randf(1);
 
     var str = `${this.randSeed}_${this.randParam}`;
     var hash = this.randParam = O.sha256(str);

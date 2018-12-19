@@ -3,7 +3,7 @@
 const Vector = require('./vector');
 
 class Camera extends Vector{
-  constructor(x, y, z, pitch, yaw, vx, vy, vz){
+  constructor(x=0, y=0, z=0, pitch=0, yaw=0, vx=0, vy=0, vz=0){
     super(x, y, z);
 
     this.pitch = pitch;

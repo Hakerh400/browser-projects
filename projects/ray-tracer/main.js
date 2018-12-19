@@ -32,7 +32,7 @@ const {data} = imgd;
 const pixels = [];
 var pixelIndex = 0;
 
-const cam = new Camera(O.randf(-5, 5), O.randf(-5, 5), O.randf(-5, 5), O.randf(-O.pih, O.pih), O.randf(O.pi2), Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE);
+const cam = new Camera(0, -2, 0, 0, O.pi / 7, 0, 0, 0);
 const {vel} = cam;
 
 const func = createFunc();
