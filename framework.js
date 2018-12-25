@@ -56,12 +56,7 @@ var O = {
     O.storage = O.obj();
 
     var global = O.global = new Function('return this;')();
-    var env = String(global);
-
-    switch(env){
-      case '[object Window]': env = 'browser'; break;
-      case '[object global]': env = 'node'; break;
-    }
+    var env = 'navigator' in global ? 'browser' : 'node';
 
     O.env = env;
 
@@ -1104,8 +1099,12 @@ var O = {
       this.d[y][x] = val;
     }
 
-    includes(x, y){
+    has(x, y){
       return x >= 0 && y >= 0 && x < this.w && y < this.h;
+    }
+
+    includes(x, y){
+      return this.has(x, y);
     }
   },
 
@@ -1481,7 +1480,6 @@ var O = {
 
     getArr(){
       var {d} = this;
-
       var arr = [];
 
       O.keys(d).forEach(y => {
@@ -1493,6 +1491,11 @@ var O = {
       });
 
       return arr;
+    }
+
+    [Symbol.iterator](){
+      var arr = this.getArra();
+      return arr[Symbol.iterator]();
     }
   },
 
