@@ -1458,10 +1458,12 @@ var O = {
 
       if(!(y in d)) d[y] = O.obj();
       d[y][x] = val;
+
+      return this;
     }
 
     add(x, y, val=1){
-      this.set(x, y, val);
+      return this.set(x, y, val);
     }
 
     remove(x, y){
@@ -1494,7 +1496,7 @@ var O = {
     }
 
     [Symbol.iterator](){
-      var arr = this.getArra();
+      var arr = this.getArr();
       return arr[Symbol.iterator]();
     }
   },
