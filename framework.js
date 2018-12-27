@@ -513,11 +513,11 @@ var O = {
   },
 
   sanl(str){
-    return str.split(/\r\n|\r|\n/g);
+    return String(str).split(/\r\n|\r|\n/g);
   },
 
   sanll(str){
-    return str.split(/\r\n\r\n|\r\r|\n\n/g);
+    return String(str).split(/\r\n\r\n|\r\r|\n\n/g);
   },
 
   pad(str, len, char='0'){
