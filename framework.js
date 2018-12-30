@@ -1078,6 +1078,13 @@ var O = {
              func(x - 1, y, this.get(x - 1, y), 3);
     }
 
+    adjc(x, y, func){
+      return func(x - 1, y - 1, this.get(x - 1, y - 1), 0) ||
+             func(x + 1, y - 1, this.get(x + 1, y - 1), 1) ||
+             func(x - 1, y + 1, this.get(x - 1, y + 1), 2) ||
+             func(x + 1, y + 1, this.get(x + 1, y + 1), 3);
+    }
+
     nav(cs, dir){
       switch(dir){
         case 0: cs[1]--; break;
