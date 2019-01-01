@@ -654,11 +654,11 @@ var O = {
   */
 
   repeat(num, func){
-    for(var i = 0; i !== num; i++) func(i);
+    for(var i = 0; i !== num; i++) func(i, i / num, num);
   },
 
   async repeata(num, func){
-    for(var i = 0; i !== num; i++) await func(i);
+    for(var i = 0; i !== num; i++) await func(i, i / num, num);
   },
 
   bound(val, min, max){
