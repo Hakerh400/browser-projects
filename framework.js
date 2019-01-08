@@ -597,11 +597,12 @@ var O = {
   */
 
   enhanceRNG(){
-    this.enhancedRNG = 1;
+    O.enhancedRNG = 1;
+    O.repeat(10, () => O.random());
   },
 
   random(){
-    if(!this.enhancedRNG)
+    if(!O.enhancedRNG)
       return Math.random();
 
     var st = O.randState;
@@ -654,11 +655,13 @@ var O = {
   */
 
   repeat(num, func){
-    for(var i = 0; i !== num; i++) func(i, i / num, num);
+    for(var i = 0; i !== num; i++)
+      func(i, i / num, num);
   },
 
   async repeata(num, func){
-    for(var i = 0; i !== num; i++) await func(i, i / num, num);
+    for(var i = 0; i !== num; i++)
+      await func(i, i / num, num);
   },
 
   bound(val, min, max){

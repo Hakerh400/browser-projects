@@ -9,6 +9,8 @@ var loaded = 0;
 window.setTimeout(main);
 
 function main(){
+  O.doc.documentElement.style.cursor = 'none';
+
   O.body.style.margin = '0px';
   O.body.style.backgroundColor = 'black';
   O.body.style.overflow = 'hidden';
