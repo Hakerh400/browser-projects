@@ -25,8 +25,8 @@ const ERR_MSG = null;
 
 const M = VERSION.match(/^\d+/) | 0;
 
-var dom = null;;
-var storage = null;;
+var dom = null;
+var storage = null;
 var userName = null;
 var pass = null;
 var secretKey = null;

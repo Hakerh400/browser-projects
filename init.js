@@ -21,7 +21,7 @@
         noscript.remove();
 
         O.rf('/framework.js', function(status, script){
-          if(status != 200) return O.fatalError('Cannot load framework script. Try clearing cache or restarting your browser.');
+          if(status != 200) return O.fatalError('Cannot load framework script. Try disabling extensions.');
           new Function(script)();
         });
       },
@@ -49,7 +49,7 @@
         };
         xhr.open('GET', O.urlTime(file));
         xhr.send();
-      },
+      }
     };
 
     O.init();

@@ -4,6 +4,7 @@ var O = {
   global: null,
   isNode: null,
   isBrowser: null,
+  crypto: null,
 
   doc: document,
   head: document.head,
@@ -47,6 +48,7 @@ var O = {
   */
 
   enhancedRNG: 0,
+  fastSha256: 1,
 
   /*
     Main functions
@@ -66,6 +68,10 @@ var O = {
     if(isBrowser){
       if(global.navigator.vendor !== 'Google Inc.')
         return O.error('Please use Chrome.');
+    }
+
+    if(isNode){
+      O.crypto = require('crypto');
     }
 
     if(!global.isConsoleOverriden)
@@ -2384,7 +2390,17 @@ var O = {
 
     return sha256;
 
-    function sha256(buff){
+    function sha256(data){
+      if(O.fastSha256){
+        var hash = O.crypto.createHash('sha256');
+        hash.update(data);
+        return hash.digest();
+      }
+
+      return slowSha256(buf);
+    }
+
+    function slowSha256(buff){
       if(!(buff instanceof O.Buffer))
         buff = new O.Buffer(buff);
 
