@@ -542,7 +542,7 @@ var O = {
     var arr = [];
 
     for(var i = 0; i !== len; i++)
-      arr.push(func(i));
+      arr.push(func(i, i / len, len));
 
     return arr;
   },
@@ -551,7 +551,7 @@ var O = {
     var arr = [];
 
     for(var i = 0; i !== len; i++)
-      arr.push(await func(i));
+      arr.push(await func(i, i / len, len));
 
     return arr;
   },
@@ -2396,7 +2396,6 @@ var O = {
         hash.update(data);
         return hash.digest();
       }
-
 
       return slowSha256(data);
     }
