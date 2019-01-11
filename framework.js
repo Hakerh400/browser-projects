@@ -79,11 +79,6 @@ var O = {
 
     O.moduleCache = O.obj();
 
-    O.enhancedRNG = 1;
-    O.randState = O.Buffer.from(O.ca(32, () => Math.random() * 256));
-    O.random();
-    O.enhancedRNG = 0;
-
     if(loadProject){
       O.project = O.urlParam('project');
 
@@ -604,6 +599,7 @@ var O = {
 
   enhanceRNG(){
     O.enhancedRNG = 1;
+    O.randState = O.Buffer.from(O.ca(32, () => Math.random() * 256));
     O.repeat(10, () => O.random());
   },
 
@@ -1053,13 +1049,17 @@ var O = {
       this.d = d;
     }
 
-    iterate(func){
+    iter(func){
       var {w, h} = this;
 
       for(var y = 0; y !== h; y++)
         for(var x = 0; x !== w; x++)
           func(x, y, this.get(x, y));
 
+    }
+
+    iterate(func){
+      this.iter(func);
     }
 
     iterAdj(x, y, func){
@@ -2391,13 +2391,14 @@ var O = {
     return sha256;
 
     function sha256(data){
-      if(O.fastSha256){
+      if(O.isNode && O.fastSha256){
         var hash = O.crypto.createHash('sha256');
         hash.update(data);
         return hash.digest();
       }
 
-      return slowSha256(buf);
+
+      return slowSha256(data);
     }
 
     function slowSha256(buff){
