@@ -29,9 +29,9 @@ function main(){
 }
 
 function aels(){
-  var strs = O.ca(9, i => {
+  var strs = O.ca(15, i => {
     return O.ca(MAX_LENGTH, () => {
-      return O.rand(i + 2);
+      return toHex(O.rand(i + 2));
     }).join('');
   });
 
@@ -53,7 +53,7 @@ function aels(){
     clearCanvas();
 
     strs.forEach((str, i) => {
-      drawStr(`${i + 1} - ${str}`, i, cols.text);
+      drawStr(`${toHex(i + 1)} - ${str}`, i, cols.text);
     });
   }
 }
@@ -65,4 +65,8 @@ function drawStr(str, i=0, col=null){
 
 function clearCanvas(){
   g.clearCanvas(cols.bg);
+}
+
+function toHex(n){
+  return n.toString(16).toUpperCase();
 }
