@@ -516,7 +516,7 @@ class Game{
     return d.d;
   }
 
-  tube(x, y, dirs, size = .5, round = 0){
+  tube(x, y, dirs, size=.5, round=0){
     this.grid.drawTube(x, y, dirs, size, round);
   }
 

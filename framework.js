@@ -1124,6 +1124,226 @@ var O = {
     }
   },
 
+  GridGUI: class{
+    constructor(w, h, func=() => O.obj()){
+      this.func = func;
+      this.grid = new O.SimpleGrid(w, h, func);
+      this.scale = 40;
+
+      const {g, w: iw, h: ih} = O.ceCanvas(1);
+      const [iwh, ihh] = [iw, ih].map(a => a / 2);
+
+      g.concaveMode = 1;
+
+      this.g = g;
+      this.iw = iw;
+      this.ih = ih;
+      this.iwh = iwh;
+      this.ihh = ihh;
+
+      this.transform();
+
+      this.keys = new Set();
+      this.mbs = 0;
+      this.cur = new O.Vector;
+
+      this.drawf = O.nop();
+      this.framef = O.nop();
+
+      this.ls = O.obj();
+      this.aels();
+    }
+
+    aels(){
+      const btnName = btn => 'lmr'[btn];
+      const {keys, cur} = this;
+
+      O.ael('keydown', evt => {
+        const key = evt.code;
+
+        keys.add(key);
+        this.emit(`k${key}`, cur.x, cur.y);
+      });
+
+      O.ael('keyup', evt => {
+        const key = evt.code;
+
+        keys.delete(key);
+        this.emit(`ku${key}`, cur.x, cur.y);
+      });
+
+      O.ael('mousedown', evt => {
+        const btn = evt.button;
+
+        this.mbs |= 1 << btn;
+        this.updateCur(evt);
+
+        this.emit(`${btnName(btn)}mb`, cur.x, cur.y);
+      });
+
+      O.ael('mousemove', evt => {
+        const {mbs} = this;
+        const {x, y} = cur;
+
+        this.updateCur(evt);
+
+        if(cur.x !== x || cur.y !== y){
+          const dx = Math.sign(cur.x - x);
+          const dy = Math.sign(cur.y - y);
+
+          let xx = x, yy = y;
+          let dir = dx === 1 ? 1 : 3;
+          let prev;
+
+          while(xx !== cur.x){
+            prev = xx;
+            xx += dx;
+
+            this.emit('move', xx, yy);
+            for(let btn = 0; btn !== 3; btn++)
+              if(mbs & (1 << btn))
+                this.emit(`drag${btnName(btn)}`, prev, yy, xx, yy, dir);
+          }
+
+          dir = dy === 1 ? 2 : 0;
+
+          while(yy !== cur.y){
+            prev = yy;
+            yy += dy;
+
+            this.emit('move', xx, yy);
+            for(let btn = 0; btn !== 3; btn++)
+              if(mbs & (1 << btn))
+                this.emit(`drag${btnName(btn)}`, xx, prev, xx, yy, dir);
+          }
+        }
+      });
+
+      O.ael('mouseup', evt => {
+        const btn = evt.button;
+
+        this.mbs &= ~(1 << btn);
+        this.updateCur(evt);
+
+        this.emit(`${btnName(btn)}mbu`, cur.x, cur.y);
+      });
+
+      O.ael('blur', evt => {
+        this.mbs = 0;
+      });
+
+      O.ael('contextmenu', evt => {
+        evt.preventDefault();
+        evt.stopPropagation();
+      });
+    }
+
+    updateCur(evt){
+      const {clientX: x, clientY: y} = evt;
+      const {scale, g, cur} = this;
+
+      cur.x = Math.floor((x - g.tx) / scale);
+      cur.y = Math.floor((y - g.ty) / scale);
+    }
+
+    transform(){
+      const {grid, g} = this;
+
+      g.resetTransform();
+      g.translate(this.iwh, this.ihh);
+      g.scale(this.scale);
+      g.translate(-grid.w / 2, -grid.h / 2);
+    }
+
+    draw(){
+      const {grid, g, drawf, framef} = this;
+
+      g.clearCanvas('darkgray');
+
+      if(drawf !== null){
+        g.save();
+        grid.iterate((x, y, d) => {
+          g.translate(x, y);
+          drawf(g, d, x, y);
+          g.restore();
+        });
+      }
+
+      if(framef !== null){
+        g.beginPath();
+
+        grid.iterate((x, y, d1) => {
+          grid.adj(x, y, (xx, yy, d2, dir) => {
+            if(!framef(g, d1, d2, x, y, dir)) return;
+
+            switch(dir){
+              case 0:
+                g.moveTo(x, y);
+                g.lineTo(x + 1, y);
+                break;
+
+              case 1:
+                g.moveTo(x + 1, y);
+                g.lineTo(x + 1, y + 1);
+                break;
+
+              case 2:
+                g.moveTo(x, y + 1);
+                g.lineTo(x + 1, y + 1);
+                break;
+
+              case 3:
+                g.moveTo(x, y);
+                g.lineTo(x, y + 1);
+                break;
+            }
+          });
+        });
+
+        g.stroke();
+      }
+    }
+
+    render(){
+      this.draw();
+      O.raf(this.render.bind(this));
+    }
+
+    removeListener(type, func){
+      const {ls} = this;
+      if(!(type in ls)) return;
+      ls[type].remove(func);
+    }
+
+    removeAllListeners(type){
+      delete this.ls[type];
+    }
+
+    on(type, func){
+      if(type === 'draw'){
+        this.drawf = func;
+        return;
+      }
+
+      if(type === 'frame'){
+        this.framef = func;
+        return;
+      }
+
+      const {ls} = this;
+      if(!(type in ls)) ls[type] = new Set();
+      ls[type].add(func);
+      return this;
+    }
+
+    emit(type, ...args){
+      const {ls} = this;
+      if(!(type in ls)) return;
+      for(const func of ls[type])
+        func(...args);
+    }
+  },
+
   Grid: class{
     constructor(w, h, func){
       var grid = O.ca(w, x => O.ca(h, y => new O.PathTile(func(x, y))));
@@ -1136,7 +1356,9 @@ var O = {
     iterate(func){
       var {w, h} = this;
       var x, y;
-      for(y = 0; y < h; y++) for(x = 0; x < w; x++) func(x, y, this[x][y]);
+      for(y = 0; y < h; y++)
+        for(x = 0; x < w; x++)
+          func(x, y, this[x][y]);
     }
   },
 
@@ -1331,110 +1553,15 @@ var O = {
       }
     }
 
-    drawTube(x, y, dirs, size, round){
-      var {g} = this;
-      g.concaveMode = 1;
+    drawTube(x, y, dirs, size, round=0){
+      let ds = dirs & 5;
 
-      var s1 = (1 - size) / 2;
-      var s2 = 1 - s1;
+      if(dirs & 2) ds |= 8;
+      if(dirs & 8) ds |= 2;
 
-      g.beginPath();
-
-      drawingBlock: {
-        if(round === 1){
-          var radius = Math.min(size, .5);
-
-          var p1 = (1 - Math.sqrt(radius * radius * 4 - size * size)) / 2;
-          var p2 = 1 - p1;
-
-          var phi1 = (1.9 - size / (radius * 4)) * O.pi;
-          var phi2 = phi1 + O.pi2 - size / radius * O.pih;
-
-          var dphi = 0;
-          var foundArc = 1;
-
-          switch(dirs){
-            case 0:
-              g.arc(x + .5, y + .5, radius, 0, O.pi2);
-              break;
-
-            case 1:
-              g.moveTo(x + s2, y + p1);
-              g.lineTo(x + s2, y);
-              g.lineTo(x + s1, y);
-              g.lineTo(x + s1, y + p1);
-              break;
-
-            case 2:
-              dphi = O.pi2 - O.pih;
-              g.moveTo(x + p1, y + s1);
-              g.lineTo(x, y + s1);
-              g.lineTo(x, y + s2);
-              g.lineTo(x + p1, y + s2);
-              break;
-
-            case 4:
-              dphi = O.pi;
-              g.moveTo(x + s1, y + p2);
-              g.lineTo(x + s1, y + 1);
-              g.lineTo(x + s2, y + 1);
-              g.lineTo(x + s2, y + p2);
-              break;
-
-            case 8:
-              dphi = O.pi2 - (O.pi + O.pih);
-              g.moveTo(x + p2, y + s2);
-              g.lineTo(x + 1, y + s2);
-              g.lineTo(x + 1, y + s1);
-              g.lineTo(x + p2, y + s1);
-              break;
-
-            default:
-              foundArc = 0;
-              break;
-          }
-
-          if(foundArc)
-            break drawingBlock;
-        }
-
-        g.moveTo(x + s1, y + s1);
-
-        if(dirs & 1){
-          g.lineTo(x + s1, y);
-          g.lineTo(x + s2, y);
-        }
-        g.lineTo(x + s2, y + s1);
-
-        if(dirs & 8){
-          g.lineTo(x + 1, y + s1);
-          g.lineTo(x + 1, y + s2);
-        }
-        g.lineTo(x + s2, y + s2);
-
-        if(dirs & 4){
-          g.lineTo(x + s2, y + 1);
-          g.lineTo(x + s1, y + 1);
-        }
-        g.lineTo(x + s1, y + s2);
-
-        if(dirs & 2){
-          g.lineTo(x, y + s2);
-          g.lineTo(x, y + s1);
-        }
-      }
-
-      if(foundArc){
-        if(dirs !== 0)
-          g.arc(x + .5, y + .5, radius, phi2 + dphi, phi1 + dphi, 1);
-      }else{
-        g.closePath();
-      }
-
-      g.fill();
-      g.stroke();
-
-      g.concaveMode = 0;
+      this.g.concaveMode = 1;
+      this.g.drawTube(x, y, ds, size, round);
+      this.g.concaveMode = 0;
     }
 
     get(x, y){
@@ -1772,6 +1899,34 @@ var O = {
       }
     }
 
+    save(rot=0){
+      this.sPrev = this.s;
+      this.txPrev = this.tx;
+      this.tyPrev = this.ty;
+
+      if(rot){
+        this.rtxPrev = this.rtx;
+        this.rtyPrev = this.rty;
+        this.rotPrev = this.rot;
+        this.rcosPrev = this.rcos;
+        this.rsinPrev = this.rsin;
+      }
+    }
+
+    restore(rot=0){
+      this.s = this.sPrev;
+      this.tx = this.txPrev;
+      this.ty = this.tyPrev;
+
+      if(rot){
+        this.rtx = this.rtxPrev;
+        this.rty = this.rtyPrev;
+        this.rot = this.rotPrev;
+        this.rcos = this.rcosPrev;
+        this.rsin = this.rsinPrev;
+      }
+    }
+
     rect(x, y, w, h){
       var s1 = 1 / this.s;
 
@@ -1894,6 +2049,110 @@ var O = {
     removeFontModifiers(){
       this.fontModifiers = '';
       this.updateFont();
+    }
+
+    drawTube(x, y, dirs, size, round=0){
+      const g = this;
+
+      const s1 = (1 - size) / 2;
+      const s2 = 1 - s1;
+
+      const radius = Math.min(size, .5);
+
+      const p1 = (1 - Math.sqrt(radius * radius * 4 - size * size)) / 2;
+      const p2 = 1 - p1;
+
+      const phi1 = (1.9 - size / (radius * 4)) * O.pi;
+      const phi2 = phi1 + O.pi2 - size / radius * O.pih;
+
+      let dphi = 0;
+
+      let foundArc = round;
+
+      g.beginPath();
+
+      drawingBlock: {
+        if(round === 1){
+          switch(dirs){
+            case 0:
+              g.arc(x + .5, y + .5, radius, 0, O.pi2);
+              break;
+
+            case 1:
+              dphi = O.pi2 - (O.pi + O.pih);
+              g.moveTo(x + p2, y + s2);
+              g.lineTo(x + 1, y + s2);
+              g.lineTo(x + 1, y + s1);
+              g.lineTo(x + p2, y + s1);
+              break;
+
+            case 2:
+              dphi = O.pi;
+              g.moveTo(x + s1, y + p2);
+              g.lineTo(x + s1, y + 1);
+              g.lineTo(x + s2, y + 1);
+              g.lineTo(x + s2, y + p2);
+              break;
+
+            case 4:
+              dphi = O.pi2 - O.pih;
+              g.moveTo(x + p1, y + s1);
+              g.lineTo(x, y + s1);
+              g.lineTo(x, y + s2);
+              g.lineTo(x + p1, y + s2);
+              break;
+
+            case 8:
+              g.moveTo(x + s2, y + p1);
+              g.lineTo(x + s2, y);
+              g.lineTo(x + s1, y);
+              g.lineTo(x + s1, y + p1);
+              break;
+
+            default:
+              foundArc = 0;
+              break;
+          }
+
+          if(foundArc)
+            break drawingBlock;
+        }
+
+        g.moveTo(x + s1, y + s1);
+
+        if(dirs & 1){
+          g.lineTo(x + s1, y);
+          g.lineTo(x + s2, y);
+        }
+        g.lineTo(x + s2, y + s1);
+
+        if(dirs & 2){
+          g.lineTo(x + 1, y + s1);
+          g.lineTo(x + 1, y + s2);
+        }
+        g.lineTo(x + s2, y + s2);
+
+        if(dirs & 4){
+          g.lineTo(x + s2, y + 1);
+          g.lineTo(x + s1, y + 1);
+        }
+        g.lineTo(x + s1, y + s2);
+
+        if(dirs & 8){
+          g.lineTo(x, y + s2);
+          g.lineTo(x, y + s1);
+        }
+      }
+
+      if(foundArc){
+        if(dirs !== 0)
+          g.arc(x + .5, y + .5, radius, phi2 + dphi, phi1 + dphi, 1);
+      }else{
+        g.closePath();
+      }
+
+      g.fill();
+      g.stroke();
     }
   },
 
