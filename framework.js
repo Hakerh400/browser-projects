@@ -1050,12 +1050,11 @@ var O = {
     }
 
     iter(func){
-      var {w, h} = this;
+      const {w, h} = this;
 
-      for(var y = 0; y !== h; y++)
-        for(var x = 0; x !== w; x++)
+      for(let y = 0; y !== h; y++)
+        for(let x = 0; x !== w; x++)
           func(x, y, this.get(x, y));
-
     }
 
     iterate(func){
@@ -1143,7 +1142,7 @@ var O = {
 
       this.transform();
 
-      this.keys = new Set();
+      this.keys = O.obj();
       this.mbs = 0;
       this.cur = new O.Vector;
 
@@ -1161,14 +1160,14 @@ var O = {
       O.ael('keydown', evt => {
         const key = evt.code;
 
-        keys.add(key);
+        keys[key] = 1;
         this.emit(`k${key}`, cur.x, cur.y);
       });
 
       O.ael('keyup', evt => {
         const key = evt.code;
 
-        keys.delete(key);
+        keys[key] = 0;
         this.emit(`ku${key}`, cur.x, cur.y);
       });
 
@@ -1262,7 +1261,7 @@ var O = {
 
       if(drawf !== null){
         g.save();
-        grid.iterate((x, y, d) => {
+        grid.iter((x, y, d) => {
           g.translate(x, y);
           drawf(g, d, x, y);
           g.restore();
@@ -1272,7 +1271,7 @@ var O = {
       if(framef !== null){
         g.beginPath();
 
-        grid.iterate((x, y, d1) => {
+        grid.iter((x, y, d1) => {
           grid.adj(x, y, (xx, yy, d2, dir) => {
             if(!framef(g, d1, d2, x, y, dir)) return;
 

@@ -1,10 +1,10 @@
 'use strict';
 
 class Tile{
-  constructor(wall, dirs=0, locked=0){
-    this.wall = wall & 1;
-    this.dirs = dirs & 15;
-    this.locked = locked & 1;
+  constructor(wall=0, dirs=0, locked=0){
+    this.wall = wall;
+    this.dirs = dirs;
+    this.locked = locked;
   }
 
   toggleLock(){
