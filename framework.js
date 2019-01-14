@@ -1061,39 +1061,70 @@ var O = {
       this.iter(func);
     }
 
-    iterAdj(x, y, func){
-      var visited = new O.Map2D();
-      var queue = [x, y];
+    iterAdj(x, y, wrap, func=null){
+      if(func === null){
+        func = wrap;
+        wrap = 0;
+      }
+
+      const queued = new O.Map2D(x, y);
+      const visited = new O.Map2D();
+      const queue = [x, y];
 
       while(queue.length !== 0){
-        x = queue.shift(), y = queue.shift();
-        if(visited.has(x, y)) continue;
+        x = queue.shift();
+        y = queue.shift();
 
+        if(!queued.has(x, y)) throw null;
+        if(visited.has(x, y)) throw null;
+
+        queued.remove(x, y);
         visited.add(x, y);
-        if(!func(x, y, this.get(x, y))) continue;
 
-        this.adj(x, y, (x, y, d) => {
+        this.adj(x, y, wrap, (x1, y1, d, dir, wrapped) => {
           if(d === null) return;
-          if(!visited.has(x, y)) queue.push(x, y);
+          if(queued.has(x1, y1)) return;
+          if(visited.has(x1, y1)) return;
+
+          if(func(x1, y1, d, x, y, dir, wrapped)){
+            queue.push(x1, y1);
+            queued.add(x1, y1);
+          }
         });
       }
     }
 
-    adj(x, y, func){
-      return func(x, y - 1, this.get(x, y - 1), 0) ||
-             func(x + 1, y, this.get(x + 1, y), 1) ||
-             func(x, y + 1, this.get(x, y + 1), 2) ||
-             func(x - 1, y, this.get(x - 1, y), 3);
+    adj(x, y, wrap, func=null){
+      const {w, h} = this;
+
+      if(func === null){
+        func = wrap;
+        wrap = 0;
+      }
+
+      let wd = 0;
+
+      return func(x, (wd = wrap && y === 0) ? h - 1 : y - 1, this.get(x, y - 1, wrap), 0, wd) ||
+             func((wd = wrap && x === w - 1) ? 0 : x + 1, y, this.get(x + 1, y, wrap), 1, wd) ||
+             func(x, (wd = wrap && y === h - 1) ? 0 : y + 1, this.get(x, y + 1, wrap), 2, wd) ||
+             func((wd = wrap && x === 0) ? w - 1 : x - 1, y, this.get(x - 1, y, wrap), 3, wd);
     }
 
-    adjc(x, y, func){
-      return func(x - 1, y - 1, this.get(x - 1, y - 1), 0) ||
-             func(x + 1, y - 1, this.get(x + 1, y - 1), 1) ||
-             func(x - 1, y + 1, this.get(x - 1, y + 1), 2) ||
-             func(x + 1, y + 1, this.get(x + 1, y + 1), 3);
+    adjc(x, y, wrap, func=null){
+      const {w, h} = this;
+
+      if(func === null){
+        func = wrap;
+        wrap = 0;
+      }
+
+      return func(wrap && x === 0 ? w - 1 : x - 1, wrap && y === 0 ? h - 1 : y - 1, this.get(x - 1, y - 1, wrap), 0) ||
+             func(wrap && x === w - 1 ? 0 : x + 1, wrap && y === 0 ? h - 1 : y - 1, this.get(x + 1, y - 1, wrap), 1) ||
+             func(wrap && x === 0 ? w - 1 : x - 1, wrap && y === h - 1 ? 0 : y + 1, this.get(x - 1, y + 1, wrap), 2) ||
+             func(wrap && x === w - 1 ? 0 : x + 1, wrap && y === h - 1 ? 0 : y + 1, this.get(x + 1, y + 1, wrap), 3);
     }
 
-    nav(cs, dir){
+    nav(cs, dir, wrap=0){
       switch(dir){
         case 0: cs[1]--; break;
         case 1: cs[0]++; break;
@@ -1101,16 +1132,30 @@ var O = {
         case 3: cs[0]--; break;
       }
 
-      return this.get(cs[0], cs[1]);
+      return this.get(cs[0], cs[1], wrap);
     }
 
-    get(x, y){
-      if(!this.includes(x, y)) return null;
+    get(x, y, wrap=0){
+      const {w, h} = this;
+
+      if(!this.includes(x, y)){
+        if(!wrap) return null;
+        x = ((x % w) + w) % w;
+        y = ((y % h) + h) % h;
+      }
+
       return this.d[y][x];
     }
 
-    set(x, y, val){
-      if(!this.includes(x, y)) return null;
+    set(x, y, val, wrap=0){
+      const {w, h} = this;
+
+      if(!this.includes(x, y)){
+        if(!wrap) return null;
+        x = ((x % w) + w) % w;
+        y = ((y % h) + h) % h;
+      }
+
       this.d[y][x] = val;
     }
 
