@@ -100,6 +100,14 @@ function main(){
 }
 
 function generate(grid){
+  grid.iter((x, y, d) => {
+    d.wall = O.randf() < .05;
+    d.dirs = 0;
+    d.locked = 0;
+  });
+
+  return;
+
   const minNum = w * h * .75;
 
   mainLoop: while(1){
