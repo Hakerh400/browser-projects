@@ -2,7 +2,7 @@
 
 const Tile = require('./tile');
 
-const w = 21;
+const w = 41;
 const h = 21;
 
 window.setTimeout(main);

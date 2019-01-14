@@ -1067,16 +1067,13 @@ var O = {
         wrap = 0;
       }
 
+      const queue = [x, y];
       const queued = new O.Map2D(x, y);
       const visited = new O.Map2D();
-      const queue = [x, y];
 
       while(queue.length !== 0){
         x = queue.shift();
         y = queue.shift();
-
-        if(!queued.has(x, y)) throw null;
-        if(visited.has(x, y)) throw null;
 
         queued.remove(x, y);
         visited.add(x, y);
