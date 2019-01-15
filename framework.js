@@ -1166,10 +1166,10 @@ var O = {
   },
 
   GridGUI: class{
-    constructor(w, h, func=() => O.obj()){
+    constructor(w, h, s, func=() => O.obj()){
       this.func = func;
       this.grid = new O.SimpleGrid(w, h, func);
-      this.scale = 40;
+      this.scale = s;
 
       const {g, w: iw, h: ih} = O.ceCanvas(1);
       const [iwh, ihh] = [iw, ih].map(a => a / 2);
@@ -2107,7 +2107,6 @@ var O = {
       const phi2 = phi1 + O.pi2 - size / radius * O.pih;
 
       let dphi = 0;
-
       let foundArc = round;
 
       g.beginPath();
@@ -2194,6 +2193,35 @@ var O = {
 
       g.fill();
       g.stroke();
+
+      const col = g.strokeStyle;
+      const s = 1 / g.s;
+
+      g.strokeStyle = g.fillStyle;
+      g.beginPath();
+
+      if(dirs & 1){
+        g.moveTo(x + s1 + s, y);
+        g.lineTo(x + s2 - s, y);
+      }
+
+      if(dirs & 2){
+        g.moveTo(x + 1, y + s1 + s);
+        g.lineTo(x + 1, y + s2 - s);
+      }
+
+      if(dirs & 4){
+        g.moveTo(x + s2 - s, y + 1);
+        g.lineTo(x + s1 + s, y + 1);
+      }
+
+      if(dirs & 8){
+        g.moveTo(x, y + s2);
+        g.lineTo(x, y + s1 + s);
+      }
+
+      g.stroke();
+      g.strokeStyle = col;
     }
   },
 

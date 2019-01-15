@@ -2,13 +2,16 @@
 
 const Tile = require('./tile');
 
-const w = 41;
-const h = 21;
+const w = 11;
+const h = 11;
+const s = 40;
+
+const density = .025;
 
 window.setTimeout(main);
 
 function main(){
-  const gui = new O.GridGUI(w, h, () => {
+  const gui = new O.GridGUI(w, h, s, () => {
     return new Tile();
   });
 
@@ -51,16 +54,16 @@ function main(){
         g.fillStyle = highlighted.has(x, y) ? '#ff0' : '#0f0';
       }
 
-      g.drawTube(0, 0, dirs, .25);
+      g.drawTube(0, 0, dirs, .3);
     }
   });
 
   gui.on('frame', (g, d1, d2, x, y, dir) => {
     if(d2 === null) return 1;
-    return !(d1.wall && d2.wall);
+    return d1.wall ^ d2.wall;
   });
 
-  gui.on('kKeyR', (x, y) => {
+  gui.on('kF2', (x, y) => {
     generate(grid);
     colorized = 0;
     highlighted.reset();
@@ -169,49 +172,8 @@ function main(){
 
 function generate(grid){
   grid.iter((x, y, d) => {
-    d.wall = O.randf() < .05;
+    d.wall = O.randf() < density;
     d.dirs = 0;
     d.locked = 0;
   });
-
-  return;
-
-  const minNum = w * h * .75;
-
-  mainLoop: while(1){
-    const sx = O.rand(w);
-    const sy = O.rand(h);
-
-    const vs = new O.Map2D(sx, sy);
-
-    let x = sx, y = sy;
-    let num = 0;
-
-    do{
-      const adj = [];
-
-      grid.adj(x, y, 1, (xn, yn) => {
-        if(xn === sx && yn === sy || !vs.has(xn, yn))
-          adj.push(xn, yn);
-      });
-
-      if(adj.length === 0)
-        continue mainLoop;
-
-      const i = O.rand(adj.length >> 1) << 1;
-
-      x = adj[i], y = adj[i + 1];
-      vs.add(x, y);
-      num++;
-    }while(!(x === sx && y === sy));
-
-    grid.iter((x, y, d) => {
-      d.wall = !vs.has(x, y);
-      d.dirs = 0;
-      d.locked = 0;
-    });
-
-    if(num < minNum) continue;
-    break;
-  };
 }
