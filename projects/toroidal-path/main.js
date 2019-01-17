@@ -1,60 +1,67 @@
 'use strict';
 
+const Solver = require('./solver');
 const Tile = require('./tile');
 
-const w = 11;
-const h = 11;
+const AUTO = 1;
+
+const w = 45;
+const h = 21;
 const s = 40;
 
-const density = .025;
+const density = .05;
+
+O.enhanceRNG();
+const seed = O.urlParam('seed');
+if(seed !== null)
+  O.randSeed(seed);
+
+const gui = new O.GridGUI(w, h, s, initFunc);
+const {grid, keys, cur} = gui;
+
+let solving = 0;
+let solver = null;
 
 window.setTimeout(main);
 
 function main(){
-  const gui = new O.GridGUI(w, h, s, () => {
-    return new Tile();
-  });
-
-  const {grid, keys, cur} = gui;
   const highlighted = new O.Map2D();
+
   let colorized = 0;
 
-  generate(grid);
-
   gui.on('draw', (g, d, x, y) => {
-    g.fillStyle =
-      d.wall ? '#840' :
-      d.locked ? '#888' :
-      colorized && (d.dirs === 0 || (1 << d.dirs) & 278) ?
-        (x ^ y) & 1 ? '#f08' : '#0ff' :
-      '#ccc';
-
+    g.fillStyle = '#ccc';
     g.fillRect(0, 0, 1, 1);
 
+    g.strokeStyle = '#bbb';
+    g.beginPath();
+    g.moveTo(1, 0);
+    g.lineTo(0, 0);
+    g.lineTo(0, 1);
+    g.stroke();
+    g.strokeStyle = 'black';
+  });
+
+  gui.on('draw', (g, d, x, y) => {
+    const col =
+      d.wall ? '#840' :
+      d.locked ? '#888' :
+      colorized && ((1 << d.dirs) & 279) ?
+        (x ^ y) & 1 ? '#f08' : '#0ff' :
+      null;
+
+    if(col !== null){
+      g.fillStyle = col;
+      g.fillRect(0, 0, 1, 1);
+    }
+
     if(!d.wall){
-      let dirs = d.dirs;
+      const {dirs} = d;
 
-      if(keys.KeyA){
-        if(d.locked){
-          dirs = 0;
-        }else{
-          if(!((x ^ y ^ cur.x ^ cur.y) & 1))
-            dirs ^= 15;
-        }
-
-        grid.adj(x, y, 1, (x, y, d, dir) => {
-          if(!d) return;
-
-          if(d.wall || d.locked)
-            dirs &= ~(1 << dir);
-        });
-
-        g.fillStyle = '#f80';
-      }else{
-        g.fillStyle = highlighted.has(x, y) ? '#ff0' : '#0f0';
-      }
-
-      g.drawTube(0, 0, dirs, .3);
+      g.fillStyle = highlighted.has(x, y) ? '#ff0' : '#0f0';
+      
+      if(dirs !== 0)
+        g.drawTube(0, 0, dirs, .3);
     }
   });
 
@@ -66,6 +73,7 @@ function main(){
   gui.on('kF2', (x, y) => {
     generate(grid);
     colorized = 0;
+    solving = 0;
     highlighted.reset();
   });
 
@@ -96,22 +104,37 @@ function main(){
   });
 
   gui.on('kKeyW', (x, y) => {
-    grid.iter((x, y, d) => {
-      let dirs = (x ^ y) & 1 ? 3 : 12;
-
-      grid.adj(x, y, 1, (x, y, d1, dir, wrapped) => {
-        if(!d1) return;
-
-        if(wrapped || d1.wall || d1.locked)
-          dirs &= ~(1 << dir);
-      });
-
-      d.dirs = dirs;
-    });
+    colorized ^= 1;
   });
 
-  gui.on('kKeyE', (x, y) => {
-    colorized ^= 1;
+  gui.on('kKeyS', () => {
+    if(!solving){
+      solver = new Solver(gui);
+      solving = 1;
+      colorized = 0;
+    }
+
+    if(!solver.move()){
+      solving = 0;
+      solver = null;
+    }
+  });
+
+  gui.on('kKeyA', () => {
+    solver = new Solver(gui);
+    colorized = 0;
+
+    while(solver.move());
+
+    if(!solver.solved){
+      grid.iter((x, y, d) => {
+        d.dirs = 0;
+      });
+    }
+
+    colorized = 0;
+    solving = 0;
+    solver = null;
   });
 
   gui.on('dragl', (x1, y1, x2, y2, dir) => {
@@ -167,13 +190,87 @@ function main(){
     d2.dirs ^= 1 << (dir ^ 2);
   });
 
+  if(AUTO){
+    let started = 0;
+
+    const next = () => {
+      do{
+        generate(grid);
+        colorized = 0;
+        solving = 0;
+        highlighted.reset();
+      }while(!check());
+
+      started = 0;
+    };
+
+    const start = () => {
+      grid.iter((x, y, d) => d.dirs = 0);
+
+      solver = new Solver(gui);
+      solving = 1;
+      colorized = 0;
+      started = 1;
+    };
+
+    const check = () => {
+      solver = new Solver(gui);
+      colorized = 0;
+
+      while(solver.move());
+      const {solved} = solver;
+
+      grid.iter((x, y, d) => d.dirs = 0);
+
+      colorized = 0;
+      solver = null;
+
+      return solved;
+    };
+
+    const move = () => {
+      if(!solving) return;
+
+      if(!solver.move()){
+        solving = 0;
+        solver = null;
+      }
+    };
+
+    gui.on('tick', () => {
+      move();
+    });
+
+    gui.on('kEnter', () => {
+      start();
+    });
+
+    gui.on('kArrowRight', () => {
+      next();
+    });
+
+    next();
+  }
+
+  gui.on('kKeyM', () => {
+    location.href = location.href.replace(/\d+$/, a => -~a);
+  });
+
   gui.render();
 }
 
 function generate(grid){
-  grid.iter((x, y, d) => {
-    d.wall = O.randf() < density;
-    d.dirs = 0;
-    d.locked = 0;
-  });
+  grid.iter(genFunc);
+}
+
+function initFunc(x, y){
+  const d = new Tile();
+  genFunc(x, y, d);
+  return d;
+}
+
+function genFunc(x, y, d){
+  d.wall = O.randf() < density;
+  d.dirs = 0;
+  d.locked = 0;
 }

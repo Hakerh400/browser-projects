@@ -19,36 +19,13 @@ var O = {
   pih: Math.PI / 2,
   pi32: Math.PI * 3 / 2,
 
-  /*
-    Symbols
-  */
-
   static: Symbol('static'),
-
-  /*
-    Project
-  */
-
   project: null,
-
-  /*
-    Cache
-  */
-
   moduleCache: null,
-
-  /*
-    Storage
-  */
-
   storage: null,
-
-  /*
-    Other parameters
-  */
-
   enhancedRNG: 0,
   fastSha256: 1,
+  rseed: null,
 
   /*
     Main functions
@@ -96,7 +73,7 @@ var O = {
           });
         });
       }else{
-        O.req(`/projects/${O.project}/main`);
+        O.req(`/projects/${O.project}/main`).catch(O.error);
       }
     }
   },
@@ -119,7 +96,7 @@ var O = {
       }
 
       if(isNode){
-        var indentStr = '  '.repeat(indent);
+        var indentStr = ' '.repeat(indent << 1);
         var str = O.inspect(args);
 
         str = O.sanl(str).map(line => {
@@ -603,6 +580,12 @@ var O = {
     O.repeat(10, () => O.random());
   },
 
+  randSeed(seed){
+    this.rseed = seed | 0;
+    O.randState = O.Buffer.alloc(0);
+    O.repeat(10, () => O.random());
+  },
+
   random(){
     if(!O.enhancedRNG)
       return Math.random();
@@ -610,8 +593,12 @@ var O = {
     var st = O.randState;
     var val = read();
 
-    write(Date.now());
-    write(Math.random() * 2 ** 64);
+    if(O.rseed !== null){
+      write(O.rseed);
+    }else{
+      write(Date.now());
+      write(Math.random() * 2 ** 64);
+    }
 
     O.randState = O.sha256(st);
     return val / 2 ** 64;
@@ -1061,6 +1048,45 @@ var O = {
       this.iter(func);
     }
 
+    some(func){
+      const {w, h} = this;
+
+      for(let y = 0; y !== h; y++)
+        for(let x = 0; x !== w; x++)
+          if(func(x, y, this.get(x, y)))
+            return 1;
+
+      return 0;
+    }
+
+    find(v, func){
+      const {w, h} = this;
+
+      for(let y = 0; y !== h; y++){
+        for(let x = 0; x !== w; x++){
+          if(func(x, y, this.get(x, y))){
+            v.x = x;
+            v.y = y;
+            return 1;
+          }
+        }
+      }
+
+      return 0;
+    }
+
+    count(func){
+      const {w, h} = this;
+      let num = 0;
+
+      for(let y = 0; y !== h; y++)
+        for(let x = 0; x !== w; x++)
+          if(func(x, y, this.get(x, y)))
+            num++;
+
+      return num;
+    }
+
     iterAdj(x, y, wrap, func=null){
       if(func === null){
         func = wrap;
@@ -1072,8 +1098,8 @@ var O = {
       const visited = new O.Map2D();
 
       while(queue.length !== 0){
-        x = queue.shift();
-        y = queue.shift();
+        const x = queue.shift();
+        const y = queue.shift();
 
         queued.remove(x, y);
         visited.add(x, y);
@@ -1101,10 +1127,12 @@ var O = {
 
       let wd = 0;
 
-      return func(x, (wd = wrap && y === 0) ? h - 1 : y - 1, this.get(x, y - 1, wrap), 0, wd) ||
-             func((wd = wrap && x === w - 1) ? 0 : x + 1, y, this.get(x + 1, y, wrap), 1, wd) ||
-             func(x, (wd = wrap && y === h - 1) ? 0 : y + 1, this.get(x, y + 1, wrap), 2, wd) ||
-             func((wd = wrap && x === 0) ? w - 1 : x - 1, y, this.get(x - 1, y, wrap), 3, wd);
+      return (
+        func(x, (wd = wrap && y === 0) ? h - 1 : y - 1, this.get(x, y - 1, wrap), 0, wd) ||
+        func((wd = wrap && x === w - 1) ? 0 : x + 1, y, this.get(x + 1, y, wrap), 1, wd) ||
+        func(x, (wd = wrap && y === h - 1) ? 0 : y + 1, this.get(x, y + 1, wrap), 2, wd) ||
+        func((wd = wrap && x === 0) ? w - 1 : x - 1, y, this.get(x - 1, y, wrap), 3, wd)
+      );
     }
 
     adjc(x, y, wrap, func=null){
@@ -1115,21 +1143,124 @@ var O = {
         wrap = 0;
       }
 
-      return func(wrap && x === 0 ? w - 1 : x - 1, wrap && y === 0 ? h - 1 : y - 1, this.get(x - 1, y - 1, wrap), 0) ||
-             func(wrap && x === w - 1 ? 0 : x + 1, wrap && y === 0 ? h - 1 : y - 1, this.get(x + 1, y - 1, wrap), 1) ||
-             func(wrap && x === 0 ? w - 1 : x - 1, wrap && y === h - 1 ? 0 : y + 1, this.get(x - 1, y + 1, wrap), 2) ||
-             func(wrap && x === w - 1 ? 0 : x + 1, wrap && y === h - 1 ? 0 : y + 1, this.get(x + 1, y + 1, wrap), 3);
+      return (
+        func(wrap && x === 0 ? w - 1 : x - 1, wrap && y === 0 ? h - 1 : y - 1, this.get(x - 1, y - 1, wrap), 0) ||
+        func(wrap && x === w - 1 ? 0 : x + 1, wrap && y === 0 ? h - 1 : y - 1, this.get(x + 1, y - 1, wrap), 1) ||
+        func(wrap && x === 0 ? w - 1 : x - 1, wrap && y === h - 1 ? 0 : y + 1, this.get(x - 1, y + 1, wrap), 2) ||
+        func(wrap && x === w - 1 ? 0 : x + 1, wrap && y === h - 1 ? 0 : y + 1, this.get(x + 1, y + 1, wrap), 3)
+      );
     }
 
-    nav(cs, dir, wrap=0){
-      switch(dir){
-        case 0: cs[1]--; break;
-        case 1: cs[0]++; break;
-        case 2: cs[1]++; break;
-        case 3: cs[0]--; break;
+    findAdj(x, y, wrap, func=null){
+      const {w, h} = this;
+
+      if(func === null){
+        func = wrap;
+        wrap = 0;
       }
 
-      return this.get(cs[0], cs[1], wrap);
+      let dir = 0;
+      let wd;
+
+      const found = (
+        func(x, (wd = wrap && y === 0) ? h - 1 : y - 1, this.get(x, y - 1, wrap), dir++, wd) ||
+        func((wd = wrap && x === w - 1) ? 0 : x + 1, y, this.get(x + 1, y, wrap), dir++, wd) ||
+        func(x, (wd = wrap && y === h - 1) ? 0 : y + 1, this.get(x, y + 1, wrap), dir++, wd) ||
+        func((wd = wrap && x === 0) ? w - 1 : x - 1, y, this.get(x - 1, y, wrap), dir++, wd)
+      );
+
+      if(!found) return -1;
+      return dir - 1;
+    }
+
+    nav(v, dir, wrap=0){
+      const {w, h} = this;
+
+      switch(dir){
+        case 0: v.y--; break;
+        case 1: v.x++; break;
+        case 2: v.y++; break;
+        case 3: v.x--; break;
+      }
+
+      if(wrap){
+        if(v.x === -1) v.x = w - 1;
+        if(v.y === -1) v.y = h - 1;
+        if(v.x === w) v.x = 0;
+        if(v.y === h) v.y = 0;
+      }
+
+      return this.get(v.x, v.y, wrap);
+    }
+
+    path(xs, ys, wrap=null, all=null, func=null){
+      if(func === null){
+        if(all === null){
+          func = wrap;
+          wrap = 0;
+        }else{
+          func = all;
+        }
+        all = 0;
+      }
+
+      const queue = [[xs, ys, [], new O.Map2D(xs, ys), '']];
+      const queued = O.obj();
+      const visited = O.obj();
+
+      let path = null;
+
+      queued[''] = new O.Map2D(xs, ys);
+
+      while(queue.length !== 0){
+        const [x, y, pp, cp, sp] = queue.shift();
+
+        queued[sp].remove(x, y);
+
+        if(!(sp in visited))
+          visited[sp] = new O.Map2D(x, y);
+        else
+          visited[sp].add(x, y);
+
+        if(this.adj(x, y, wrap, (x1, y1, d, dir, wrapped) => {
+          const start = x1 === xs && y1 === ys;
+          if(!start && cp.has(x1, y1)) return;
+
+          const p = pp.slice();
+          const c = cp.clone();
+          const s = all ? sp + dir : wrap && (pp.length & 1) ? '1' : '';
+
+          p.push(dir);
+          c.add(x1, y1);
+
+          if(!start){
+            if((s in queued) && queued[s].has(x1, y1)) return;
+            if((s in visited) && visited[s].has(x1, y1)) return;
+          }
+
+          switch(func(x1, y1, d, x, y, dir, wrapped, p, c)){
+            case 1:
+              if(start) break;
+              queue.push([x1, y1, p, c, s]);
+              if(!(s in queued))
+                queued[s] = new O.Map2D(x1, y1);
+              else
+                queued[s].add(x1, y1);
+              break;
+
+            case 2:
+              path = p;
+              return 1;
+              break;
+          }
+        })) break;
+      }
+
+      return path;
+    }
+
+    findPath(x, y, wrap, all, func){
+      this.path(x, y, wrap, all, func);
     }
 
     get(x, y, wrap=0){
@@ -1188,8 +1319,12 @@ var O = {
       this.mbs = 0;
       this.cur = new O.Vector;
 
-      this.drawf = O.nop();
-      this.framef = O.nop();
+      this.funcs = {
+        draw: [],
+        frame: [],
+      };
+
+      this.wrap = 0;
 
       this.ls = O.obj();
       this.aels();
@@ -1296,12 +1431,16 @@ var O = {
       g.translate(-grid.w / 2, -grid.h / 2);
     }
 
+    tick(){
+      this.emit('tick');
+    }
+
     draw(){
-      const {grid, g, drawf, framef} = this;
+      const {grid, g, funcs, wrap} = this;
 
       g.clearCanvas('darkgray');
 
-      if(drawf !== null){
+      for(const drawf of funcs.draw){
         g.save();
         grid.iter((x, y, d) => {
           g.translate(x, y);
@@ -1310,11 +1449,13 @@ var O = {
         });
       }
 
-      if(framef !== null){
+      for(const framef of funcs.frame){
         g.beginPath();
 
         grid.iter((x, y, d1) => {
-          grid.adj(x, y, (xx, yy, d2, dir) => {
+          grid.adj(x, y, wrap, (xx, yy, d2, dir) => {
+            if(dir === 3 && x !== 0) return;
+            if(dir === 0 && y !== 0) return;
             if(!framef(g, d1, d2, x, y, dir)) return;
 
             switch(dir){
@@ -1346,7 +1487,9 @@ var O = {
     }
 
     render(){
+      this.tick();
       this.draw();
+
       O.raf(this.render.bind(this));
     }
 
@@ -1362,12 +1505,12 @@ var O = {
 
     on(type, func){
       if(type === 'draw'){
-        this.drawf = func;
+        this.funcs.draw.push(func);
         return;
       }
 
       if(type === 'frame'){
-        this.framef = func;
+        this.funcs.frame.push(func);
         return;
       }
 
@@ -1627,9 +1770,21 @@ var O = {
         this.add(x, y, val);
     }
 
-    reset(){
+    reset(x=null, y=null, val=1){
       this.d = O.obj();
-      return this;
+
+      if(x !== null)
+        this.add(x, y, val);
+    }
+
+    empty(){
+      this.reset();
+    }
+
+    clone(){
+      const map = new O.Map2D();
+      this.iter((x, y, d) => map.add(x, y, d));
+      return map;
     }
 
     get(x, y, defaultVal=null){
@@ -1657,31 +1812,74 @@ var O = {
       delete d[y][x];
     }
 
+    delete(x, y){
+      this.remove(x, y);
+    }
+
+    del(x, y){
+      this.remove(x, y);
+    }
+
     has(x, y){
       var {d} = this;
 
       if(!(y in d)) return 0;
-      return d[y][x];
+      if(!(x in d[y])) return 0;
+      return 1;
+    }
+
+    iter(func){
+      const {d} = this;
+
+      for(let y in d)
+        for(let x in d[y |= 0])
+          func(x |= 0, y, d[y][x]);
+    }
+
+    iterate(func){
+      this.iter(func);
+    }
+
+    some(func){
+      const {d} = this;
+
+      for(let y in d)
+        for(let x in d[y |= 0])
+          if(func(x |= 0, y, d[y][x]))
+            return;
+    }
+
+    find(v, func){
+      const {d} = this;
+
+      for(let y in d){
+        for(let x in d[y |= 0]){
+          const val = d[y][x |= 0];
+
+          if(func(x, y, val)){
+            v.x = x;
+            v.y = y;
+
+            return val;
+          }
+        }
+      }
+
+      return null;
     }
 
     getArr(){
-      var {d} = this;
-      var arr = [];
-
-      O.keys(d).forEach(y => {
-        y |= 0;
-        O.keys(d[y]).forEach(x => {
-          x |= 0;
-          arr.push([x, y]);
-        });
-      });
-
+      const arr = [];
+      this.iter((x, y) => arr.push([x, y]));
       return arr;
     }
 
-    [Symbol.iterator](){
-      var arr = this.getArr();
-      return arr[Symbol.iterator]();
+    *[Symbol.iterator](){
+      const {d} = this;
+
+      for(let y in d)
+        for(let x in d[y |= 0])
+          yield [x |= 0, y, d[y][x]];
     }
   },
 
@@ -1751,6 +1949,129 @@ var O = {
 
       return arr;
     }
+  },
+
+  CoordsColle: class{
+    constructor(x=null, y=null){
+      this.map = new O.Map2D();
+      this.arr = [];
+
+      if(x !== null)
+        this.add(x, y);
+    }
+
+    reset(x=null, y=null){
+      this.map.reset();
+      this.arr.length = 0;
+
+      if(x !== null)
+        this.add(x, y);
+    }
+
+    empty(){
+      this.reset();
+    }
+
+    len(){
+      return this.arr.length >> 1;
+    }
+
+    isEmpty(){
+      return this.len() === 0;
+    }
+
+    has(x, y){
+      return this.map.has(x, y);
+    }
+
+    add(x, y, top=1){
+      const {map, arr} = this;
+
+      if(!map.has(x, y)){
+        map.add(x, y, arr.length);
+        arr.push(x, y);
+        return;
+      }
+
+      if(!top) return;
+
+      const i = map.get(x, y);
+      const j = arr.length - 2;
+      if(i === j) return;
+
+      const x1 = arr[j];
+      const y1 = arr[j + 1];
+
+      map.set(x, y, j);
+      map.set(x1, y1, i);
+      arr[j] = x, arr[j + 1] = y;
+      arr[i] = x1, arr[i + 1] = y1;
+    }
+
+    push(x, y){
+      this.add(x, y);
+    }
+
+    remove(x, y){
+      const {map, arr} = this;
+      if(!map.has(x, y)) return;
+
+      const i = map.get(x, y);
+      this.removeByIndex(i);
+    }
+
+    delete(x, y){
+      this.remove(x, y);
+    }
+
+    del(x, y){
+      this.remove(x, y);
+    }
+
+    removeByIndex(i){
+      const {map, arr} = this;
+      const j = arr.length - 2;
+
+      const x = arr[i];
+      const y = arr[i + 1];
+      map.remove(x, y);
+
+      if(i !== j){
+        const x1 = arr[j];
+        const y1 = arr[j + 1];
+
+        map.set(x1, y1, i);
+        arr[i] = x1, arr[i + 1] = y1;
+      }
+
+      arr.length = j;
+    }
+
+    pop(v){
+      return this.getByIndex(v, this.arr.length - 2, 1);
+    }
+
+    rand(v, remove=0){
+      return this.getByIndex(v, O.rand(this.arr.length) & ~1, remove);
+    }
+
+    getByIndex(v, i, remove=0){
+      const {arr} = this;
+      if((i & 1) || i < 0 || i >= arr.length) return null;
+
+      v.x = arr[i];
+      v.y = arr[i + 1];
+
+      if(remove)
+        this.removeByIndex(i);
+
+      return v;
+    }
+
+    iter(func){ return this.map.iter(func); }
+    some(func){ return this.map.some(func); }
+    find(v, func){ return this.map.find(v, func); }
+    [Symbol.iterator](){ return this.map[Symbol.iterator](); }
   },
 
   EnhancedRenderingContext: class{
