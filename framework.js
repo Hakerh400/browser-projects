@@ -2440,6 +2440,13 @@ var O = {
               break;
 
             case 1:
+              g.moveTo(x + s2, y + p1);
+              g.lineTo(x + s2, y);
+              g.lineTo(x + s1, y);
+              g.lineTo(x + s1, y + p1);
+              break;
+
+            case 2:
               dphi = O.pi2 - (O.pi + O.pih);
               g.moveTo(x + p2, y + s2);
               g.lineTo(x + 1, y + s2);
@@ -2447,7 +2454,7 @@ var O = {
               g.lineTo(x + p2, y + s1);
               break;
 
-            case 2:
+            case 4:
               dphi = O.pi;
               g.moveTo(x + s1, y + p2);
               g.lineTo(x + s1, y + 1);
@@ -2455,19 +2462,12 @@ var O = {
               g.lineTo(x + s2, y + p2);
               break;
 
-            case 4:
+            case 8:
               dphi = O.pi2 - O.pih;
               g.moveTo(x + p1, y + s1);
               g.lineTo(x, y + s1);
               g.lineTo(x, y + s2);
               g.lineTo(x + p1, y + s2);
-              break;
-
-            case 8:
-              g.moveTo(x + s2, y + p1);
-              g.lineTo(x + s2, y);
-              g.lineTo(x + s1, y);
-              g.lineTo(x + s1, y + p1);
               break;
 
             default:
@@ -2508,41 +2508,43 @@ var O = {
       if(foundArc){
         if(dirs !== 0)
           g.arc(x + .5, y + .5, radius, phi2 + dphi, phi1 + dphi, 1);
+
+        g.fill();
+        g.stroke();
       }else{
         g.closePath();
+        g.fill();
+        g.stroke();
+
+        const col = g.strokeStyle;
+        const s = 1 / g.s;
+
+        g.strokeStyle = g.fillStyle;
+        g.beginPath();
+
+        if(dirs & 1){
+          g.moveTo(x + s1 + s, y);
+          g.lineTo(x + s2 - s, y);
+        }
+
+        if(dirs & 2){
+          g.moveTo(x + 1, y + s1 + s);
+          g.lineTo(x + 1, y + s2 - s);
+        }
+
+        if(dirs & 4){
+          g.moveTo(x + s2 - s, y + 1);
+          g.lineTo(x + s1 + s, y + 1);
+        }
+
+        if(dirs & 8){
+          g.moveTo(x, y + s2);
+          g.lineTo(x, y + s1 + s);
+        }
+
+        g.stroke();
+        g.strokeStyle = col;
       }
-
-      g.fill();
-      g.stroke();
-
-      const col = g.strokeStyle;
-      const s = 1 / g.s;
-
-      g.strokeStyle = g.fillStyle;
-      g.beginPath();
-
-      if(dirs & 1){
-        g.moveTo(x + s1 + s, y);
-        g.lineTo(x + s2 - s, y);
-      }
-
-      if(dirs & 2){
-        g.moveTo(x + 1, y + s1 + s);
-        g.lineTo(x + 1, y + s2 - s);
-      }
-
-      if(dirs & 4){
-        g.moveTo(x + s2 - s, y + 1);
-        g.lineTo(x + s1 + s, y + 1);
-      }
-
-      if(dirs & 8){
-        g.moveTo(x, y + s2);
-        g.lineTo(x, y + s1 + s);
-      }
-
-      g.stroke();
-      g.strokeStyle = col;
     }
   },
 
