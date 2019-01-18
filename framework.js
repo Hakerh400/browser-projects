@@ -1204,7 +1204,7 @@ var O = {
         all = 0;
       }
 
-      const queue = [[xs, ys, [], new O.Map2D(xs, ys), '']];
+      const queue = [[xs, ys, [], new O.Map2D(xs, ys, 0), '']];
       const queued = O.obj();
       const visited = O.obj();
 
@@ -1214,6 +1214,7 @@ var O = {
 
       while(queue.length !== 0){
         const [x, y, pp, cp, sp] = queue.shift();
+        const dirp = pp.length !== 0 ? O.last(pp) ^ 2 : -1;
 
         queued[sp].remove(x, y);
 
@@ -1223,22 +1224,28 @@ var O = {
           visited[sp].add(x, y);
 
         if(this.adj(x, y, wrap, (x1, y1, d, dir, wrapped) => {
+          if(dir === dirp) return;
+
           const start = x1 === xs && y1 === ys;
-          if(!start && cp.has(x1, y1)) return;
+
+          if(!start){
+            const len = cp.get(x1, y1);
+            if(len !== null && ((len ^ pp.length) & 1)) return;
+          }
 
           const p = pp.slice();
           const c = cp.clone();
           const s = all ? sp + dir : wrap && (pp.length & 1) ? '1' : '';
 
           p.push(dir);
-          c.add(x1, y1);
+          c.add(x1, y1, p.length);
 
           if(!start){
             if((s in queued) && queued[s].has(x1, y1)) return;
             if((s in visited) && visited[s].has(x1, y1)) return;
           }
 
-          switch(func(x1, y1, d, x, y, dir, wrapped, p, c)){
+          switch(func(x1, y1, d, x, y, dir, wrapped, p, c, cp)){
             case 1:
               if(start) break;
               queue.push([x1, y1, p, c, s]);
@@ -1787,6 +1794,16 @@ var O = {
       return map;
     }
 
+    eq(map){
+      if(this.some((x, y) => !map.has(x, y))) return 0;
+      if(map.some((x, y) => !this.has(x, y))) return 0;
+      return 1;
+    }
+
+    neq(map){
+      return !this.eq(map);
+    }
+
     get(x, y, defaultVal=null){
       if(!this.has(x, y)) return defaultVal;
       return this.d[y][x];
@@ -1978,6 +1995,15 @@ var O = {
 
     isEmpty(){
       return this.len() === 0;
+    }
+
+    eq(cc){
+      if(this.len() !== cc.len()) return 0;
+      return !this.some((x, y) => !cc.has(x, y));
+    }
+
+    neq(cc){
+      return !this.eq(cc);
     }
 
     has(x, y){

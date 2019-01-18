@@ -5,16 +5,16 @@ const Tile = require('./tile');
 
 const AUTO = 1;
 
-const w = 45;
-const h = 21;
+const w = 11;
+const h = 11;
 const s = 40;
 
-const density = .05;
+const density = .2;
+const speed = 1;
 
 O.enhanceRNG();
-const seed = O.urlParam('seed');
-if(seed !== null)
-  O.randSeed(seed);
+let seed = O.urlParam('seed');
+if(seed !== null) O.randSeed(seed |= 0);
 
 const gui = new O.GridGUI(w, h, s, initFunc);
 const {grid, keys, cur} = gui;
@@ -44,6 +44,7 @@ function main(){
 
   gui.on('draw', (g, d, x, y) => {
     const col =
+      d.z ? '#f00' :
       d.wall ? '#840' :
       d.locked ? '#888' :
       colorized && ((1 << d.dirs) & 279) ?
@@ -70,11 +71,11 @@ function main(){
     return d1.wall ^ d2.wall;
   });
 
-  gui.on('kF2', (x, y) => {
-    generate(grid);
-    colorized = 0;
-    solving = 0;
-    highlighted.reset();
+  gui.on('kF3', (x, y) => {
+    grid.iter((x, y, d) => {
+      d.dirs = 0;
+      d.locked = 0;
+    });
   });
 
   gui.on('kSpace', (x, y) => {
@@ -107,7 +108,7 @@ function main(){
     colorized ^= 1;
   });
 
-  gui.on('kKeyS', () => {
+  gui.on('kEnter', () => {
     if(!solving){
       solver = new Solver(gui);
       solving = 1;
@@ -190,9 +191,7 @@ function main(){
     d2.dirs ^= 1 << (dir ^ 2);
   });
 
-  if(AUTO){
-    let started = 0;
-
+  {
     const next = () => {
       do{
         generate(grid);
@@ -200,17 +199,6 @@ function main(){
         solving = 0;
         highlighted.reset();
       }while(!check());
-
-      started = 0;
-    };
-
-    const start = () => {
-      grid.iter((x, y, d) => d.dirs = 0);
-
-      solver = new Solver(gui);
-      solving = 1;
-      colorized = 0;
-      started = 1;
     };
 
     const check = () => {
@@ -238,11 +226,8 @@ function main(){
     };
 
     gui.on('tick', () => {
-      move();
-    });
-
-    gui.on('kEnter', () => {
-      start();
+      if(!AUTO) return;
+      O.repeat(speed, move);
     });
 
     gui.on('kArrowRight', () => {
@@ -253,10 +238,17 @@ function main(){
   }
 
   gui.on('kKeyM', () => {
-    location.href = location.href.replace(/\d+$/, a => -~a);
+    location.href = location.href.replace(/&seed=\d+|$/, a => {
+      return `&seed=${seed !== null ? seed + 1 : 1}`;
+    });
   });
 
   gui.render();
+
+  /////////////////////////////
+
+  if(seed !== null)
+    gui.emit('kKeyA');
 }
 
 function generate(grid){
