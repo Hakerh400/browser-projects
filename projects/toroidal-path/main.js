@@ -245,8 +245,6 @@ function main(){
 
   gui.render();
 
-  /////////////////////////////
-
   if(seed !== null)
     gui.emit('kKeyA');
 }

@@ -765,6 +765,17 @@ var O = {
   hypot(x, y){ return Math.sqrt(x * x + y * y); },
   proto(obj){ return Object.getPrototypeOf(obj); },
 
+  allKeys(obj){
+    const arr = [];
+
+    while(obj !== null){
+      arr.push(O.keys(obj));
+      obj = O.proto(obj);
+    }
+
+    return arr;
+  },
+
   /*
     Events
   */
