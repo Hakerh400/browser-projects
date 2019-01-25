@@ -17,3 +17,4 @@ text-editor
 virtual-machines
 toroidal-path
 shortest-path
+color
