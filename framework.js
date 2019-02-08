@@ -1917,28 +1917,11 @@ class Serializer extends IO{
     return (num | mask) - 1;
   }
 
-  writeStr(str){
-    this.writeInt(str.length);
-
-    for(const char of str)
-      this.write(O.cc(char), 255);
-  }
-
-  readStr(){
-    const len = this.readInt();
-    let str = '';
-
-    for(let i = 0; i !== len; i++)
-      str += O.sfcc(this.read(255));
-
-    return str;
-  }
-
   writeBuf(buf){
     this.writeInt(buf.length);
 
     for(const byte of buf)
-      this.write(buf, 255);
+      this.write(byte, 255);
   }
 
   readBuf(){
@@ -1949,6 +1932,14 @@ class Serializer extends IO{
       buf[i] = this.read(255);
 
     return buf;
+  }
+
+  writeStr(str){
+    this.writeBuf(O.Buffer.from(str, 'utf8'));
+  }
+
+  readStr(){
+    return this.readBuf().toString('utf8');
   }
 
   getOutput(checksum=0, encoding=null, trim=1){
