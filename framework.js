@@ -1802,10 +1802,6 @@ class IO{
     return buf;
   }
 
-  hasMore(){
-    return (this.inputIndex >> 4) < this.input.length;
-  }
-
   read(){
     const {input} = this;
     const i = this.inputIndex;
@@ -1820,6 +1816,10 @@ class IO{
   write(bit){
     this.byte |= bit << (this.outputIndex++ & 7);
     if((this.outputIndex & 7) === 0) this.addByte();
+  }
+
+  hasMore(){
+    return (this.inputIndex >> 4) < this.input.length;
   }
 
   addByte(){
@@ -1907,8 +1907,11 @@ class Serializer extends IO{
   readInt(){
     let num = 0;
     let mask = 1;
+    let len = 0;
 
     while(super.read()){
+      if(++len === 30)
+        throw new RangeError('Too large integer');
       if(super.read())
         num |= mask;
       mask <<= 1;
@@ -2745,7 +2748,7 @@ const O = {
     const arr = [];
 
     while(obj !== null){
-      arr.push(O.keys(obj));
+      arr.unshift(O.keys(obj));
       obj = O.proto(obj);
     }
 
