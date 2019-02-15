@@ -936,6 +936,46 @@ class Map3D{
   }
 };
 
+class MultidimensionalMap{
+  constructor(){
+    this.d = O.obj();
+    this.end = Symbol('end');
+  }
+
+  set(arr, val){
+    let {d} = this;
+
+    for(const elem of arr){
+      if(!(elem in d)) d[elem] = O.obj();
+      d = d[elem];
+    }
+
+    d[this.end] = val;
+  }
+
+  get(arr, val){
+    let {d} = this;
+
+    for(const elem of arr){
+      if(!(elem in d)) return undefined;
+      d = d[elem];
+    }
+
+    return d[this.end];
+  }
+
+  has(arr, val){
+    let {d} = this;
+
+    for(const elem of arr){
+      if(!(elem in d)) return false;
+      d = d[elem];
+    }
+
+    return this.end in d;
+  }
+};
+
 class CoordsColle{
   constructor(x=null, y=null){
     this.map = new O.Map2D();
@@ -1997,6 +2037,7 @@ const O = {
   GridUI,
   Map2D,
   Map3D,
+  MultidimensionalMap,
   CoordsColle,
   EnhancedRenderingContext,
   Buffer,
