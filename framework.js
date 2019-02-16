@@ -2024,6 +2024,9 @@ const O = {
   fastSha256: 1,
   rseed: null,
 
+  // Node modules
+  nm: null,
+
   module: {
     cache: null,
     remaining: 0,
@@ -2063,7 +2066,7 @@ const O = {
     }
 
     if(isNode){
-      O.crypto = require('crypto');
+      O.initNodeModules();
       O.Buffer = global.Buffer;
     }
 
@@ -2092,6 +2095,27 @@ const O = {
         O.req(`/projects/${O.project}/main`).catch(O.error);
       }
     }
+  },
+
+  initNodeModules(){
+    O.nm = O.obj();
+    const {nm} = O;
+
+    [
+      'fs',
+      'path',
+      'crypto',
+      'zlib',
+      'util',
+      'http',
+      'https',
+      'net',
+      'url',
+      'events',
+      'readline',
+    ].forEach(name => {
+      nm[name] = require(name);
+    });
   },
 
   overrideConsole(){
@@ -2774,8 +2798,6 @@ const O = {
   sortAsc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0); },
   sortDesc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0); },
   undupe(arr){ return arr.filter((a, b, c) => c.indexOf(a) === b); },
-  rgb(...col){ return `#${col.map(val => O.pad((val | 0).toString(16), 2)).join('')}`; },
-  binLen(a){ return a && (Math.log2(a) | 0) + 1; },
   raf(func){ return window.requestAnimationFrame(func); },
   obj(proto=null){ return Object.create(proto); },
   keys(obj){ return Reflect.ownKeys(obj); },
@@ -2784,6 +2806,7 @@ const O = {
   hex(val, bytesNum){ return val.toString(16).toUpperCase().padStart(bytesNum << 1, '0'); },
   hypot(x, y){ return Math.sqrt(x * x + y * y); },
   proto(obj){ return Object.getPrototypeOf(obj); },
+  sf(val){ return JSON.stringify(val, null, 2); },
 
   allKeys(obj){
     const arr = [];
@@ -2795,6 +2818,19 @@ const O = {
 
     return arr;
   },
+
+  virtual(name, isStatic=0){
+    let type = O.cap(`${isStatic ? 'static ' : ''}method`);
+    throw new TypeError(`${type} ${O.sf(name)} is virtual`);
+  },
+
+  /*
+    Node functions
+  */
+
+  rfs(...args){ return O.nm.fs.readFileSync(...args); },
+  wfs(...args){ return O.nm.fs.writeFileSync(...args); },
+  ext(file){ return O.nm.path.parse(file).ext.slice(1); },
 
   /*
     Events
