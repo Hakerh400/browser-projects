@@ -2006,7 +2006,6 @@ const O = {
   isNode: null,
   isBrowser: null,
   isElectron: null,
-  crypto: null,
 
   doc: document,
   head: document.head,
@@ -2828,8 +2827,8 @@ const O = {
     Node functions
   */
 
-  rfs(...args){ return O.nm.fs.readFileSync(...args); },
-  wfs(...args){ return O.nm.fs.writeFileSync(...args); },
+  rfs(file, str=0){ return O.nm.fs.readFileSync(file, str ? 'utf8' : null); },
+  wfs(file){ return O.nm.fs.writeFileSync(file); },
   ext(file){ return O.nm.path.parse(file).ext.slice(1); },
 
   /*
@@ -2875,7 +2874,7 @@ const O = {
 
     function sha256(data){
       if(O.isNode && O.fastSha256){
-        var hash = O.crypto.createHash('sha256');
+        var hash = O.nm.crypto.createHash('sha256');
         hash.update(data);
         return hash.digest();
       }
