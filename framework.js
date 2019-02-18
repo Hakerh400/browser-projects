@@ -905,6 +905,10 @@ class Map3D{
     delete d[y][x];
   }
 
+  delete(x, y, z){
+    this.remove(x, y, z);
+  }
+
   has(x, y, z){
     var {d} = this;
 
@@ -942,15 +946,15 @@ class MultidimensionalMap{
     this.end = Symbol('end');
   }
 
-  set(arr, val){
+  has(arr, val){
     let {d} = this;
 
     for(const elem of arr){
-      if(!(elem in d)) d[elem] = O.obj();
+      if(!(elem in d)) return false;
       d = d[elem];
     }
 
-    d[this.end] = val;
+    return this.end in d;
   }
 
   get(arr, val){
@@ -964,15 +968,30 @@ class MultidimensionalMap{
     return d[this.end];
   }
 
-  has(arr, val){
+  set(arr, val){
     let {d} = this;
 
     for(const elem of arr){
-      if(!(elem in d)) return false;
+      if(!(elem in d)) d[elem] = O.obj();
       d = d[elem];
     }
 
-    return this.end in d;
+    d[this.end] = val;
+  }
+
+  remove(arr){
+    let {d} = this;
+
+    for(const elem of arr){
+      if(!(elem in d)) return;
+      d = d[elem];
+    }
+
+    delete d[this.end];
+  }
+
+  delete(arr){
+    this.remove(arr);
   }
 };
 
@@ -2121,8 +2140,6 @@ const O = {
     var global = O.global;
     var isNode = O.isNode;
 
-    O.util = isNode ? require('util') : null;
-
     var console = global.console;
     var logOrig = console.log;
 
@@ -2175,12 +2192,13 @@ const O = {
     if(!O.isNode)
       throw new TypeError('Function "inspect" is available only in Node.js');
 
-    var {util} = O;
+    const {util} = O.nm;
+    const fstStr = typeof arr[0] === 'string';
 
-    if(!(arr.length === 1 && typeof arr[0] === 'string'))
-      arr = arr.map(val => util.inspect(val));
-
-    return arr.join(' ');
+    return arr.map(val => {
+      if(fstStr && typeof val === 'string') return val;
+      return util.inspect(val);
+    }).join(' ');
   },
 
   title(title){
@@ -2692,7 +2710,7 @@ const O = {
 
   sleep(time){
     const t = Date.now();
-    while(date.now() - t < time);
+    while(Date.now() - t < time);
   },
 
   sleepa(time){
