@@ -2811,6 +2811,35 @@ const O = {
     };
   },
 
+  allKeys(obj){
+    const arr = [];
+
+    while(obj !== null){
+      arr.unshift(O.keys(obj));
+      obj = O.proto(obj);
+    }
+
+    return arr;
+  },
+
+  match(str, reg){
+    const match = str.match(reg);
+    if(match === null) return [];
+    return match;
+  },
+
+  bits2buf(str){
+    str = str.replace(/[^01]/g, '');
+
+    const arr = [];
+    const ss = O.match(str, /.{8}|.+/g);
+
+    for(const s of ss)
+      arr.push(parseInt(O.rev(s), 2));
+
+    return O.Buffer.from(arr);
+  },
+
   bool(val){ return Boolean(O.int(val)); },
   sortAsc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0); },
   sortDesc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0); },
@@ -2824,29 +2853,14 @@ const O = {
   hypot(x, y){ return Math.sqrt(x * x + y * y); },
   proto(obj){ return Object.getPrototypeOf(obj); },
   sf(val){ return JSON.stringify(val, null, 2); },
-
-  allKeys(obj){
-    const arr = [];
-
-    while(obj !== null){
-      arr.unshift(O.keys(obj));
-      obj = O.proto(obj);
-    }
-
-    return arr;
-  },
-
-  virtual(name, isStatic=0){
-    let type = O.cap(`${isStatic ? 'static ' : ''}method`);
-    throw new TypeError(`${type} ${O.sf(name)} is virtual`);
-  },
+  rev(str){ return str.split('').reverse().join(''); },
 
   /*
     Node functions
   */
 
   rfs(file, str=0){ return O.nm.fs.readFileSync(file, str ? 'utf8' : null); },
-  wfs(file){ return O.nm.fs.writeFileSync(file); },
+  wfs(file, data){ return O.nm.fs.writeFileSync(file, data); },
   ext(file){ return O.nm.path.parse(file).ext.slice(1); },
 
   /*
@@ -2876,6 +2890,19 @@ const O = {
   pd(evt, stopPropagation=0){
     evt.preventDefault();
     if(stopPropagation) evt.stopPropagation();
+  },
+
+  /*
+    Errors
+  */
+
+  virtual(name, isStatic=0){
+    let type = O.cap(`${isStatic ? 'static ' : ''}method`);
+    throw new TypeError(`${type} ${O.sf(name)} is virtual`);
+  },
+
+  noimpl(name){
+    throw new TypeError(`Function ${O.sf(name)} is not implemented`);
   },
 
   /*
