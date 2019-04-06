@@ -128,7 +128,7 @@ class Vector{
 
     var dx = this.x - x;
     var dy = this.y - y;
-    
+
     return Math.sqrt(dx * dx + dy * dy);;
   }
 
@@ -218,6 +218,51 @@ class Color extends Uint8ClampedArray{
 
   toString(){
     return this.str;
+  }
+};
+
+class EventEmitter{
+  constructor(){
+    this.ls = O.obj();
+  }
+
+  removeListener(type, func){
+    const {ls} = this;
+    if(!(type in ls)) return;
+    ls[type].delete(func);
+    if(ls[type].size === 0) delete ls[type];
+    return this;
+  }
+
+  removeAllListeners(type){
+    delete this.ls[type];
+    return this;
+  }
+
+  on(type, func){
+    const {ls} = this;
+    if(!(type in ls)) ls[type] = new Map();
+    ls[type].set(func, 1);
+    return this;
+  }
+
+  once(type, func){
+    const {ls} = this;
+    if(!(type in ls)) ls[type] = new Map();
+    ls[type].set(func, 0);
+    return this;
+  }
+
+  emit(type, ...args){
+    const {ls} = this;
+    if(!(type in ls)) return this;
+
+    for(const [func, repeat] of ls[type]){
+      func(...args);
+      if(!repeat) this.removeListener(type, func);
+    }
+
+    return this;
   }
 };
 
@@ -915,7 +960,6 @@ class Map3D{
     if(!(z in d)) return 0;
     d = d[z];
 
-    
     if(!(y in d)) return 0;
     return d[y][x];
   }
@@ -1286,7 +1330,7 @@ class EnhancedRenderingContext{
   resetTransform(resetScale=1){
     if(resetScale)
       this.s = 1;
-    
+
     this.tx = 0;
     this.ty = 0;
     this.rot = 0;
@@ -1613,7 +1657,7 @@ class Buffer extends Uint8Array{
     return new O.Buffer(size);
   }
 
-  static from(data, encoding){
+  static from(data, encoding='utf8'){
     if(data.length === 0)
       return O.Buffer.alloc(0);
 
@@ -1623,8 +1667,16 @@ class Buffer extends Uint8Array{
         return new O.Buffer(data);
         break;
 
-      default:
+      case 'base64':
+        return O.base64.decode(data);
+        break;
+
+      case 'utf8':
         return new O.Buffer(data);
+        break;
+
+      default:
+        this.errEnc(encoding);
         break;
     }
   }
@@ -1673,130 +1725,27 @@ class Buffer extends Uint8Array{
   }
 
   toString(encoding){
-    var arr = [...this];
-
     switch(encoding){
       case 'hex':
-        return arr.map(a => a.toString(16).padStart(2, '0')).join('');
+        return Array.from(this).map(a => a.toString(16).padStart(2, '0')).join('');
+        break;
+
+      case 'base64':
+        return O.base64.encode(this);
+        break;
+
+      case 'utf8':
+        return Array.from(this).map(a => String.fromCharCode(a)).join('');
         break;
 
       default:
-        return arr.map(a => String.fromCharCode(a)).join('');
+        this.errEnc(encoding);
         break;
     }
   }
-};
 
-class Storage{
-  constructor(obj=null, path=null, prefix=null){
-    if(obj === null) obj = O.obj();
-
-    this.obj = obj;
-    this.prefix = prefix;
-
-    if(path !== null){
-      var obj1 = this.get(path);
-
-      if(!this.isObj(obj1)){
-        obj1 = O.obj();
-        this.set(path, obj1);
-      }
-
-      this.obj = obj1;
-    }
-  }
-
-  reset(){
-    const {obj} = this;
-
-    for(var key of O.keys(obj))
-      if(this.isOwnKey(key))
-        delete obj[key];
-  }
-
-  has(path){
-    var {obj} = this;
-
-    return this.iterPath(path, key => {
-      if(!(key in obj)) return;
-      obj = obj[key];
-      return 1;
-    });
-  }
-
-  get(path, defaultVal=null){
-    var {obj} = this;
-
-    var found = this.iterPath(path, key => {
-      if(!(key in obj)) return;
-      obj = obj[key];
-      return 1;
-    });
-
-    if(!found) return defaultVal;
-    return obj;
-  }
-
-  set(path, val){
-    var {obj} = this;
-    var last;
-
-    this.iterPath(path, (key, index, arr) => {
-      if(index === arr.length - 1){
-        last = key;
-        return 1;
-      }
-
-      if(!this.isObj(obj[key])) obj[key] = O.obj();
-      obj = obj[key];
-      return 1;
-    });
-
-    obj[last] = val;
-  }
-
-  remove(path){
-    var {obj} = this;
-    var last;
-
-    var found = this.iterPath(path, (key, index, arr) => {
-      if(index === arr.length - 1){
-        last = key;
-        return 1;
-      }
-
-      if(!(key in obj)) return;
-      obj = obj[key];
-      return 1;
-    });
-
-    if(!found) return;
-    delete obj[last];
-  }
-
-  iterPath(path, func){
-    return path.split('.').every((key, index, arr) => {
-      if(index === 0) key = this.format(key);
-      return func(key, index, arr);
-    });
-  }
-
-  format(key){
-    const {prefix} = this;
-
-    if(prefix === null) return key;
-    return `${prefix}_${key}`;
-  }
-
-  isOwnKey(key){
-    const {prefix} = this;
-
-    if(prefix === null) return 1;
-    return key.startsWith(`${prefix}_`);
-  }
-
-  isObj(val){
-    return typeof val === 'object' && val !== null;
+  errEnc(encoding){
+    throw new TypeError(`Unsupported encoding ${O.sf(encoding)}`);
   }
 };
 
@@ -1927,7 +1876,7 @@ class Serializer extends IO{
       mask >>= 1;
     }
 
-    return num;
+    return this;
   }
 
   read(max=1){
@@ -1960,7 +1909,7 @@ class Serializer extends IO{
       num >>= 1;
     }
 
-    super.write(0);
+    return super.write(0);
   }
 
   readInt(){
@@ -1984,6 +1933,8 @@ class Serializer extends IO{
 
     for(const byte of buf)
       this.write(byte, 255);
+
+    return this;
   }
 
   readBuf(){
@@ -1997,7 +1948,7 @@ class Serializer extends IO{
   }
 
   writeStr(str){
-    this.writeBuf(O.Buffer.from(str, 'utf8'));
+    return this.writeBuf(O.Buffer.from(str, 'utf8'));
   }
 
   readStr(){
@@ -2017,6 +1968,256 @@ class Serializer extends IO{
 
     if(encoding !== null) buf = buf.toString(encoding);
     return buf;
+  }
+};
+
+class Serializable{
+  ser(ser=new O.Serializer()){ O.virtual('ser'); }
+  deser(ser){ O.virtual('deser'); }
+  static deser(ser){ O.virtual('deser'); } // Optional
+
+  reser(){
+    return this.deser(new O.Serializer(this.ser().getOutput()));
+  }
+};
+
+class Graph extends Serializable{
+  constructor(nodeCtors, maxSize=null){
+    super();
+
+    this.nodeCtors = nodeCtors;
+    this.maxSize = maxSize;
+    this.nodes = new Set();
+    this.ctorsNum = nodeCtors.length;
+
+    {
+      const ctorsMap = new Map();
+      const ctorsKeys = new Map();
+
+      nodeCtors.forEach((ctor, index) => {
+        ctorsMap.set(ctor, index);
+        ctorsKeys.set(ctor, ctor.keys());
+      });
+
+      this.ctorsMap = ctorsMap;
+      this.ctorsKeys = ctorsKeys;
+    }
+  }
+
+  addNode(node){
+    const {maxSize} = this;
+
+    if(maxSize !== null && this.size === maxSize){
+      this.cleanup();
+      if(this.size === maxSize)
+        throw new RangeError('Maximum graph size exceeded');
+    }
+
+    this.nodes.add(node);
+  }
+
+  ser(ser=new O.Serializer()){
+    const {nodes, ctorsNum, ctorsMap, ctorsKeys} = this;
+    const lastCtorIndex = ctorsNum - 1;
+
+    const all = new Set(nodes);
+    const done = new Map();
+    const queue = [];
+
+    const lastNodeIndex = all.size - 1;
+    ser.writeInt(all.size);
+
+    while(all.size !== 0){
+      let first = 1;
+
+      queue.push(O.first(all));
+
+      while(queue.length !== 0){
+        const node = queue.shift();
+
+        if(node === null){
+          ser.write(0);
+          continue;
+        }else if(!first){
+          ser.write(1);
+        }
+
+        const ctor = node.constructor;
+        const seen = done.has(node);
+        const index = seen ? done.get(node) : done.size;
+
+        if(first) first = 0;
+        else ser.write(index, Math.min(done.size, lastNodeIndex));
+        if(seen) continue;
+
+        all.delete(node);
+        done.set(node, index);
+
+        ser.write(ctorsMap.get(ctor), lastCtorIndex);
+        node.ser(ser);
+
+        for(const key of ctorsKeys.get(ctor))
+          queue.push(node[key]);
+      }
+    }
+
+    return ser;
+  }
+
+  deser(ser){
+    const {nodeCtors, ctorsNum, ctorsKeys} = this;
+    const lastCtorIndex = ctorsNum - 1;
+
+    const nodes = new Set();
+    this.nodes = nodes;
+
+    const nodesNum = ser.readInt();
+    const lastNodeIndex = nodesNum - 1;
+
+    const done = [];
+    const queue = [];
+
+    while(nodes.size !== nodesNum){
+      let first = 1;
+
+      while(queue.length !== 0 || first){
+        const isNull = first ? 0 : !ser.read();
+        const index = first ? nodes.size : isNull ? -1 : ser.read(Math.min(nodes.size, lastNodeIndex));
+        const seen = isNull || index !== nodes.size;
+        const node = seen ? isNull ? null : done[index] : new nodeCtors[ser.read(lastCtorIndex)](this);
+
+        if(first){
+          first = 0;
+        }else{
+          const elem = queue[0];
+          const keys = ctorsKeys.get(elem[0].constructor);
+          elem[0][keys[elem[1]++]] = node;
+          if(elem[1] === keys.length) queue.shift();
+        }
+
+        if(seen) continue;
+
+        done.push(node);
+        node.deser(ser);
+
+        if(ctorsKeys.get(node.constructor).length !== 0)
+          queue.push([node, 0]);
+      }
+    }
+
+    return this;
+  }
+
+  cleanup(){
+    const {ctorsKeys} = this;
+    if(this.size === 0) return this;
+
+    const nodes = new Set();
+    const queue = [O.first(this.nodes)];
+
+    while(queue.length !== 0){
+      const node = queue.shift();
+
+      nodes.add(node);
+
+      for(const key of ctorsKeys.get(node.constructor)){
+        const next = node[key];
+        if(next === null || nodes.has(next)) continue;
+        queue.push(next);
+      }
+    }
+
+    this.nodes = nodes;
+
+    return this;
+  }
+
+  get size(){ return this.nodes.size; }
+};
+
+class GraphNode extends Serializable{
+  constructor(graph){
+    super();
+
+    this.graph = graph;
+    graph.addNode(this);
+  }
+
+  static keys(){ O.virtual('keys'); }
+};
+
+class Storage extends Serializable{
+  constructor(storage=window.localStorage, prop=O.project){
+    super();
+
+    this.storage = storage;
+    this.prop = prop;
+
+    if(this.check()){
+      this.load();
+    }else{
+      this.init();
+      this.save();
+    }
+  }
+
+  static get version(){ O.virtual('version'); }
+  static get checksum(){ return 1; }
+  static get encoding(){ return 'base64'; }
+
+  get version(){ return this.constructor.version; }
+  get encoding(){ return this.constructor.encoding; }
+  get checksum(){ return this.constructor.checksum; }
+
+  init(){ O.virtual('init'); }
+
+  getSer(){
+    const {storage, prop} = this;
+
+    const str = storage[prop];
+    const buf = O.Buffer.from(str, this.encoding);
+
+    let ser;
+    try{
+      ser = new O.Serializer(buf, this.checksum);
+    }catch{
+      this.init();
+      this.save();
+      ser = this.getSer();
+    }
+
+    return ser;
+  }
+
+  check(){
+    const {storage, prop} = this;
+    if(!O.has(storage, prop)) return 0;
+
+    const ser = this.getSer();
+    const ver = ser.readInt();
+
+    return this.constructor.name, ver === this.version;
+  }
+
+  load(){
+    const ser = this.getSer();
+    const ver = ser.readInt();
+
+    this.deser(ser);
+  }
+
+  save(){
+    const {storage, prop} = this;
+
+    const ser = new O.Serializer();
+    ser.writeInt(this.version);
+
+    this.ser(ser);
+
+    const buf = ser.getOutput(this.checksum);
+    const str = buf.toString(this.encoding);
+
+    storage[prop] = str;
   }
 };
 
@@ -2043,6 +2244,7 @@ const O = {
   rseed: null,
 
   // Node modules
+
   nm: null,
 
   module: {
@@ -2050,10 +2252,26 @@ const O = {
     remaining: 0,
   },
 
+  // Storage
+
+  lst: null,
+  sst: null,
+
+  // Global data
+
+  glob: null,
+
+  // Symbols
+
+  symbols: {
+    enhanceRNG: Symbol('enhanceRNG'),
+  },
+
   // Classes
 
   Vector,
   Color,
+  EventEmitter,
   Grid,
   GridUI,
   Map2D,
@@ -2062,12 +2280,17 @@ const O = {
   CoordsColle,
   EnhancedRenderingContext,
   Buffer,
-  Storage,
   IO,
   Serializer,
+  Serializable,
+  Graph,
+  GraphNode,
+  Storage,
 
   init(loadProject=1){
-    O.storage = O.obj();
+    const CHROME_ONLY = 0;
+
+    O.glob = O.obj();
 
     var global = O.global = new Function('return this;')();
     var env = 'navigator' in global ? 'browser' : 'node';
@@ -2079,11 +2302,16 @@ const O = {
     var isElectron = O.isElectron = isBrowser && navigator.userAgent.includes('Electron');
 
     if(isBrowser){
-      if(global.navigator.vendor !== 'Google Inc.')
+      if(CHROME_ONLY && global.navigator.vendor !== 'Google Inc.')
         return O.error('Please use Chrome.');
+
+      if(!isElectron){
+        O.lst = window.localStorage;
+        O.sst = window.sessionStorage;
+      }
     }
 
-    if(isNode){
+    if(isNode || isElectron){
       O.initNodeModules();
       O.Buffer = global.Buffer;
     }
@@ -2093,11 +2321,17 @@ const O = {
 
     O.module.cache = O.obj();
 
+    /*
+      Older versions of Google Chrome had issues with Math.random()
+      Ref: https://bugs.chromium.org/p/v8/issues/detail?id=8212
+      Function O.enhanceRNG creates cryptographically secure
+      random number generator that depends on current time in
+      milliseconds and internal 256-bit state.
+    */
+    O.enhanceRNG(O.symbols.enhanceRNG);
+
     if(loadProject){
       O.project = O.urlParam('project');
-
-      if(!O.projectTest(O.project))
-        return O.error(`Illegal project name ${JSON.stringify(O.ascii(O.project))}".`);
 
       if(O.project == null){
         O.rf(`projects.txt`, (status, projects) => {
@@ -2110,6 +2344,9 @@ const O = {
           });
         });
       }else{
+        if(!O.projectTest(O.project))
+        return O.error(`Illegal project name ${JSON.stringify(O.ascii(O.project))}".`);
+
         O.req(`/projects/${O.project}/main`).catch(O.error);
       }
     }
@@ -2137,8 +2374,7 @@ const O = {
   },
 
   overrideConsole(){
-    var global = O.global;
-    var isNode = O.isNode;
+    const {global, isNode, isElectron} = O;
 
     var console = global.console;
     var logOrig = console.log;
@@ -2151,7 +2387,7 @@ const O = {
         return;
       }
 
-      if(isNode){
+      if(isNode || isElectron){
         var indentStr = ' '.repeat(indent << 1);
         var str = O.inspect(args);
 
@@ -2189,8 +2425,8 @@ const O = {
   },
 
   inspect(arr){
-    if(!O.isNode)
-      throw new TypeError('Function "inspect" is available only in Node.js');
+    if(!(O.isNode || O.isElectron))
+      throw new TypeError('Function "inspect" is available only in Node.js and Electron');
 
     const {util} = O.nm;
     const fstStr = typeof arr[0] === 'string';
@@ -2207,12 +2443,15 @@ const O = {
     O.ceText(h1, title);
   },
 
-  error(msg){
+  error(err){
+    log(new Error().stack);
+
     O.body.classList.remove('has-canvas');
-    O.body.style.backgroundColor = '#ffffff';
+    O.body.style.margin = '8px';
+    O.body.style.background = '#ffffff';
 
     O.title('Error Occured');
-    O.ceText(O.body, msg);
+    O.ceText(O.body, err);
     O.ceBr(O.body, 2);
     O.ceLink(O.body, 'Home Page', '/');
   },
@@ -2230,6 +2469,12 @@ const O = {
 
       return word;
     }).join(' ');
+  },
+
+  nameToProject(name){
+    return name
+      .replace(/\s./g, m => m[1].toUpperCase())
+      .replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
   },
 
   shouldUpper(word){ return O.uppercaseWords.includes(word); },
@@ -2288,7 +2533,7 @@ const O = {
       classNames.forEach(className => {
         if(className === '')
           return;
-        
+
         elem.classList.add(className);
       });
     }
@@ -2380,7 +2625,7 @@ const O = {
 
   urlTime(url){
     var char = url.indexOf('?') !== -1 ? '&' : '?';
-    return `${url}${char}_=${Date.now()}`;
+    return `${url}${char}_=${O.now()}`;
   },
 
   rf(file, isBinary, cb=null){
@@ -2411,6 +2656,7 @@ const O = {
       file = `${window.VIRTUAL_URL_BASE}${file.substring(1)}`;
 
     xhr.open('GET', O.urlTime(file));
+    xhr.setRequestHeader('x-requested-with', 'XMLHttpRequest');
     xhr.send(null);
   },
 
@@ -2436,39 +2682,62 @@ const O = {
     const cache = O.module.cache;
     const pathOrig = path;
 
-    let script;
+    let data, type;
 
     if(path in cache) return cache[path];
-    
+
     if(path.endsWith('.js')){
-      script = await O.rfAsync(path);
-    }else if((script = await O.rfAsync(`${path}.js`)) !== null){
+      data = await O.rfAsync(path);
+    }else if((data = await O.rfAsync(`${path}.js`)) !== null){
+      type = 2;
       path += '.js';
       if(path in cache) return cache[path];
-    }else{
+    }else if((data = await O.rfAsync(`${path}/index.js`)) !== null){
+      type = 2;
       path += '/index.js';
       if(path in cache) return cache[path];
-      script = await O.rfAsync(path);
-    }
-
-    if(script === null){
-      O.error(`Failed to load script for project ${JSON.stringify(O.project)}`);
+    }else if((data = await O.rfAsync(`${path}.json`)) !== null){
+      type = 1;
+      path += '.json';
+      if(path in cache) return cache[path];
+    }else if((data = await O.rfAsync(`${path}.txt`)) !== null){
+      type = 0;
+      path += '.txt';
+      if(path in cache) return cache[path];
+    }else if((data = await O.rfAsync(`${path}.md`)) !== null){
+      type = 0;
+      path += '.md';
+      if(path in cache) return cache[path];
+    }else{
+      O.error(`Failed to load data for project ${JSON.stringify(O.project)}`);
       return null;
     }
 
     path = path.split('/');
     path.pop();
 
-    script = script.replace(/^const (?:O|debug) .+/gm, '');
-    script = script.replace(/ \= require\(/g, ' \= await require(');
+    const module = {exports: {}};
 
-    var AsyncFunction = (async () => {}).constructor;
+    switch(type){
+      case 0: // Text
+        module.exports = data;
+        break;
 
-    var module = {exports: {}};
-    var {exports} = module;
+      case 1: // JSON
+        module.exports = JSON.parse(data);
+        break;
 
-    var func = new AsyncFunction('window', 'document', 'Function', 'O', 'require', 'module', 'exports', script);
-    await func(window, document, Function, O, require, module, exports);
+      case 2: // JavaScript
+        data = data
+          .replace(/^const (?:O|debug) .+/gm, '')
+          .replace(/ \= require\(/g, ' \= await require(');
+
+        const AsyncFunction = (async () => {}).constructor;
+        const func = new AsyncFunction('window', 'document', 'Function', 'O', 'require', 'module', 'exports', data);
+
+        await func(window, document, Function, O, require, module, module.exports);
+        break;
+    }
 
     return cache[pathOrig] = module.exports;
 
@@ -2557,7 +2826,16 @@ const O = {
     return `${str[0].toUpperCase()}${str.substring(1)}`;
   },
 
+  chars(start, len){
+    const cc = O.cc(start);
+    return O.ca(len, i => O.sfcc(cc + i)).join('');
+  },
+
   indent(str, indent){ return `${' '.repeat(indent << 1)}${str}`; },
+  setLineBreak(str, lineBreak){ return str.replace(/\r\n|\r|\n/g, lineBreak); },
+  cr(str){ return O.setLineBreak(str, '\r'); },
+  lf(str){ return O.setLineBreak(str, '\n'); },
+  crlf(str){ return O.setLineBreak(str, '\r\n'); },
 
   /*
     Array functions
@@ -2613,6 +2891,13 @@ const O = {
     return a;
   },
 
+  // For sets
+  first(set, defaultVal=null){
+    if(set.size === 0) return defaultVal;
+    return set.keys().next().value;
+  },
+
+  // For arrays
   last(arr, defaultVal=null){
     if(arr.length === 0) return defaultVal;
     return arr[arr.length - 1];
@@ -2622,7 +2907,10 @@ const O = {
     Random number generator
   */
 
-  enhanceRNG(){
+  enhanceRNG(sym){
+    if(sym !== O.symbols.enhanceRNG)
+      throw new TypeError('Function "enhanceRNG" should not be called explicitly');
+
     O.enhancedRNG = 1;
     O.randState = O.Buffer.from(O.ca(32, () => Math.random() * 256));
     O.repeat(10, () => O.random());
@@ -2644,7 +2932,7 @@ const O = {
     if(O.rseed !== null){
       write(O.rseed);
     }else{
-      write(Date.now());
+      write(O.now());
       write(Math.random() * 2 ** 64);
     }
 
@@ -2709,8 +2997,8 @@ const O = {
   },
 
   sleep(time){
-    const t = Date.now();
-    while(Date.now() - t < time);
+    const t = O.now();
+    while(O.now() - t < time);
   },
 
   sleepa(time){
@@ -2854,6 +3142,10 @@ const O = {
   proto(obj){ return Object.getPrototypeOf(obj); },
   sf(val){ return JSON.stringify(val, null, 2); },
   rev(str){ return str.split('').reverse().join(''); },
+  has(obj, key){ return Object.hasOwnProperty.call(obj, key); },
+  desc(obj, key){ return Object.getOwnPropertyDescriptor.call(obj, key); },
+  now(){ return Date.now(); },
+  gmt(){ return new Date().toGMTString(); },
 
   /*
     Node functions
@@ -2908,7 +3200,7 @@ const O = {
   /*
     Algorithms
   */
-  
+
   sha256: (() => {
     const MAX_UINT = 2 ** 32;
 
@@ -2918,7 +3210,7 @@ const O = {
     return sha256;
 
     function sha256(data){
-      if(O.isNode && O.fastSha256){
+      if((O.isNode || O.isElectron) && O.fastSha256){
         var hash = O.nm.crypto.createHash('sha256');
         hash.update(data);
         return hash.digest();
@@ -3096,11 +3388,106 @@ const O = {
     }
   })(),
 
-  /*
-    Function that does nothing
-  */
+  base64: (() => {
+    const encode = data => {
+      const buf = O.Buffer.from(data);
 
-  nop(){}
+      let str = '';
+      let val = 0;
+
+      buf.forEach((byte, i) => {
+        switch(i % 3){
+          case 0:
+            str += char(byte >> 2);
+            val = (byte & 3) << 4;
+            break;
+
+          case 1:
+            str += char((byte >> 4) | val);
+            val = (byte & 15) << 2;
+            break;
+
+          case 2:
+            str += char((byte >> 6) | val);
+            str += char(byte & 63);
+            break;
+        }
+      });
+
+      const m = buf.length % 3;
+      if(m !== 0) str += char(val) + '='.repeat(3 - m);
+
+      return str;
+    };
+
+    const decode = str => {
+      const pad = str.match(/\=*$/)[0].length;
+      const extraBytes = pad !== 0 ? pad : 0;
+      const len = (str.length >> 2) * 3 - extraBytes;
+      const buf = O.Buffer.alloc(len);
+
+      str += str;
+
+      let j = 0;
+      let val = 0;
+
+      for(let i = 0; i !== len; i++){
+        let byte = 0;
+
+        switch(i % 3){
+          case 0:
+            byte = ord(str[j++]) << 2;
+            val = ord(str[j++]);
+            byte |= val >> 4;
+            break;
+
+          case 1:
+            byte = val << 4;
+            val = ord(str[j++]);
+            byte |= val >> 2;
+            break;
+
+          case 2:
+            byte = (val << 6) | ord(str[j++]);
+            break;
+        }
+
+        buf[i] = byte;
+      }
+
+      return buf;
+    };
+
+    const char = ord => {
+      if(ord === 62) return '+';
+      if(ord === 63) return '/';
+
+      return O.sfcc(ord + (
+        ord < 26 ? 65 :
+        ord < 52 ? 71 :
+        -4
+      ));
+    };
+
+    const ord = char => {
+      if(char === '+') return 62;
+      if(char === '/') return 63;
+
+      const cc = O.cc(char);
+
+      return cc + (
+        cc < 65 ? 4 :
+        cc < 97 ? -65 :
+        -71
+      );
+    };
+
+    return {encode, decode};
+  })(),
+
+  // Function which does nothing
+
+  nop(){},
 };
 
 O.init();

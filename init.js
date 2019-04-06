@@ -1,6 +1,8 @@
 (function(){
   'use strict';
 
+  var CHROME_ONLY = 0;
+
   window.addEventListener('load', function(){
     var O = {
       doc: document,
@@ -9,7 +11,7 @@
       init: function(){
         var noscript = document.querySelector('noscript');
 
-        if(window.navigator.vendor != 'Google Inc.'){
+        if(CHROME_ONLY && window.navigator.vendor != 'Google Inc.'){
           var html = noscript.innerHTML.split(/\r\n|\r|\n/);
           html = html.map(function(a){ return a.trim(); });
           html = html.filter(function(a){ return a.length; });
