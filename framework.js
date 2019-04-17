@@ -550,22 +550,22 @@ class Grid{
   }
 };
 
-class GridUI{
-  constructor(w, h, s, func=() => O.obj()){
+class GridUI extends EventEmitter{
+  constructor(g, w, h, s, func=() => O.obj()){
+    super();
+
+    this.canvas = g.canvas;
     this.func = func;
     this.grid = new O.Grid(w, h, func);
     this.scale = s;
 
-    const {g, w: iw, h: ih} = O.ceCanvas(1);
-    const [iwh, ihh] = [iw, ih].map(a => a / 2);
-
     g.concaveMode = 1;
 
     this.g = g;
-    this.iw = iw;
-    this.ih = ih;
-    this.iwh = iwh;
-    this.ihh = ihh;
+    this.iw = g.w;
+    this.ih = g.h;
+    this.iwh = g.w / 2;
+    this.ihh = g.h / 2;
 
     this.transform();
 
@@ -663,17 +663,30 @@ class GridUI{
     });
 
     O.ael('contextmenu', evt => {
-      evt.preventDefault();
-      evt.stopPropagation();
+      O.pd(evt);
     });
   }
 
+  on(type, func){
+    if(type === 'draw'){
+      this.funcs.draw.push(func);
+      return;
+    }
+
+    if(type === 'frame'){
+      this.funcs.frame.push(func);
+      return;
+    }
+
+    super.on(type, func);
+  }
+
   updateCur(evt){
-    const {clientX: x, clientY: y} = evt;
     const {scale, g, cur} = this;
 
-    cur.x = Math.floor((x - g.tx) / scale);
-    cur.y = Math.floor((y - g.ty) / scale);
+    const rect = this.canvas.getBoundingClientRect();
+    cur.x = Math.floor((evt.clientX - g.tx - rect.x) / scale);
+    cur.y = Math.floor((evt.clientY - g.ty - rect.y) / scale);
   }
 
   transform(){
@@ -745,40 +758,6 @@ class GridUI{
     this.draw();
 
     O.raf(this.render.bind(this));
-  }
-
-  removeListener(type, func){
-    const {ls} = this;
-    if(!(type in ls)) return;
-    ls[type].remove(func);
-  }
-
-  removeAllListeners(type){
-    delete this.ls[type];
-  }
-
-  on(type, func){
-    if(type === 'draw'){
-      this.funcs.draw.push(func);
-      return;
-    }
-
-    if(type === 'frame'){
-      this.funcs.frame.push(func);
-      return;
-    }
-
-    const {ls} = this;
-    if(!(type in ls)) ls[type] = new Set();
-    ls[type].add(func);
-    return this;
-  }
-
-  emit(type, ...args){
-    const {ls} = this;
-    if(!(type in ls)) return;
-    for(const func of ls[type])
-      func(...args);
   }
 };
 
@@ -914,7 +893,7 @@ class Map2D{
 };
 
 class Map3D{
-  constructor(x=null, y=null, z = null, val=1){
+  constructor(x=null, y=null, z=null, val=1){
     this.d = O.obj();
 
     if(x !== null)
@@ -2221,6 +2200,39 @@ class Storage extends Serializable{
   }
 };
 
+class Semaphore{
+  constructor(s){
+    this.s = s;
+    this.blocked = [];
+  }
+
+  init(s){
+    this.s = s;
+  }
+
+  wait(){
+    if(this.s > 0){
+      this.s--;
+      return;
+    }
+
+    return new Promise(res => {
+      this.blocked.push(res);
+    });
+  }
+
+  signal(){
+    const {blocked} = this;
+
+    if(blocked.length === 0){
+      this.s++;
+      return;
+    }
+
+    setTimeout(blocked.shift());
+  }
+};
+
 const O = {
   global: null,
   isNode: null,
@@ -2234,6 +2246,7 @@ const O = {
   pi: Math.PI,
   pi2: Math.PI * 2,
   pih: Math.PI / 2,
+  pi3: Math.PI * 3,
   pi32: Math.PI * 3 / 2,
 
   static: Symbol('static'),
@@ -2286,6 +2299,7 @@ const O = {
   Graph,
   GraphNode,
   Storage,
+  Semaphore,
 
   init(loadProject=1){
     const CHROME_ONLY = 0;
@@ -2444,7 +2458,8 @@ const O = {
   },
 
   error(err){
-    log(new Error().stack);
+    if(err instanceof Error) err = err.message;
+    console.error(err);
 
     O.body.classList.remove('has-canvas');
     O.body.style.margin = '8px';
@@ -2708,6 +2723,14 @@ const O = {
       type = 0;
       path += '.md';
       if(path in cache) return cache[path];
+    }else if((data = await O.rfAsync(`${path}.glsl`)) !== null){
+      type = 0;
+      path += '.glsl';
+      if(path in cache) return cache[path];
+    }else if((data = await O.rfAsync(`${path}.obj`)) !== null){
+      type = 0;
+      path += '.obj';
+      if(path in cache) return cache[path];
     }else{
       O.error(`Failed to load data for project ${JSON.stringify(O.project)}`);
       return null;
@@ -2716,7 +2739,11 @@ const O = {
     path = path.split('/');
     path.pop();
 
-    const module = {exports: {}};
+    cache[pathOrig] = {};
+    const module = {
+      get exports(){ return cache[pathOrig]; },
+      set exports(val){ cache[pathOrig] = val; }
+    };
 
     switch(type){
       case 0: // Text
@@ -2733,13 +2760,20 @@ const O = {
           .replace(/ \= require\(/g, ' \= await require(');
 
         const AsyncFunction = (async () => {}).constructor;
-        const func = new AsyncFunction('window', 'document', 'Function', 'O', 'require', 'module', 'exports', data);
+        let func = null;
+
+        try{
+          func = new AsyncFunction('window', 'document', 'Function', 'O', 'require', 'module', 'exports', data);
+        }catch(err){
+          console.error(`Syntax error in ${O.sf(pathOrig)}`);
+          throw err;
+        }
 
         await func(window, document, Function, O, require, module, module.exports);
         break;
     }
 
-    return cache[pathOrig] = module.exports;
+    return module.exports;
 
     async function require(newPath){
       var resolvedPath;
@@ -2829,6 +2863,17 @@ const O = {
   chars(start, len){
     const cc = O.cc(start);
     return O.ca(len, i => O.sfcc(cc + i)).join('');
+  },
+
+  ftext(str){
+    let lines = O.sanl(str);
+    lines = lines.slice(1, lines.length - 1);
+
+    const pad = lines
+      .filter(line => line.trim().length !== 0)
+      .reduce((pad, line, i) => Math.min(pad, line.match(/^\s+/)[0].length), Infinity);
+
+    return lines.map(line => line.slice(pad)).join('\n');
   },
 
   indent(str, indent){ return `${' '.repeat(indent << 1)}${str}`; },
@@ -3128,6 +3173,18 @@ const O = {
     return O.Buffer.from(arr);
   },
 
+  date(date=O.now()){
+    date = new Date(date);
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+
+    return `${day}.${month}.${year}. ${hour}:${minute}`;
+  },
+
   bool(val){ return Boolean(O.int(val)); },
   sortAsc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0); },
   sortDesc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0); },
@@ -3145,7 +3202,6 @@ const O = {
   has(obj, key){ return Object.hasOwnProperty.call(obj, key); },
   desc(obj, key){ return Object.getOwnPropertyDescriptor.call(obj, key); },
   now(){ return Date.now(); },
-  gmt(){ return new Date().toGMTString(); },
 
   /*
     Node functions

@@ -1,7 +1,7 @@
 blank
 image
 video
-games
+simulator
 other-projects
 grid.io
 tasks
@@ -18,3 +18,5 @@ virtual-machines
 toroidal-path
 shortest-path
 color
+sandbox
+games
