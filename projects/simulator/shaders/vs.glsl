@@ -16,8 +16,10 @@ void main(){
   nFrag = n;
   texFrag = tex;
 
-  vec4 position = projection * camRot * (objRotation * vec4((v - .5) * scale, 1.) + vec4(camTrans + .5, 1.));
+  vec4 position = projection * camRot * (objRotation * vec4(v * scale, 1.) + vec4(camTrans, 1.));
 
-  float z = -log(position.z + 10.) / log(1e3);
+  float z = position.z;
+  z = -log(z + 10.) / 10.;
+
   gl_Position = vec4(position.xy, z, position.a);
 }

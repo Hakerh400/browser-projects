@@ -95,9 +95,9 @@ class Sphere extends Model{
             norms[k1 = a[1][0] * 3] = norms_[k2 = a[1][2] * 3], norms[k1 + 1] = norms_[k2 + 1], norms[k1 + 2] = norms_[k2 + 2];
             norms[k1 = a[2][0] * 3] = norms_[k2 = a[2][2] * 3], norms[k1 + 1] = norms_[k2 + 1], norms[k1 + 2] = norms_[k2 + 2];
 
-            tex[k1 = a[0][0] * 3] = 0, tex[k1 + 1] = 0, tex[k1 + 2] = 1;
-            tex[k1 = a[1][0] * 3] = 0, tex[k1 + 1] = 1, tex[k1 + 2] = 1;
-            tex[k1 = a[2][0] * 3] = 1, tex[k1 + 1] = 1, tex[k1 + 2] = 1;
+            tex[k1 = a[0][0] * 3] = .5, tex[k1 + 1] = .5, tex[k1 + 2] = 1;
+            tex[k1 = a[1][0] * 3] = .5, tex[k1 + 1] = .5, tex[k1 + 2] = 1;
+            tex[k1 = a[2][0] * 3] = .5, tex[k1 + 1] = .5, tex[k1 + 2] = 1;
           }else{
             throw new Error(`Unsupported face with ${a.length} edges`);
           }

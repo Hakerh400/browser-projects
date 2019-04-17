@@ -190,8 +190,8 @@ class Entity extends ActiveObject{
   getZ(t){ return super.getZ(t) + .5; }
 
   tick(){
-    //this.nav(O.rand(4));
-    //this.rotate(this.rot - O.pi / 10);
+    this.nav(O.rand(4));
+    this.rotate(this.rot - O.pi / 10);
   }
 
   //getY(t){ return super.getY(t) + Math.sin(t / 1e3) * .2; }

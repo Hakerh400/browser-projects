@@ -1,4 +1,5 @@
-#define imgTilesPerRow 1.
+#define imgTilesPerRow 2.
+#define brightnessMin .4
 
 precision mediump float;
 
@@ -10,10 +11,10 @@ varying vec3 nFrag;
 varying vec3 texFrag;
 
 void main(){
-  float brightness = .75 + dot(nFrag, -lightDir) * .25;
+  float intensity = (dot(nFrag, -lightDir) + 1.) / 2.;
+  float brightness = brightnessMin + intensity * (1. - brightnessMin);
 
-  //vec2 tex = texType + texFrag.xy / imgTilesPerRow;
-  vec2 tex = vec2(.25, .25);
+  vec2 tex = texType + texFrag.xy / imgTilesPerRow;
 
   gl_FragColor = vec4(texture2D(texImg, tex).xyz * brightness, texFrag.z);
 }

@@ -19,6 +19,7 @@ class RenderEngine{
 
     const gl = canvas.getContext('webgl2', {
       alpha: false,
+      preserveDrawingBuffer: true,
     });
 
     gl.enable(gl.BLEND);
