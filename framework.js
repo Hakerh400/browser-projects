@@ -3200,7 +3200,7 @@ const O = {
   sf(val){ return JSON.stringify(val, null, 2); },
   rev(str){ return str.split('').reverse().join(''); },
   has(obj, key){ return Object.hasOwnProperty.call(obj, key); },
-  desc(obj, key){ return Object.getOwnPropertyDescriptor.call(obj, key); },
+  desc(obj, key){ return Object.getOwnPropertyDescriptor(obj, key); },
   now(){ return Date.now(); },
 
   /*
