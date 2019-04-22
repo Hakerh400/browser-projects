@@ -9,8 +9,10 @@ class Vector{
     this.z = z;
   }
 
-  static from(v){ return new Vector(v.x, v.y, v.z); }
   static zero(){ return new Vector(0, 0, 0); }
+  static from(v){ return new Vector(v.x, v.y, v.z); }
+
+  clone(){ return new Vector(this.x, this.y, this.z); }
 
   get lens(){
     const {x, y, z} = this;
@@ -19,18 +21,31 @@ class Vector{
 
   get len(){ return sqrt(this.lens); }
 
-  set(v){ return this.set_(v.x, v.y, v.z); }
-  add(v){ return this.add_(v.x, v.y, v.z); }
-  sub(v){ return this.sub_(v.x, v.y, v.z); }
+  set(x, y, z){ this.x = x; this.y = y; this.z = z; return this; }
+  add(x, y, z){ this.x += x; this.y += y; this.z += z; return this; }
+  sub(x, y, z){ this.x -= x; this.y -= y; this.z -= z; return this; }
 
-  set_(x, y, z){ this.x = x; this.y = y; this.z = z; return this; }
-  add_(x, y, z){ this.x += x; this.y += y; this.z += z; return this; }
-  sub_(x, y, z){ this.x -= x; this.y -= y; this.z -= z; return this; }
+  setv(v){ return this.set(v.x, v.y, v.z); }
+  addv(v){ return this.add(v.x, v.y, v.z); }
+  subv(v){ return this.sub(v.x, v.y, v.z); }
 
   mul(s){ this.x *= s; this.y *= s; this.z *= s; return this; }
   div(s){ this.x /= s; this.y /= s; this.z /= s; return this; }
 
   norm(){ return this.div(this.len); }
+
+  nav(dir){
+    switch(dir){
+      case 0: this.z--; break;
+      case 1: this.x++; break;
+      case 2: this.z++; break;
+      case 3: this.x--; break;
+      case 4: this.y--; break;
+      case 5: this.y++; break;
+    }
+
+    return this;
+  }
 };
 
 module.exports = Vector;

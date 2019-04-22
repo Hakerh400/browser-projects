@@ -32,6 +32,8 @@ class Object extends Vector{
 
     this.shapes = [];
 
+    this.dir = 0;
+
     tile.addObj(this);
   }
 
@@ -43,11 +45,13 @@ class Object extends Vector{
   static tick(){
     for(const obj of activeObjs)
       obj.tick();
+    Object.lastTick = Date.now();
   }
 
   addShape(shape){
     const {shapes} = this;
 
+    shape.obj = this;
     shape.index = shapes.length;
     shapes.push(shape);
   }
@@ -57,13 +61,13 @@ class Object extends Vector{
     const {index} = shape;
     const last = shapes.pop();
 
+    shape.obj = null;
     last.index = index;
     if(shapes.length !== 0) shapes[index] = last;
   }
 
   move(x, y, z, pushed=0, dir=null){
     const {grid} = this;
-    if(!grid.has(x, y, z)) return;
 
     const d1 = this.tile;
     const d2 = grid.get(x, y, z);
@@ -92,13 +96,8 @@ class Object extends Vector{
   }
 
   nav(dir, pushed=0){
-    const {x, y, z} = this;
-    if(dir === 0) this.move(x, y, z - 1, pushed, dir);
-    else if(dir === 1) this.move(x + 1, y, z, pushed, dir);
-    else if(dir === 2) this.move(x, y, z + 1, pushed, dir);
-    else if(dir === 3) this.move(x - 1, y, z, pushed, dir);
-    else if(dir === 4) this.move(x, y - 1, z, pushed, dir);
-    else this.move(x, y + 1, z, pushed, dir);
+    const v = Vector.from(this).nav(dir);
+    this.move(v.x, v.y, v.z, pushed, dir);
   }
 
   push(dir){
@@ -145,7 +144,9 @@ class Object extends Vector{
       shape.remove();
   }
 };
+Object.TICK_TIME = TICK_TIME;
 Object.activeObjs = activeObjs;
+Object.lastTick = Date.now();
 
 class ActiveObject extends Object{
   constructor(tile){
@@ -162,11 +163,11 @@ class ActiveObject extends Object{
   tick(){ O.virtual('tick'); }
 };
 
-class Grass extends Object{
+class Dirt extends Object{
   constructor(tile){
     super(tile);
 
-    this.addShape(new Shape(this, Model.cube, Material.grass));
+    this.addShape(new Shape(Model.cube, Material.dirt));
   }
 };
 
@@ -174,32 +175,45 @@ class Stone extends Object{
   constructor(tile){
     super(tile);
 
-    this.addShape(new Shape(this, Model.cube, Material.stone));
+    this.addShape(new Shape(Model.cube, Material.stone));
   }
 };
 
-class Entity extends ActiveObject{
+class Man extends ActiveObject{
   constructor(tile){
     super(tile);
 
-    this.addShape(new Shape(this, Model.sphere, Material.entity));
+    this.s1 = new Shape(Model.test1, Material.man);
+    this.s2 = new Shape(Model.test2, Material.man);
+
+    this.i = 0;
+    this.addShape(this.s1);
   }
 
-  getX(t){ return super.getX(t) + .5; }
-  //getY(t){ return super.getY(t) + .5; }
-  getZ(t){ return super.getZ(t) + .5; }
-
   tick(){
-    this.nav(O.rand(4));
-    this.rotate(this.rot - O.pi / 10);
+    const {grid, dir} = this;
+    const v = Vector.from(this);
+
+    const {s1, s2} = this;
+    if(this.i ^= 1) this.removeShape(s1), this.addShape(s2);
+    else this.removeShape(s2), this.addShape(s1);
+
+    return;
+
+    if(grid.getv(v.nav(dir)).empty && !grid.getv(v.nav(4)).empty){
+      this.nav(dir);
+    }else{
+      this.dir = dir + 2 & 3;
+      this.rotate(this.dir * -O.pih);
+    }
   }
 
   //getY(t){ return super.getY(t) + Math.sin(t / 1e3) * .2; }
 };
 
 Object.ActiveObject = ActiveObject;
-Object.Grass = Grass;
+Object.Dirt = Dirt;
 Object.Stone = Stone;
-Object.Entity = Entity;
+Object.Man = Man;
 
 module.exports = Object;

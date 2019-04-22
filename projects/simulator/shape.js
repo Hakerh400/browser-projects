@@ -8,13 +8,13 @@ const {zero} = Vector;
 const shapes = new Map();
 
 class Shape{
-  constructor(obj, model, mat, scale=1, trans=zero(), rot=zero()){
-    this.obj = obj;
+  constructor(model, mat, scale=1, trans=zero(), rot=zero()){
+    this.obj = null;
     this.index = -1;
 
     this.model = model;
     this.mat = mat;
-    this.scale = scale * .999;
+    this.scale = scale;
     this.trans = trans;
     this.rot = rot;
 
@@ -24,7 +24,7 @@ class Shape{
 
   remove(){
     const {model} = this;
-    const ser = shapes.get(model);
+    const set = shapes.get(model);
 
     if(set.size === 1) shapes.delete(model);
     else set.delete(this);
