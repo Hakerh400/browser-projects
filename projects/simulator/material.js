@@ -1,6 +1,7 @@
 'use strict';
 
 const textures = {
+  hud: './textures/hud.png',
   sky: './textures/sky.png',
   dirt: './textures/dirt.png',
   stone: './textures/stone.png',

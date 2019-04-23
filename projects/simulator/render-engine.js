@@ -6,6 +6,8 @@ const Object = require('./object');
 const Shape = require('./shape');
 const Material = require('./material');
 const Model = require('./model');
+const Ray = require('./ray');
+const Matrix = require('./matrix');
 const Vector = require('./vector');
 const vsSrc = require('./shaders/vs');
 const fsSrc = require('./shaders/fs');
@@ -48,16 +50,14 @@ class RenderEngine{
 
     let cursorLocked = 0;
 
+    // 1 - create object, 2 - destroy object
+    let curAction = 0;
+
     const {sqrt, sin, cos} = Math;
 
-    const identityMat = new Float32Array([
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      0, 0, 0, 1,
-    ]);
-    const camRot = identityMat.slice();
-    const objRotMat = identityMat.slice();
+    const identityMat = Matrix.ident();
+    const camRot = Matrix.ident();
+    const objRotMat = Matrix.ident();
 
     O.enhancedRNG = 0;
     const grid = new Grid();
@@ -78,10 +78,18 @@ class RenderEngine{
     function aels(){
       O.ael('mousedown', evt => {
         switch(evt.button){
+          case 0:
+            curAction = 2;
+            break;
+
           case 1:
             O.pd(evt);
             if(cursorLocked) O.doc.exitPointerLock();
             else canvas.requestPointerLock();
+            break;
+
+          case 2:
+            curAction = 1;
             break;
         }
       });
@@ -196,7 +204,22 @@ class RenderEngine{
       });
     }
 
+    // TODO: Implement this in a better way (don't use `O.z`)
+    let tt = Date.now();
+    let sum = 0;
+    let num = 0;
+
     function render(){
+      // TODO: Use the exponential moving average algorithm to calculate FPS
+      {
+        const t = Date.now();
+        sum += t - tt;
+        num++;
+        tt = t;
+        O.z = sum / num;
+        if(num === 300) sum = num = 0;
+      }
+
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
       if(dir){
@@ -229,26 +252,49 @@ class RenderEngine{
       camRot[0] = cy;
       camRot[1] = sx * sy;
       camRot[2] = -cx * sy;
-      camRot[5] = cx;
-      camRot[6] = sx;
-      camRot[8] = sy;
-      camRot[9] = -sx * cy;
-      camRot[10] = cx * cy;
+      camRot[4] = cx;
+      camRot[5] = sx;
+      camRot[6] = sy;
+      camRot[7] = -sx * cy;
+      camRot[8] = cx * cy;
 
-      gl.uniformMatrix4fv(uniforms.camRot, false, camRot);
+      gl.uniformMatrix3fv(uniforms.camRot, false, camRot);
 
-      // Render sky
-      const sky = Model.sky[0];
-      sky.buffer();
-      gl.uniform3f(uniforms.camTrans, 0, 0, 0);
-      objRotMat[0] = objRotMat[10] = 1;
-      objRotMat[2] = objRotMat[8] = 0;
-      gl.uniformMatrix4fv(uniforms.objRotation, false, objRotMat);
-      gl.uniform1f(uniforms.scale, 1e3);
-      gl.uniform1i(uniforms.calcLight, 0);
-      gl.bindTexture(gl.TEXTURE_2D, Material.sky.tex);
-      gl.drawElements(gl.TRIANGLES, sky.len, gl.UNSIGNED_SHORT, 0);
-      gl.uniform1i(uniforms.calcLight, 1);
+      // Base translation for objects' vertices
+      const xx = tx + .5;
+      const yy = ty + .5;
+      const zz = tz + .5;
+
+      // Find the the target tile
+      renderTargetTile: {
+        const ray = new Ray(-tx, -ty, -tz, ...new Vector(0, 0, 1).rot(rx, O.pi - ry, 0));
+        let d = grid.trace(ray, 20, 1, 1);
+        if(d === null) break renderTargetTile;
+
+        if(curAction !== 0){
+          if(curAction === 1){
+            d = grid.getv(ray);
+            new Object.Stone(d);
+          }else{
+            d.purge();
+          }
+
+          ray.set(-tx, -ty, -tz, ...new Vector(0, 0, 1).rot(rx, O.pi - ry, 0));
+          d = grid.trace(ray, 20, 1, 1);
+          if(d === null) break renderTargetTile;
+        }
+
+        const square = Model.square[0];
+        square.buffer();
+        gl.uniform3f(uniforms.camTrans, xx + ray.x, yy + ray.y, zz + ray.z);
+        gl.uniformMatrix3fv(uniforms.objRotation, false, Vector.dirMat(ray.dir, 0));
+        gl.uniform1f(uniforms.scale, 1);
+        gl.uniform1i(uniforms.calcLight, 0);
+        gl.bindTexture(gl.TEXTURE_2D, Material.hud.tex);
+        gl.drawElements(gl.LINE_LOOP, square.len, gl.UNSIGNED_SHORT, 0);
+        gl.uniform1i(uniforms.calcLight, 1);
+      }
+      curAction = 0;
 
       let rot = null;
 
@@ -273,20 +319,35 @@ class RenderEngine{
           const {obj} = shape;
           if(obj === null) continue;
 
-          gl.uniform3f(uniforms.camTrans, tx + obj.getX(t), ty + obj.getY(t), tz + obj.getZ(t));
+          gl.uniform3f(uniforms.camTrans, xx + obj.getX(t), yy + obj.getY(t), zz + obj.getZ(t));
           gl.uniform1f(uniforms.scale, shape.scale);
           gl.bindTexture(gl.TEXTURE_2D, shape.mat.tex);
 
           const r = obj.getRot(t);
           if(r !== rot){
             rot = r;
-            objRotMat[0] = objRotMat[10] = cos(r);
-            objRotMat[2] = -(objRotMat[8] = sin(r));
-            gl.uniformMatrix4fv(uniforms.objRotation, false, objRotMat);
+            objRotMat[0] = objRotMat[8] = cos(r);
+            objRotMat[2] = -(objRotMat[6] = sin(r));
+            gl.uniformMatrix3fv(uniforms.objRotation, false, objRotMat);
           }
 
           gl.drawElements(gl.TRIANGLES, model1.len, gl.UNSIGNED_SHORT, 0);
         }
+      }
+
+      // Render the sky
+      {
+        const sky = Model.sky[0];
+        sky.buffer();
+        gl.uniform3f(uniforms.camTrans, 0, 0, 0);
+        objRotMat[0] = objRotMat[8] = 1;
+        objRotMat[2] = objRotMat[6] = 0;
+        gl.uniformMatrix3fv(uniforms.objRotation, false, objRotMat);
+        gl.uniform1f(uniforms.scale, 1e3);
+        gl.uniform1i(uniforms.calcLight, 0);
+        gl.bindTexture(gl.TEXTURE_2D, Material.sky.tex);
+        gl.drawElements(gl.TRIANGLES, sky.len, gl.UNSIGNED_SHORT, 0);
+        gl.uniform1i(uniforms.calcLight, 1);
       }
 
       O.raf(render);

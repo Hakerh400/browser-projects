@@ -1202,8 +1202,8 @@ class EnhancedRenderingContext{
 
     this.fillStyle = 'white';
     this.strokeStyle = 'black';
-    this.textAlign = 'center';
     this.textBaseline = 'middle';
+    this.textAlign = 'center';
 
     this.drawImage = g.drawImage.bind(g);
 

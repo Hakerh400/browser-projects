@@ -1,7 +1,7 @@
 uniform vec3 camTrans;
-uniform mat4 camRot;
+uniform mat3 camRot;
 
-uniform mat4 objRotation;
+uniform mat3 objRotation;
 uniform mat4 projection;
 uniform float scale, k;
 
@@ -17,10 +17,10 @@ void main(){
   vec3 v = v1 * k1 + v2 * k;
   vec3 n = n1 * k1 + n2 * k;
 
-  nFrag = (objRotation * vec4(n, 1.)).xyz;
+  nFrag = objRotation * n;
   texFrag = tex;
 
-  vec4 position = projection * camRot * (objRotation * vec4(v * scale, 1.) + vec4(camTrans, 1.));
+  vec4 position = projection * vec4(camRot * (camTrans + objRotation * (v * scale)), 1.);
 
   float z = position.z;
   z = z > -10. ? -log(z + 10.) / 10. : -1.;

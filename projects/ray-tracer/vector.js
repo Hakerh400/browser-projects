@@ -50,7 +50,7 @@ class Vector{
   }
 
   rotn_(rx, ry, rz){ return this.rot_(-rx, -ry, -rz); }
-  rotnsc_(sx, cx, sy, cy, sz, cz){ return this.rotnsc_(-sx, cx, -sy, cy, -sz, cz); }
+  rotnsc_(sx, cx, sy, cy, sz, cz){ return this.rotsc_(-sx, cx, -sy, cy, -sz, cz); }
 
   lt_(x, y, z){ return this.x < x && this.y < y && this.z < z; }
   gt_(x, y, z){ return this.x > x && this.y > y && this.z > z; }

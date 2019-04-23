@@ -4,6 +4,8 @@ const m1 = require('./models/wavefront/man-standing');
 const m2 = require('./models/wavefront/man-walking-right');
 const m3 = require('./models/wavefront/man-walking-left');
 
+const dd = 1e-3;
+
 let gl, attribs;
 let v1Buf, v2Buf, n1Buf, n2Buf, texBuf, indBuf;
 
@@ -59,12 +61,26 @@ class Model{
   }
 };
 
+class Rectangle extends Model{
+  constructor(x1, y1, z1, w, d){
+    const x2 = x1 + w;
+    const z2 = z1 + d;
+    const y = y1 + dd;
+
+    const verts = [x1, y, z1, x2, y, z1, x2, y, z2, x1, y, z2];
+    const norms = [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0];
+    const tex = [0, 0, 1, 0, 1, 1, 0, 1];
+    const inds = [0, 1, 2, 2, 3, 0];
+
+    super(verts, norms, tex, inds);
+  }
+};
+
 class Cuboid extends Model{
   constructor(x1, y1, z1, w, h, d, uv=1){
     const x2 = x1 + w;
     const y2 = y1 + h;
     const z2 = z1 + d;
-    const dd = 1e-3;
 
     const verts = [
       x1, y2 - dd, z1, x2, y2 - dd, z1, x1, y2 - dd, z2, x2, y2 - dd, z2, // Top
@@ -169,11 +185,13 @@ class Test extends Model{
   }
 };
 
+Model.Rectangle = Rectangle;
 Model.Cuboid = Cuboid;
 Model.Test = Test;
 
 Object.assign(Model, {
   sky: [new Model.Cuboid(-.5, -.5, -.5, 1, 1, 1, 1)],
+  square: [new Model.Rectangle(-.5, -.5, -.5, 1, 1)],
   cube: [new Model.Cuboid(-.5, -.5, -.5, 1, 1, 1, 0)],
   test1: [new Model.Test(m2), new Model.Test(m3)],
   test2: [new Model.Test(m3), new Model.Test(m2)],

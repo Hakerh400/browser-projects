@@ -1,6 +1,7 @@
 'use strict';
 
 const Tile = require('./tile');
+const Ray = require('./ray');
 const Vector = require('./vector');
 
 class Grid extends O.EventEmitter{
@@ -8,10 +9,6 @@ class Grid extends O.EventEmitter{
     super();
 
     this.d = O.obj();
-
-    this.xMin = this.xMax = null;
-    this.yMin = this.yMax = null;
-    this.zMin = this.zMax = null;
   }
 
   has(x, y, z){
@@ -21,19 +18,6 @@ class Grid extends O.EventEmitter{
 
   gen(x, y, z){
     const {d} = this;
-
-    if(this.xMin === null){
-      this.xMin = this.xMax = x;
-      this.yMin = this.yMax = y;
-      this.zMin = this.zMax = z;
-    }else{
-      if(x < this.xMin) this.xMin = x;
-      else if(x > this.xMax) this.xMax = x;
-      if(y < this.yMin) this.yMin = y;
-      else if(y > this.yMax) this.yMax = y;
-      if(z < this.zMin) this.zMin = z;
-      else if(z > this.zMax) this.zMax = z;
-    }
 
     const tile = new Tile(this, x, y, z);
     this.set(x, y, z, tile);
@@ -55,10 +39,33 @@ class Grid extends O.EventEmitter{
     d[y][z][x] = tile;
   }
 
+  getf(x, y, z){ return this.get(Math.floor(x), Math.floor(y), Math.floor(z)); }
+
+  trace(ray, maxDist=null, findOpaque=1, findBlocking=1){
+    let dPrev = this.getv(ray);
+    let i = 0;
+
+    while(1){
+      const d = this.getv(ray.move());
+
+      if(findOpaque && d.has.opaque || findBlocking && d.has.blocking){
+        ray.nav(ray.dir);
+        return d;
+      }
+
+      if(maxDist !== null && ++i === maxDist) break;
+
+      dPrev = d;
+    }
+
+    return null;
+  }
+
   hasv(v){ return this.has(v.x, v.y, v.z); }
   genvv(v){ return this.genv(v.x, v.y, v.z); }
   getv(v){ return this.get(v.x, v.y, v.z); }
   setv(v, tile){ return this.set(v.x, v.y, v.z, tile); }
+  getfv(v){ return this.getf(v.x, v.y, v.z); }
 };
 
 module.exports = Grid;

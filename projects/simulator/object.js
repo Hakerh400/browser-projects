@@ -31,10 +31,17 @@ class Object extends Vector{
     this.animRot = 0;
 
     this.shapes = [];
-
     this.dir = 0;
 
+    this.is = this.constructor.is;
+
     tile.addObj(this);
+  }
+
+  static traits(arr){
+    const obj = O.obj();
+    for(const trait of arr) obj[trait] = 1;
+    return obj;
   }
 
   static start(){
@@ -63,7 +70,7 @@ class Object extends Vector{
 
     shape.obj = null;
     last.index = index;
-    if(shapes.length !== 0) shapes[index] = last;
+    if(last !== shape) shapes[index] = last;
   }
 
   move(x, y, z, pushed=0, dir=null){
@@ -95,9 +102,10 @@ class Object extends Vector{
     this.animEnd = t + TICK_TIME;
   }
 
+  movev(v){ return this.move(v.x, v.y, v.z); }
+
   nav(dir, pushed=0){
-    const v = Vector.from(this).nav(dir);
-    this.move(v.x, v.y, v.z, pushed, dir);
+    this.movev(Vector.from(this).nav(dir), pushed, dir);
   }
 
   push(dir){
@@ -140,6 +148,8 @@ class Object extends Vector{
   }
 
   remove(){
+    this.tile.removeObj(this);
+
     for(const shape of this.shapes)
       shape.remove();
   }
@@ -147,6 +157,7 @@ class Object extends Vector{
 Object.TICK_TIME = TICK_TIME;
 Object.activeObjs = activeObjs;
 Object.lastTick = Date.now();
+Object.is = Object.traits([]);
 
 class ActiveObject extends Object{
   constructor(tile){
@@ -157,7 +168,7 @@ class ActiveObject extends Object{
 
   remove(){
     super.remove();
-    activeObjs.remove(this);
+    activeObjs.delete(this);
   }
 
   tick(){ O.virtual('tick'); }
@@ -170,6 +181,7 @@ class Dirt extends Object{
     this.addShape(new Shape(Model.cube, Material.dirt));
   }
 };
+Dirt.is = Object.traits(['occupying', 'opaque', 'blocking', 'ground']);
 
 class Stone extends Object{
   constructor(tile){
@@ -178,6 +190,7 @@ class Stone extends Object{
     this.addShape(new Shape(Model.cube, Material.stone));
   }
 };
+Stone.is = Object.traits(['occupying', 'opaque', 'blocking', 'ground', 'pushable']);
 
 class Man extends ActiveObject{
   constructor(tile){
@@ -198,18 +211,15 @@ class Man extends ActiveObject{
     if(this.i ^= 1) this.removeShape(s1), this.addShape(s2);
     else this.removeShape(s2), this.addShape(s1);
 
-    return;
-
-    if(grid.getv(v.nav(dir)).empty && !grid.getv(v.nav(4)).empty){
+    if(O.rand(5) !== 0 && grid.getv(v.nav(dir)).empty && !grid.getv(v.nav(4)).empty){
       this.nav(dir);
     }else{
-      this.dir = dir + 2 & 3;
+      this.dir = dir + (O.rand(2) ? 1 : -1) & 3;
       this.rotate(this.dir * -O.pih);
     }
   }
-
-  //getY(t){ return super.getY(t) + Math.sin(t / 1e3) * .2; }
 };
+Man.is = Object.traits(['occupying']);
 
 Object.ActiveObject = ActiveObject;
 Object.Dirt = Dirt;

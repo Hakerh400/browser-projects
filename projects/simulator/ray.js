@@ -5,10 +5,11 @@ const Vector = require('./vector');
 class Ray extends Vector{
   constructor(x, y, z, rx, ry, rz){
     super(0, 0, 0);
-    this.reset(x, y, z, rx, ry, rz);
+
+    this.set(x, y, z, rx, ry, rz);
   }
 
-  reset(x, y, z, rx, ry, rz){
+  set(x, y, z, rx, ry, rz){
     const xx = Math.floor(x);
     const yy = Math.floor(y);
     const zz = Math.floor(z);
@@ -42,6 +43,8 @@ class Ray extends Vector{
     this.sz = this.az ? 1 : -1;
 
     this.dir = 0;
+
+    return this;
   }
 
   move(){
@@ -66,7 +69,7 @@ class Ray extends Vector{
         if(this.dz < 0) this.dz++;
         else if(this.dz > 1) this.dz--;
 
-        this.dir = ax ? 1 : -1;
+        this.dir = ax ? 3 : 1;
       }else{
         // Z
 
@@ -81,7 +84,7 @@ class Ray extends Vector{
         if(this.dy < 0) this.dy++;
         else if(this.dy > 1) this.dy--;
 
-        this.dir = az ? 3 : -3;
+        this.dir = az ? 0 : 2;
       }
     }else{
       if(ary * d > arz * h){
@@ -98,8 +101,9 @@ class Ray extends Vector{
        if(this.dz < 0) this.dz++;
        else if(this.dz > 1) this.dz--;
 
-       this.dir = ay ? 2 : -2;
+       this.dir = ay ? 4 : 5;
       }else{
+        // TODO: reduce duplication
         // Z
 
         this.z += sz;
@@ -113,9 +117,11 @@ class Ray extends Vector{
         if(this.dy < 0) this.dy++;
         else if(this.dy > 1) this.dy--;
 
-        this.dir = az ? 3 : -3;
+        this.dir = az ? 0 : 2;
       }
     }
+
+    return this;
   }
 };
 
