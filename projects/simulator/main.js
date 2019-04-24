@@ -11,12 +11,13 @@ const [wh, hh] = [w, h].map(a => a / 2);
 
 window.setTimeout(main);
 
-function main(){
+async function main(){
   O.body.style.margin = '0px';
   O.body.style.overflow = 'hidden';
 
   const canvas3D = createCanvas();
   const reng = new RenderEngine(canvas3D);
+  await reng.init();
 
   const canvas2D = createCanvas();
   const g = canvas2D.getContext('2d');

@@ -3,6 +3,7 @@
 const Shape = require('./shape');
 const Material = require('./material');
 const Model = require('./model');
+const Ray = require('./ray');
 const Vector = require('./vector');
 
 const TICK_TIME = 1e3;
@@ -11,7 +12,7 @@ const {zero} = Vector;
 
 const activeObjs = new Set();
 
-class Object extends Vector{
+class Object extends Ray{
   constructor(tile){
     const {x, y, z} = tile;
     super(x, y, z);
@@ -20,7 +21,6 @@ class Object extends Vector{
     this.tile = tile;
     this.index = -1;
 
-    this.rot = 0;
     this.elevation = 0;
 
     this.animStart = 0;
@@ -122,7 +122,7 @@ class Object extends Vector{
     this.animY = proto.getY.call(this, t);
     this.animZ = proto.getZ.call(this, t);
     this.animRot = proto.getRot.call(this, t);
-    this.rot = rot;
+    this.ry = rot;
     this.animStart = t;
     this.animEnd = t + TICK_TIME;
   }
@@ -132,7 +132,7 @@ class Object extends Vector{
   getZ(t){ return this.intp(t, this.animZ, this.z); }
 
   getRot(t){
-    const {animStart, animEnd, animRot: a, rot: b} = this;
+    const {animStart, animEnd, animRot: a, ry: b} = this;
     if(t > animEnd) return b;
 
     const k = (t - animStart) / (animEnd - animStart);

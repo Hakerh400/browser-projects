@@ -1,4 +1,4 @@
-#define brightnessMin .4
+#define brightnessMin .3
 
 precision mediump float;
 

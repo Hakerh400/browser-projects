@@ -1,7 +1,7 @@
 'use strict';
 
 const Tile = require('./tile');
-const Ray = require('./ray');
+const DiscreteRay = require('./discrete-ray');
 const Vector = require('./vector');
 
 class Grid extends O.EventEmitter{

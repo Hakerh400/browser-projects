@@ -8,33 +8,27 @@ const textures = {
   man: './textures/man.png',
 };
 
-let gl;
-
 class Material{
   constructor(tex){
     this.tex = tex;
   }
 
-  static async init(glCtx){
-    gl = glCtx;
-
+  static async init(genTexFunc, procTexFunc){
     for(const texture of O.keys(textures)){
-      const tex = await Material.loadTexture(textures[texture]);;
+      const glTex = genTexFunc();
+      const tex = await Material.loadTexture(textures[texture], glTex, procTexFunc);
       Material[texture] = new Material(tex);
     }
   }
 
-  static loadTexture(pth){
+  static loadTexture(pth, glTex, procTexFunc){
     return new Promise(res => {
-      const texture = gl.createTexture();
+      const tex = glTex;
       const img = new Image();
 
       img.onload = () => {
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.generateMipmap(gl.TEXTURE_2D);
-
-        res(texture);
+        procTexFunc(tex, img);
+        res(tex);
       };
 
       img.src = O.urlTime(`/projects/${O.project}/${pth}`);

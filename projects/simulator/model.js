@@ -6,9 +6,6 @@ const m3 = require('./models/wavefront/man-walking-left');
 
 const dd = 1e-3;
 
-let gl, attribs;
-let v1Buf, v2Buf, n1Buf, n2Buf, texBuf, indBuf;
-
 class Model{
   constructor(verts, norms, tex, inds){
     this.verts = new Float32Array(verts);
@@ -17,47 +14,6 @@ class Model{
     this.inds = new Uint16Array(inds);
 
     this.len = inds.length;
-  }
-
-  static init(glCtx, attribsObj){
-    gl = glCtx;
-    attribs = attribsObj;
-
-    v1Buf = gl.createBuffer();
-    v2Buf = gl.createBuffer();
-    n1Buf = gl.createBuffer();
-    n2Buf = gl.createBuffer();
-    texBuf = gl.createBuffer();
-    indBuf = gl.createBuffer();
-  }
-
-  static buffer(m1, m2=m1){
-    gl.bindBuffer(gl.ARRAY_BUFFER, v1Buf);
-    gl.bufferData(gl.ARRAY_BUFFER, m1.verts, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(attribs.v1, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, v2Buf);
-    gl.bufferData(gl.ARRAY_BUFFER, m2.verts, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(attribs.v2, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, n1Buf);
-    gl.bufferData(gl.ARRAY_BUFFER, m1.norms, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(attribs.n1, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, n2Buf);
-    gl.bufferData(gl.ARRAY_BUFFER, m2.norms, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(attribs.n2, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, m1.tex, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(attribs.tex, 2, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indBuf);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, m1.inds, gl.STATIC_DRAW);
-  }
-
-  buffer(m2){
-    return Model.buffer(this, m2);
   }
 };
 

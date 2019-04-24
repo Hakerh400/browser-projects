@@ -2,14 +2,20 @@
 
 const {abs, sqrt, sin, cos} = Math;
 
-class Vector{
+class Vector extends O.EventEmitter{
   constructor(x, y, z){
+    super();
+
     this.x = x;
     this.y = y;
     this.z = z;
   }
 
   static zero(){ return new Vector(0, 0, 0); }
+  static unitX(){ return new Vector(1, 0, 0); }
+  static unitY(){ return new Vector(0, 1, 0); }
+  static unitZ(){ return new Vector(0, 0, 1); }
+
   static from(v){ return new Vector(v.x, v.y, v.z); }
 
   static revDir(dir){
@@ -18,7 +24,7 @@ class Vector{
     return 4;
   }
 
-  static dirMat(dir, axis, mat=auxMat){
+  static dirMat(dir, axis, mat){
     let sx = 0, cx = 1;
     let sy = 0, cy = 1;
     let sz = 0, cz = 1;
@@ -37,19 +43,7 @@ class Vector{
     else if(axis === 1) sx = s1, cx = c1, sz = s2, cz = c2;
     else sx = s1, cx = c1, sy = s2, cy = c2;
 
-    mat[0] = cx * cz - cy * sx * sz;
-    mat[1] = -cx * sz - cy * sx * cz;
-    mat[2] = sx * sy;
-
-    mat[3] = sx * cz + cy * cx * sz;
-    mat[4] = -sx * sz + cy * cx * cz;
-    mat[5] = -cx * sy;
-
-    mat[6] = sz * sy;
-    mat[7] = cz * sy;
-    mat[8] = cy;
-
-    return mat;
+    return Matrix.rotsc(sx, cx, sy, cy, sz, cz, mat);
   }
 
   static dirMatn(dir, exis, mat){ return Vector.dirMat(Vector.revDir(dir), axis, mat); }
@@ -158,8 +152,8 @@ class Vector{
   }
 };
 
+const aux = Vector.aux = Vector.zero();
+
 module.exports = Vector;
 
 const Matrix = require('./matrix');
-
-const auxMat = Matrix.ident();
