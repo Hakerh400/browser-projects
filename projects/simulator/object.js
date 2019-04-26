@@ -6,35 +6,35 @@ const Model = require('./model');
 const Ray = require('./ray');
 const Vector = require('./vector');
 
-const TICK_TIME = 1e3;
-
 const {zero} = Vector;
 
-const activeObjs = new Set();
+const objs = new Set();
 
 class Object extends Ray{
+  static objs = objs;
+
+  static is = Object.traits([]);
+  is = this.constructor.is;
+
+  #dir = 0;
+
+  updateSym = Symbol();
+
   constructor(tile){
     const {x, y, z} = tile;
-    super(x, y, z);
+    super(x, y, z, 0, 0, 0);
 
     this.grid = tile.grid;
     this.tile = tile;
     this.index = -1;
-
-    this.elevation = 0;
-
-    this.animStart = 0;
-    this.animEnd = 0;
-    this.animX = x;
-    this.animY = y;
-    this.animZ = z;
-    this.animRot = 0;
-
-    this.shapes = [];
     this.dir = 0;
 
-    this.is = this.constructor.is;
+    this.prev = Ray.from(this);
+    this.shapes = [];
 
+    this.aels();
+
+    objs.add(this);
     tile.addObj(this);
   }
 
@@ -44,15 +44,60 @@ class Object extends Ray{
     return obj;
   }
 
-  static start(){
-    Object.tick();
-    setInterval(Object.tick, TICK_TIME);
+  aels(){
+    const {grid} = this;
+
+    this.tickBound = 'onTick' in this ? this.onTick.bind(this) : null;
+
+    this.updateBound = 'onUpdate' in this ? type => {
+      if(this.updateSym === grid.updateSym) return;
+      this.updateSym = grid.updateSym;
+      this.onUpdate(type);
+    } : null;
+
+    if(this.tickBound !== null) this.grid.ael('tick', this.tickBound);
   }
 
-  static tick(){
-    for(const obj of activeObjs)
-      obj.tick();
-    Object.lastTick = Date.now();
+  rels(){
+    if(this.tickBound !== null) this.grid.rel('tick', this.tickBound);
+  }
+
+  get(x, y, z){
+    let t;
+
+    switch(this.#dir){
+      case 0: [x, z] = [x, z]; break;
+      case 1: [x, z] = [z, x]; break;
+      case 2: [x, z] = [-x, -z]; break;
+      case 3: [x, z] = [-z, -x]; break;
+    }
+
+    return this.grid.get(this.x + x, this.y + y, this.z + z);
+  }
+
+  move(x, y, z){
+    super.move(x, y, z);
+
+    this.tile.removeObj(this);
+    this.tile = this.grid.get(x, y, z);
+    this.tile.addObj(this);
+  }
+
+  nav(dir){
+    this.movev(Vector.navv(this, dir));
+  }
+
+  rot(rx, ry, rz){
+    super.rot(rx, ry, rz);
+  }
+
+  get dir(){
+    return this.#dir;
+  }
+
+  set dir(dir){
+    this.#dir = dir;
+    this.rot(0, (dir + 2) * O.pih, 0);
   }
 
   addShape(shape){
@@ -73,155 +118,89 @@ class Object extends Ray{
     if(last !== shape) shapes[index] = last;
   }
 
-  move(x, y, z, pushed=0, dir=null){
-    const {grid} = this;
-
-    const d1 = this.tile;
-    const d2 = grid.get(x, y, z);
-
-    if(!d2.empty){
-      if(pushed || dir === null || !d2.sngl) return;
-      d2.fst.push(dir);
-      if(!d2.empty) return;
-    }
-
-    d1.removeObj(this);
-    this.tile = grid.get(x, y, z);
-    this.tile.addObj(this);
-
-    const t = Date.now();
-    const proto = Object.prototype;
-    this.animX = proto.getX.call(this, t);
-    this.animY = proto.getY.call(this, t);
-    this.animZ = proto.getZ.call(this, t);
-    this.animRot = proto.getRot.call(this, t);
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.animStart = t;
-    this.animEnd = t + TICK_TIME;
-  }
-
-  movev(v){ return this.move(v.x, v.y, v.z); }
-
-  nav(dir, pushed=0){
-    this.movev(Vector.from(this).nav(dir), pushed, dir);
-  }
-
-  push(dir){
-    this.nav(dir, 1);
-  }
-
-  rotate(rot){
-    if(Math.abs(rot) > O.pi2) rot %= O.pi2;
-    if(rot < 0) rot += O.pi2;
-
-    const t = Date.now();
-    const proto = Object.prototype;
-    this.animX = proto.getX.call(this, t);
-    this.animY = proto.getY.call(this, t);
-    this.animZ = proto.getZ.call(this, t);
-    this.animRot = proto.getRot.call(this, t);
-    this.ry = rot;
-    this.animStart = t;
-    this.animEnd = t + TICK_TIME;
-  }
-
-  getX(t){ return this.intp(t, this.animX, this.x); }
-  getY(t){ return this.intp(t, this.animY, this.y); }
-  getZ(t){ return this.intp(t, this.animZ, this.z); }
-
-  getRot(t){
-    const {animStart, animEnd, animRot: a, ry: b} = this;
-    if(t > animEnd) return b;
-
-    const k = (t - animStart) / (animEnd - animStart);
-    return a + ((((((b - a) % O.pi2) + O.pi3) % O.pi2) - O.pi) * k) % O.pi2;
-  }
-
-  intp(t, a, b){
-    const {animStart, animEnd} = this;
-    if(t > animEnd) return b;
-
-    const k = (t - animStart) / (animEnd - animStart);
-    return a * (1 - k) + b  * k;
-  }
-
   remove(){
+    this.rels();
     this.tile.removeObj(this);
+    objs.delete(this);
 
     for(const shape of this.shapes)
       shape.remove();
   }
-};
-Object.TICK_TIME = TICK_TIME;
-Object.activeObjs = activeObjs;
-Object.lastTick = Date.now();
-Object.is = Object.traits([]);
 
-class ActiveObject extends Object{
-  constructor(tile){
-    super(tile);
-
-    activeObjs.add(this);
-  }
-
-  remove(){
-    super.remove();
-    activeObjs.delete(this);
-  }
-
-  tick(){ O.virtual('tick'); }
+  getv(v){ return this.get(v.x, v.y, v.z); }
+  movev(v){ return this.move(v.x, v.y, v.z); }
+  rotv(v){ return this.rot(v.x, v.y, v.z); }
 };
 
 class Dirt extends Object{
+  static is = Object.traits(['occupying', 'opaque', 'blocking', 'ground']);
+
   constructor(tile){
     super(tile);
 
     this.addShape(new Shape(Model.cube, Material.dirt));
   }
 };
-Dirt.is = Object.traits(['occupying', 'opaque', 'blocking', 'ground']);
 
 class Stone extends Object{
+  static is = Object.traits(['occupying', 'opaque', 'blocking', 'ground', 'pushable']);
+
   constructor(tile){
     super(tile);
 
     this.addShape(new Shape(Model.cube, Material.stone));
   }
-};
-Stone.is = Object.traits(['occupying', 'opaque', 'blocking', 'ground', 'pushable']);
 
-class Man extends ActiveObject{
-  constructor(tile){
-    super(tile);
+  onUpdate(){
+    const {grid} = this;
 
-    this.s1 = new Shape(Model.test1, Material.man);
-    this.s2 = new Shape(Model.test2, Material.man);
-
-    this.i = 0;
-    this.addShape(this.s1);
-  }
-
-  tick(){
-    const {grid, dir} = this;
-    const v = Vector.from(this);
-
-    const {s1, s2} = this;
-    if(this.i ^= 1) this.removeShape(s1), this.addShape(s2);
-    else this.removeShape(s2), this.addShape(s1);
-
-    if(O.rand(5) !== 0 && grid.getv(v.nav(dir)).empty && !grid.getv(v.nav(4)).empty){
-      this.nav(dir);
-    }else{
-      this.dir = dir + (O.rand(2) ? 1 : -1) & 3;
-      this.rotate(this.dir * -O.pih);
+    if(grid.getv(Vector.navv(this, 4)).empty){
+      this.nav(4);
+      return;
     }
   }
 };
-Man.is = Object.traits(['occupying']);
 
-Object.ActiveObject = ActiveObject;
+class Man extends Object{
+  static is = Object.traits(['occupying']);
+  static num = 0;
+
+  constructor(tile){
+    super(tile);
+
+    this.addShape(new Shape(Model.test1, Material.man));
+
+    Man.num++;
+  }
+
+  onTick(){
+    const {grid, dir} = this;
+
+    if(grid.getv(Vector.navv(this, 4)).empty){
+      this.nav(4);
+      return;
+    }
+
+    if(Man.num !== 1 && O.rand(75) === 0){
+      this.remove();
+      return;
+    }
+
+    if(O.rand(5) !== 0 && grid.getv(Vector.navv(this, dir)).empty && !grid.getv(Vector.navv(this, dir).nav(4)).empty){
+      new Dirt(this.get(0, -1, -1).purge());
+      if(Man.num < 20 && O.rand(50) === 0) new Man(this.get(0, 0, -1).purge());
+      this.nav(dir);
+    }else{
+      this.dir = dir + (O.rand(2) ? 1 : -1) & 3;
+    }
+  }
+
+  remove(){
+    super.remove();
+    Man.num--;
+  }
+};
+
 Object.Dirt = Dirt;
 Object.Stone = Stone;
 Object.Man = Man;

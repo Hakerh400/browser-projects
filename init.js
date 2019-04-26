@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var CHROME_ONLY = 0;
+  var CHROME_ONLY = 1;
 
   window.addEventListener('load', function(){
     var O = {

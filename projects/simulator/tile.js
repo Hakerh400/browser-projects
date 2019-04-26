@@ -19,6 +19,11 @@ class Tile extends Vector{
   get sngl(){ return this.len === 1; }
   get mult(){ return this.len > 1; }
 
+  update(){
+    this.grid.updatev(this);
+    return this;
+  }
+
   addObj(obj){
     const {objs, has} = this;
 
@@ -29,6 +34,11 @@ class Tile extends Vector{
       if(trait in has) has[trait]++;
       else has[trait] = 1;
     }
+
+    if(obj.updateBound !== null) this.ael('update', obj.updateBound);
+    this.update();
+
+    return this;
   }
 
   removeObj(obj){
@@ -41,6 +51,11 @@ class Tile extends Vector{
 
     for(const trait in obj.is)
       has[trait]--;
+
+    if(obj.updateBound !== null) this.rel('update', obj.updateBound);
+    this.update();
+
+    return this;
   }
 
   purge(){
@@ -49,6 +64,8 @@ class Tile extends Vector{
 
     for(let i = 0; i !== len; i++)
       objs[0].remove();
+
+    return this;
   }
 
   [Symbol.iterator](){ return this.objs[Symbol.iterator](); }

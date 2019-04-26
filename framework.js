@@ -222,16 +222,40 @@ class Color extends Uint8ClampedArray{
 };
 
 class EventEmitter{
-  constructor(){
-    this.ls = O.obj();
+  #ls = O.obj();
+
+  on(type, func){
+    const ls = this.#ls;
+    if(!(type in ls)) ls[type] = new Map();
+    ls[type].set(func, 1);
+    return this;
+  }
+
+  addEventListener(type, func){
+    return this.on(type, func);
+  }
+
+  ael(type, func){
+    return this.on(type, func);
+  }
+
+  once(type, func){
+    const ls = this.#ls;
+    if(!(type in ls)) ls[type] = new Map();
+    ls[type].set(func, 0);
+    return this;
   }
 
   removeListener(type, func){
-    const {ls} = this;
+    const ls = this.#ls;
     if(!(type in ls)) return;
     ls[type].delete(func);
     if(ls[type].size === 0) delete ls[type];
     return this;
+  }
+
+  rel(type, func){
+    return this.removeListener(type, func);
   }
 
   removeAllListeners(type){
@@ -239,22 +263,8 @@ class EventEmitter{
     return this;
   }
 
-  on(type, func){
-    const {ls} = this;
-    if(!(type in ls)) ls[type] = new Map();
-    ls[type].set(func, 1);
-    return this;
-  }
-
-  once(type, func){
-    const {ls} = this;
-    if(!(type in ls)) ls[type] = new Map();
-    ls[type].set(func, 0);
-    return this;
-  }
-
   emit(type, ...args){
-    const {ls} = this;
+    const ls = this.#ls;
     if(!(type in ls)) return this;
 
     for(const [func, repeat] of ls[type]){
@@ -580,7 +590,6 @@ class GridUI extends EventEmitter{
 
     this.wrap = 0;
 
-    this.ls = O.obj();
     this.aels();
   }
 
@@ -1987,7 +1996,7 @@ class Graph extends Serializable{
     const {maxSize} = this;
 
     if(maxSize !== null && this.size === maxSize){
-      this.cleanup();
+      this.gc();
       if(this.size === maxSize)
         throw new RangeError('Maximum graph size exceeded');
     }
@@ -2087,7 +2096,7 @@ class Graph extends Serializable{
     return this;
   }
 
-  cleanup(){
+  gc(){
     const {ctorsKeys} = this;
     if(this.size === 0) return this;
 
@@ -2728,6 +2737,7 @@ const O = {
       path += '.glsl';
       if(path in cache) return cache[path];
     }else if((data = await O.rfAsync(`${path}.obj`)) !== null){
+      // TODO: remove this
       type = 0;
       path += '.obj';
       if(path in cache) return cache[path];

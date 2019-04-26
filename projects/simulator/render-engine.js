@@ -20,9 +20,10 @@ const FAR = 1e3;
 const CURSOR_SPEED = 3;
 const SUNLIGHT_DIR = new Vector(0, -100, 50).norm();
 
-const TICK_TIME = 1e3;
+let TICK_TIME = 1e3;
+O.ael('keydown', a => {if(a.code === 'Enter')TICK_TIME=prompt('',TICK_TIME)|0});
 
-const {min, max, sin, cos} = Math;
+const {min, max, abs, sin, cos} = Math;
 
 class RenderEngine{
   constructor(canvas){
@@ -70,7 +71,7 @@ class RenderEngine{
     this.renderBound = this.render.bind(this);
 
     // TODO: Implement this in a better way (don't use `O.z`)
-    this.tt = Date.now();
+    this.tt = O.now();
     this.sum = 0;
     this.num = 0;
   }
@@ -89,7 +90,8 @@ class RenderEngine{
     });
 
     this.initGrid();
-    Object.start();
+
+    this.timePrev = O.now() - TICK_TIME;
 
     this.render();
     this.aels();
@@ -160,9 +162,10 @@ class RenderEngine{
 
         if(!y) return new Object.Dirt(d);
         if((x || z) && O.rand(40) === 0) new Object.Stone(d);
-        else if(O.rand(20) === 0) new Object.Man(d);
       }));
     });
+
+    new Object.Man(grid.get(10, 1, 10).purge());
   }
 
   aels(){
@@ -232,17 +235,32 @@ class RenderEngine{
   render(){
     const {gl, uniforms, cam, dir, camRot, objRot, grid} = this;
 
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    const time = O.now();
+    let timeDiff = time - this.timePrev;
+
+    const newTick = timeDiff >= TICK_TIME;
+    if(newTick){
+      for(const obj of Object.objs)
+        obj.prev.setv(obj);
+
+      this.timePrev += TICK_TIME;
+      timeDiff %= TICK_TIME;
+      grid.tick();
+    }
+
+    const k = timeDiff / TICK_TIME;
+
     // TODO: Use the exponential moving average algorithm to calculate FPS
     {
-      const t = Date.now();
+      const t = O.now();
       this.sum += t - this.tt;
       this.num++;
       this.tt = t;
       O.z = this.sum / this.num;
       if(this.num === 300) this.sum = this.num = 0;
     }
-
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     if(dir){
       const sp = this.speed;
@@ -288,7 +306,7 @@ class RenderEngine{
     const yy = cam.y + .5;
     const zz = cam.z + .5;
 
-    // Find the the target tile
+    // Find the target tile
     renderTargetTile: {
       // TODO: optimize this
       const ray = new DiscreteRay(-cam.x, -cam.y, -cam.z, ...new Vector(0, 0, 1).rot(cam.rx, O.pi - cam.ry, 0));
@@ -325,16 +343,12 @@ class RenderEngine{
 
     let rot = null;
 
-    const t = Date.now();
-    const k = (t - Object.lastTick) / Object.TICK_TIME;
-
     for(const [models, set] of Shape.shapes){
       const modelsNum = models.length;
-      const modelsNum1 = modelsNum - 1;
-      const mul = k * modelsNum1;
+      const mul = k * modelsNum;
 
-      const model1Index = min(mul | 0, modelsNum1);
-      const model2Index = min(model1Index + 1, modelsNum1);
+      const model1Index = mul | 0;
+      const model2Index = (model1Index + 1) % modelsNum;
       const model1 = models[model1Index];
       const model2 = models[model2Index];
 
@@ -346,15 +360,15 @@ class RenderEngine{
         const {obj} = shape;
         if(obj === null) continue;
 
-        gl.uniform3f(uniforms.camTrans, xx + obj.getX(t), yy + obj.getY(t), zz + obj.getZ(t));
+        const {x, y, z, ry} = Ray.intp(obj.prev, obj, k).add(xx, yy, zz);
+        gl.uniform3f(uniforms.camTrans, x, y, z);
         gl.uniform1f(uniforms.scale, shape.scale);
         gl.bindTexture(gl.TEXTURE_2D, shape.mat.tex);
 
-        const r = obj.getRot(t);
-        if(r !== rot){
-          rot = r;
-          objRot[0] = objRot[8] = cos(r);
-          objRot[2] = -(objRot[6] = sin(r));
+        if(ry !== rot){
+          rot = ry;
+          objRot[0] = objRot[8] = cos(ry);
+          objRot[2] = -(objRot[6] = sin(ry));
           gl.uniformMatrix3fv(uniforms.objRotation, false, objRot);
         }
 

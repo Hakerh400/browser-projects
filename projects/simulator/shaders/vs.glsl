@@ -13,9 +13,8 @@ varying vec3 nFrag;
 varying vec2 texFrag;
 
 void main(){
-  float k1 = 1. - k;
-  vec3 v = v1 * k1 + v2 * k;
-  vec3 n = n1 * k1 + n2 * k;
+  vec3 v = mix(v1, v2, k);
+  vec3 n = mix(n1, n2, k);
 
   nFrag = objRotation * n;
   texFrag = tex;

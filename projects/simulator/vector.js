@@ -3,6 +3,8 @@
 const {abs, sqrt, sin, cos} = Math;
 
 class Vector extends O.EventEmitter{
+  static aux = Vector.zero();
+
   constructor(x, y, z){
     super();
 
@@ -31,9 +33,9 @@ class Vector extends O.EventEmitter{
     let s1, c1, s2, c2;
 
     switch(dir){
-      case 0: s1 = 1, c1 = 0, s2 = 0, c2 = 1; break;
+      case 0: s1 = -1, c1 = 0, s2 = 0, c2 = 1; break;
       case 1: s1 = 0, c1 = 1, s2 = 1, c2 = 0; break;
-      case 2: s1 = -1, c1 = 0, s2 = 0, c2 = 1; break;
+      case 2: s1 = 1, c1 = 0, s2 = 0, c2 = 1; break;
       case 3: s1 = 0, c1 = 1, s2 = -1, c2 = 0; break;
       case 4: s1 = 0, c1 = 1, s2 = 0, c2 = -1; break;
       case 5: s1 = 0, c1 = 1, s2 = 0, c2 = 1; break;
@@ -48,6 +50,22 @@ class Vector extends O.EventEmitter{
 
   static dirMatn(dir, exis, mat){ return Vector.dirMat(Vector.revDir(dir), axis, mat); }
 
+  static intp(v1, v2, k, dest=aux){
+    const k1 = 1 - k;
+
+    return dest.set(
+      v1.x * k1 + v2.x * k,
+      v1.y * k1 + v2.y * k,
+      v1.z * k1 + v2.z * k
+    );
+  }
+
+  static nav(x, y, z, dir, dest=aux){ return dest.set(x, y, z).nav(dir); }
+  static navn(x, y, z, dir, dest=aux){ return dest.set(x, y, z).navn(dir); }
+
+  static navv(v, dir, dest=aux){ return dest.setv(v).nav(dir); }
+  static navnv(v, dir, dest=aux){ return dest.setv(v).navn(dir); }
+
   clone(){ return new Vector(this.x, this.y, this.z); }
 
   get len(){ const {x, y, z} = this; return sqrt(x * x + y * y + z * z); }
@@ -58,11 +76,13 @@ class Vector extends O.EventEmitter{
   setLen(len){ this.mul(len / this.len); return this; }
 
   set(x, y, z){ this.x = x; this.y = y; this.z = z; return this; }
+  move(x, y, z){ this.x = x; this.y = y; this.z = z; return this; }
+
   add(x, y, z){ this.x += x; this.y += y; this.z += z; return this; }
   sub(x, y, z){ this.x -= x; this.y -= y; this.z -= z; return this; }
 
-  dist(x, y, z){ const dx = this.x - x, dy = this.y - y, dz = this.z - z; return sqrt(x * x + y * y + z * z); }
-  dists(x, y, z){ const dx = this.x - x, dy = this.y - y, dz = this.z - z; return x * x + y * y + z * z; }
+  dist(x, y, z){ const dx = this.x - x, dy = this.y - y, dz = this.z - z; return sqrt(dx * dx + dy * dy + dz * dz); }
+  dists(x, y, z){ const dx = this.x - x, dy = this.y - y, dz = this.z - z; return dx * dx + dy * dy + dz * dz; }
   distm(x, y, z){ return abs(this.x - x) + abs(this.y - y) + abs(this.z - z); }
 
   rot(rx, ry, rz){
@@ -94,6 +114,7 @@ class Vector extends O.EventEmitter{
   rotnsc(sx, cx, sy, cy, sz, cz){ return this.rotsc(-sx, cx, -sy, cy, -sz, cz); }
 
   rotDir(dir){
+    throw new Error('???');
     // TODO: check if this even works
     switch(dir){
       // TODO: replace all of these with `this.rotsc`
@@ -114,6 +135,7 @@ class Vector extends O.EventEmitter{
   gt(x, y, z){ return this.x > x && this.y > y && this.z > z; }
 
   setv(v){ return this.set(v.x, v.y, v.z); }
+  movev(v){ return this.move(v.x, v.y, v.z); }
   addv(v){ return this.add(v.x, v.y, v.z); }
   subv(v){ return this.sub(v.x, v.y, v.z); }
   distv(v){ return this.dist(v.x, v.y, v.z); }
@@ -132,9 +154,9 @@ class Vector extends O.EventEmitter{
 
   nav(dir){
     switch(dir){
-      case 0: this.z--; break;
+      case 0: this.z++; break;
       case 1: this.x++; break;
-      case 2: this.z++; break;
+      case 2: this.z--; break;
       case 3: this.x--; break;
       case 4: this.y--; break;
       case 5: this.y++; break;
@@ -152,7 +174,7 @@ class Vector extends O.EventEmitter{
   }
 };
 
-const aux = Vector.aux = Vector.zero();
+const {aux} = Vector;
 
 module.exports = Vector;
 

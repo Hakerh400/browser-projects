@@ -3,6 +3,8 @@
 const {abs, sqrt, sin, cos, tan} = Math;
 
 class Matrix extends Float32Array{
+  static aux = Matrix.ident();
+
   constructor(arg){
     super(arg);
   }
@@ -20,7 +22,7 @@ class Matrix extends Float32Array{
   }
 
   static rot(rx, ry, rz, mat){
-    const sx = sin(rx), cy = cos(rx);
+    const sx = sin(rx), cx = cos(rx);
     const sy = sin(ry), cy = cos(ry);
     const sz = sin(rz), cz = cos(rz);
     return Matrix.rotsc(sx, cx, sy, cx, sz, cz, mat);
@@ -58,7 +60,7 @@ class Matrix extends Float32Array{
   static rotnv(v, mat){ return Matrix.rotn(r.x, r.y, r.z, mat); }
 };
 
-const aux = Matrix.aux = Matrix.ident();
+const {aux} = Matrix;
 
 module.exports = Matrix;
 
