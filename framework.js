@@ -1962,53 +1962,113 @@ class Serializer extends IO{
 class Serializable{
   ser(ser=new O.Serializer()){ O.virtual('ser'); }
   deser(ser){ O.virtual('deser'); }
-  static deser(ser){ O.virtual('deser'); } // Optional
 
-  reser(){
-    return this.deser(new O.Serializer(this.ser().getOutput()));
-  }
+  static deser(ser){ return new this().deser(ser); }
+  reser(){ return this.deser(new O.Serializer(this.ser().getOutput())); }
 };
 
 class Graph extends Serializable{
-  constructor(nodeCtors, maxSize=null){
+  #ctors;
+  #ctorsNum;
+  #ctorsMap;
+  #ctorsKeys;
+  #nodes;
+  #persts;
+
+  constructor(ctors, maxSize=null){
     super();
 
-    this.nodeCtors = nodeCtors;
+    this.#ctors = ctors;
+    this.#ctorsNum = ctors.length;
     this.maxSize = maxSize;
-    this.nodes = new Set();
-    this.ctorsNum = nodeCtors.length;
+    this.#nodes = new Set();
 
     {
       const ctorsMap = new Map();
       const ctorsKeys = new Map();
 
-      nodeCtors.forEach((ctor, index) => {
+      ctors.forEach((ctor, index) => {
         ctorsMap.set(ctor, index);
-        ctorsKeys.set(ctor, ctor.keys());
+        ctorsKeys.set(ctor, ctor.keys);
       });
 
-      this.ctorsMap = ctorsMap;
-      this.ctorsKeys = ctorsKeys;
+      this.#ctorsMap = ctorsMap;
+      this.#ctorsKeys = ctorsKeys;
     }
+
+    this.#persts = new Set();
+    this.size = 0;
   }
+
+  get nodes(){ return this.#nodes; }
 
   addNode(node){
     const {maxSize} = this;
+    const {size} = node;
 
-    if(maxSize !== null && this.size === maxSize){
+    if(maxSize !== null && this.size + size > maxSize){
       this.gc();
-      if(this.size === maxSize)
+      if(this.size >= maxSize)
         throw new RangeError('Maximum graph size exceeded');
     }
 
-    this.nodes.add(node);
+    this.#nodes.add(node);
+    this.size += size;
+
+    return this;
+  }
+
+  addPersistentNode(node){
+    this.addNode(node);
+    return this.persist(node);
+  }
+
+  persist(node){
+    node.persistent = 1;
+    return this.#persts.add(node);
+    return this;
+  }
+
+  unpersist(node){
+    node.persistent = 0;
+    return this.#persts.delete(node);
+    return this;
+  }
+
+  gc(){
+    const nodes = new Set();
+    const queue = Array.from(this.#persts);
+    let size = 0;
+
+    while(queue.length !== 0){
+      const node = queue.shift();
+
+      nodes.add(node);
+      size += node.size;
+
+      for(const key of this.#ctorsKeys.get(node.constructor)){
+        const next = node[key];
+        if(next === null || nodes.has(next)) continue;
+        queue.push(next);
+      }
+    }
+
+    for(const node of this.#persts){
+      if(nodes.has(node)) continue;
+      nodes.add(node);
+      size += node.size;
+    }
+
+    this.#nodes = nodes;
+    this.size = size;
+
+    return this;
   }
 
   ser(ser=new O.Serializer()){
-    const {nodes, ctorsNum, ctorsMap, ctorsKeys} = this;
-    const lastCtorIndex = ctorsNum - 1;
+    const lastCtorIndex = this.#ctorsNum - 1;
 
-    const all = new Set(nodes);
+    const all = new Set(this.#nodes);
     const done = new Map();
     const queue = [];
 
@@ -2041,10 +2101,11 @@ class Graph extends Serializable{
         all.delete(node);
         done.set(node, index);
 
-        ser.write(ctorsMap.get(ctor), lastCtorIndex);
+        ser.write(this.#ctorsMap.get(ctor), lastCtorIndex);
+        ser.write(node.persistent);
         node.ser(ser);
 
-        for(const key of ctorsKeys.get(ctor))
+        for(const key of this.#ctorsKeys.get(ctor))
           queue.push(node[key]);
       }
     }
@@ -2053,11 +2114,11 @@ class Graph extends Serializable{
   }
 
   deser(ser){
-    const {nodeCtors, ctorsNum, ctorsKeys} = this;
-    const lastCtorIndex = ctorsNum - 1;
+    const lastCtorIndex = this.#ctorsNum - 1;
 
-    const nodes = new Set();
-    this.nodes = nodes;
+    const nodes = this.#nodes = new Set();
+    const persts = this.#persts = new Set();
+    this.size = 0;
 
     const nodesNum = ser.readInt();
     const lastNodeIndex = nodesNum - 1;
@@ -2072,13 +2133,13 @@ class Graph extends Serializable{
         const isNull = first ? 0 : !ser.read();
         const index = first ? nodes.size : isNull ? -1 : ser.read(Math.min(nodes.size, lastNodeIndex));
         const seen = isNull || index !== nodes.size;
-        const node = seen ? isNull ? null : done[index] : new nodeCtors[ser.read(lastCtorIndex)](this);
+        const node = seen ? isNull ? null : done[index] : new this.#ctors[ser.read(lastCtorIndex)](this);
 
         if(first){
           first = 0;
         }else{
           const elem = queue[0];
-          const keys = ctorsKeys.get(elem[0].constructor);
+          const keys = this.#ctorsKeys.get(elem[0].constructor);
           elem[0][keys[elem[1]++]] = node;
           if(elem[1] === keys.length) queue.shift();
         }
@@ -2086,44 +2147,23 @@ class Graph extends Serializable{
         if(seen) continue;
 
         done.push(node);
+        if(node.persistent = ser.read()) persts.add(node);
         node.deser(ser);
 
-        if(ctorsKeys.get(node.constructor).length !== 0)
+        if(this.#ctorsKeys.get(node.constructor).length !== 0)
           queue.push([node, 0]);
       }
     }
 
     return this;
   }
-
-  gc(){
-    const {ctorsKeys} = this;
-    if(this.size === 0) return this;
-
-    const nodes = new Set();
-    const queue = [O.first(this.nodes)];
-
-    while(queue.length !== 0){
-      const node = queue.shift();
-
-      nodes.add(node);
-
-      for(const key of ctorsKeys.get(node.constructor)){
-        const next = node[key];
-        if(next === null || nodes.has(next)) continue;
-        queue.push(next);
-      }
-    }
-
-    this.nodes = nodes;
-
-    return this;
-  }
-
-  get size(){ return this.nodes.size; }
 };
 
 class GraphNode extends Serializable{
+  static keys = null;
+
+  persistent = 0;
+
   constructor(graph){
     super();
 
@@ -2131,7 +2171,7 @@ class GraphNode extends Serializable{
     graph.addNode(this);
   }
 
-  static keys(){ O.virtual('keys'); }
+  get size(){ return 1; }
 };
 
 class Storage extends Serializable{
@@ -2351,7 +2391,7 @@ const O = {
       random number generator that depends on current time in
       milliseconds and internal 256-bit state.
     */
-    O.enhanceRNG(O.symbols.enhanceRNG);
+    //O.enhanceRNG(O.symbols.enhanceRNG);
 
     if(loadProject){
       O.project = O.urlParam('project');
@@ -2423,16 +2463,19 @@ const O = {
         logOrig(...args);
       }
 
-      return args[args.length - 1];
+      return O.last(args);
     };
 
-    logFunc.inc = (val=1) => {
-      indent += val;
+    logFunc.inc = (...args) => {
+      if(args.length !== 0) logFunc.apply(null, args);
+      indent++;
+      return O.last(args);
     };
 
-    logFunc.dec = (val=1) => {
-      indent -= val;
-      if(indent < 0) indent = 0;
+    logFunc.dec = (...args) => {
+      if(args.length !== 0) logFunc.apply(null, args);
+      if(indent !== 0) indent--;
+      return O.last(args);
     };
 
     logFunc.get = () => {

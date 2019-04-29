@@ -181,14 +181,14 @@ class Man extends Object{
       return;
     }
 
-    if(Man.num !== 1 && O.rand(75) === 0){
+    if(Man.num !== 1 && O.rand(50) === 0){
       this.remove();
       return;
     }
 
-    if(O.rand(5) !== 0 && grid.getv(Vector.navv(this, dir)).empty && !grid.getv(Vector.navv(this, dir).nav(4)).empty){
+    if(grid.getv(Vector.navv(this, dir)).empty && !grid.getv(Vector.navv(this, dir).nav(4)).empty){
       new Dirt(this.get(0, -1, -1).purge());
-      if(Man.num < 20 && O.rand(50) === 0) new Man(this.get(0, 0, -1).purge());
+      if(O.rand(50) === 0) new Man(this.get(0, 0, -1).purge());
       this.nav(dir);
     }else{
       this.dir = dir + (O.rand(2) ? 1 : -1) & 3;
