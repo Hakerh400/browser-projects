@@ -1933,7 +1933,7 @@ class Serializer extends IO{
   }
 
   writeBuf(buf){
-    this.writeInt(buf.length);
+    this.writeUint(buf.length);
 
     for(const byte of buf)
       this.write(byte, 255);
@@ -1942,7 +1942,7 @@ class Serializer extends IO{
   }
 
   readBuf(){
-    const len = this.readInt();
+    const len = this.readUint();
     const buf = O.Buffer.alloc(len);
 
     for(let i = 0; i !== len; i++)
@@ -2807,6 +2807,8 @@ const O = {
     if(arr.length === 0) return defaultVal;
     return arr[arr.length - 1];
   },
+
+  fst(set, defaultVal){ return O.first(set, defaultVal); },
 
   /*
     Random number generator
