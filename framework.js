@@ -1814,7 +1814,7 @@ class IO{
     if((this.outputIndex & 7) === 0) this.addByte();
   }
 
-  hasMore(){
+  get hasMore(){
     return (this.inputIndex >> 4) < this.input.length;
   }
 
@@ -2815,12 +2815,14 @@ const O = {
   */
 
   enhanceRNG(sym){
-    if(sym !== O.symbols.enhanceRNG)
+    O.noimpl('enhanceRNG');
+
+    /*if(sym !== O.symbols.enhanceRNG)
       throw new TypeError('Function "enhanceRNG" should not be called explicitly');
 
     O.enhancedRNG = 1;
     O.randState = O.Buffer.from(O.ca(32, () => Math.random() * 256));
-    O.repeat(10, () => O.random());
+    O.repeat(10, () => O.random());*/
   },
 
   randSeed(seed){

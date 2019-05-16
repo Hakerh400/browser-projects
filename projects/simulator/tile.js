@@ -46,8 +46,10 @@ class Tile extends Vector{
     const {index} = obj;
     const last = objs.pop();
 
-    last.index = index;
-    if(last !== obj) objs[index] = last;
+    if(last !== obj){
+      last.index = index;
+      objs[index] = last;
+    }
 
     for(const trait in obj.is)
       has[trait]--;
