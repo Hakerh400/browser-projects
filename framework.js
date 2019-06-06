@@ -2871,6 +2871,7 @@ const O = {
   cr(str){ return O.setLineBreak(str, '\r'); },
   lf(str){ return O.setLineBreak(str, '\n'); },
   crlf(str){ return O.setLineBreak(str, '\r\n'); },
+  rev(str){ return str.split('').reverse().join(''); },
 
   /*
     Array functions
@@ -3083,9 +3084,8 @@ const O = {
   },
 
   dist(x1, y1, x2, y2){
-    var dx = x2 - x1;
-    var dy = y2 - y1;
-
+    const dx = x2 - x1;
+    const dy = y2 - y1;
     return Math.sqrt(dx * dx + dy * dy);
   },
 

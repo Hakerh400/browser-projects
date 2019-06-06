@@ -1,5 +1,5 @@
 'use strict';
 
-window.setTimeout(main);
+setTimeout(main);
 
 function main(){}
