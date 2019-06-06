@@ -1,5 +1,7 @@
 'use strict';
 
+O.enhanceRNG();
+
 const MAX_LENGTH = 150;
 
 const FONT_SIZE = 32;
@@ -15,8 +17,6 @@ const {w, h, g} = O.ceCanvas(1);
 window.setTimeout(main);
 
 function main(){
-  O.enhanceRNG();
-
   g.textBaseline = 'top';
   g.textAlign = 'left';
 
