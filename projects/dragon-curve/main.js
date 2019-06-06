@@ -38,13 +38,11 @@ function main(){
   g.drawImage(canvas, s, 0);
 
   const imgd1 = g.getImageData(0, 0, w, h);
-  const imgd2 = g.createImageData(w, h);
+  const imgd2 = g.getImageData(0, 0, w, h);
   const d1 = imgd1.data;
   const d2 = imgd2.data;
-  d2.fill(255);
 
   const dataSize = d1.length;
-  log(dataSize)
   let cx = wh;
   let cy = hh;
 
