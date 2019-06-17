@@ -529,11 +529,11 @@ class Grid{
     this.path(x, y, wrap, all, func);
   }
 
-  get(x, y, wrap=0){
+  get(x, y, wrap=0, defaultVal=null){
     const {w, h} = this;
 
     if(!this.includes(x, y)){
-      if(!wrap) return null;
+      if(!wrap) return defaultVal;
       x = ((x % w) + w) % w;
       y = ((y % h) + h) % h;
     }
@@ -2850,9 +2850,12 @@ const O = {
     return `${str[0].toUpperCase()}${str.substring(1)}`;
   },
 
-  chars(start, len){
+  chars(start, len, arr=0){
     const cc = O.cc(start);
-    return O.ca(len, i => O.sfcc(cc + i)).join('');
+    const array = O.ca(len, i => O.sfcc(cc + i));
+
+    if(arr) return array;
+    return array.join('');
   },
 
   ftext(str){
@@ -2864,6 +2867,14 @@ const O = {
       .reduce((pad, line, i) => Math.min(pad, line.match(/^\s+/)[0].length), Infinity);
 
     return lines.map(line => line.slice(pad)).join('\n');
+  },
+
+  *exec(str, reg){
+    while(1){
+      const match = reg.exec(str);
+      if(match === null) break;
+      yield match;
+    }
   },
 
   indent(str, indent){ return `${' '.repeat(indent << 1)}${str}`; },
@@ -2878,29 +2889,29 @@ const O = {
   */
 
   ca(len, func=O.nop){
-    var arr = [];
+    const arr = [];
 
-    for(var i = 0; i !== len; i++)
+    for(let i = 0; i !== len; i++)
       arr.push(func(i, i / len, len));
 
     return arr;
   },
 
   async caa(len, func){
-    var arr = [];
+    const arr = [];
 
-    for(var i = 0; i !== len; i++)
+    for(let i = 0; i !== len; i++)
       arr.push(await func(i, i / len, len));
 
     return arr;
   },
 
   shuffle(arr){
-    var len = arr.length;
+    const len = arr.length;
 
-    for(var i = 0; i !== len; i++){
-      var j = i + O.rand(len - i);
-      var t = arr[i];
+    for(let i = 0; i !== len; i++){
+      const j = i + O.rand(len - i);
+      const t = arr[i];
       arr[i] = arr[j];
       arr[j] = t;
     }
@@ -2994,7 +3005,7 @@ const O = {
   },
 
   rand(a=2, b=null){
-    if(b !== null) return a + O.random() * (b - a + 1) | 0;
+    if(b !== null) return a + (O.random() * (b - a + 1) | 0);
     return O.random() * a | 0;
   },
 
