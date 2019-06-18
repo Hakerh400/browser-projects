@@ -2696,7 +2696,7 @@ const O = {
       path += '.hex';
       if(path in cache) return cache[path];
     }else{
-      throw new TypeError(`Cannot find ${O.sf(pathOrig)}`);
+      throw new Error(`Cannot find ${O.sf(pathOrig)}`);
     }
 
     const pathMatch = path;
@@ -2783,7 +2783,12 @@ const O = {
 
         resolvedPath = oldPath.join('/');
       }else{
-        return O.modulesPolyfill[newPath];
+        const mpf = O.modulesPolyfill;
+
+        if(!O.has(mpf, newPath))
+          throw new Error(`Unknown native module ${O.sf(newPath)}`);
+
+        return mpf[newPath];
       }
 
       var exportedModule = await O.req(resolvedPath);
@@ -2936,6 +2941,12 @@ const O = {
     }
 
     return a;
+  },
+
+  arr2obj(arr, val=1){
+    const obj = O.obj();
+    for(const key of arr) obj[key] = val;
+    return obj;
   },
 
   // For sets
@@ -3259,10 +3270,12 @@ const O = {
           return p.replace(/[\\]/g, '/');
         },
 
-        join(p1, p2){
-          return p1.split(/[\/\\]/).
-            concat(p2.split(/[\/\\]/)).
-            join('/').replace(/\/+/g, '/');
+        join(...pths){
+          return pths.reduce((p1, p2) => {
+            return p1.split(/[\/\\]/).
+              concat(p2.split(/[\/\\]/)).
+              join('/').replace(/\/+/g, '/');
+          });
         },
       },
     };

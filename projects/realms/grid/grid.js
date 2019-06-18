@@ -1,6 +1,9 @@
 'use strict';
 
-class Grid extends O.EventEmitter{
+class Grid{
+  has(){ O.virtual('has'); }
+  gen(){ O.virtual('gen'); }
+  getRaw(){ O.virtual('getRaw'); }
   get(){ O.virtual('get'); }
   set(){ O.virtual('set'); }
   prune(){ O.virtual('prune'); }
