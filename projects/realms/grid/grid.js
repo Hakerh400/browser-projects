@@ -1,6 +1,11 @@
 'use strict';
 
 class Grid{
+  constructor(reng){
+    this.reng = reng;
+  }
+
+  draw(g, t){  O.virtual('draw');  }
   has(){ O.virtual('has'); }
   gen(){ O.virtual('gen'); }
   getRaw(){ O.virtual('getRaw'); }
@@ -8,7 +13,7 @@ class Grid{
   set(){ O.virtual('set'); }
   prune(){ O.virtual('prune'); }
   relocate(){ O.virtual('relocate'); }
-};
+}
 
 module.exports = Grid;
 

@@ -12,6 +12,6 @@ class Object{
 
     tile.addObj(this);
   }
-};
+}
 
 module.exports = Object;

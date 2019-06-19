@@ -18,6 +18,30 @@ const createKey = (obj, key) => {
 class SquareGrid extends Grid{
   #d = createObj();
 
+  constructor(reng){
+    super(reng);
+  }
+
+  draw(g, t){
+    const {left, top, width: w, height: h} = g.canvas.getBoundingClientRect();
+    const wh = w / 2;
+    const hh = h / 2;
+
+    g.fillStyle = 'black';
+    g.fillRect(0, 0, w, h);
+    g.lineWidth = 1 / 40;
+
+    for(let y = -5; y !== 6; y++){
+      for(let x = -5; x !== 6; x++){
+        g.save();
+        g.translate(wh + x * 40, hh + y * 40);
+        g.scale(40 - .5, 40 - .5);
+        this.get(x, y).draw(g, t);
+        g.restore();
+      }
+    }
+  }
+
   has(x, y){
     let d = this.#d;
     if(!(y in d)) return 0;
@@ -60,6 +84,6 @@ class SquareGrid extends Grid{
     if(!(x in d)) return this.gen(x, y);
     return d[x];
   }
-};
+}
 
 module.exports = SquareGrid;

@@ -1,5 +1,6 @@
 'use strict';
 
+const RenderEngine = require('./render-engine');
 const Grid = require('./grid');
 const Tile = require('./tile');
 const Object = require('./object');
@@ -9,13 +10,13 @@ const realms = require('./realms');
 setTimeout(main);
 
 function main(){
-  const grid = new Grid.SquareGrid();
+  O.body.style.overflow = 'hidden';
 
-  grid.get(-1, 0);
-  grid.get(1, 0);
+  const canvas = O.ce(O.body, 'canvas');
+  canvas.width = 640;
+  canvas.height = 480;
+  canvas.style.marginLeft = '100px';
+  canvas.style.marginTop = '20px';
 
-  log(grid.get(0, 0).adjRaw(0));
-  log(grid.get(0, 0).adjRaw(1));
-  log(grid.get(0, 0).adjRaw(2));
-  log(grid.get(0, 0).adjRaw(3));
+  const reng = new RenderEngine(canvas, Grid.SquareGrid);
 }

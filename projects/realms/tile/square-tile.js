@@ -16,6 +16,9 @@ class SquareTile extends Tile{
     const {objs} = this;
     const len = objs.length;
 
+    g.fillStyle = O.Color.from(O.hsv(Math.max(Math.abs(this.x), Math.abs(this.y)) / 6 % 1));
+    g.fillRect(-.5, -.5, 1, 1);
+
     for(let i = this.fstVis; i !== len; i++)
       objs[i].draw(g);
   }
@@ -36,6 +39,6 @@ class SquareTile extends Tile{
 
     this.grid.gen(x, y);
   }
-};
+}
 
 module.exports = SquareTile;
