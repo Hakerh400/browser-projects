@@ -3,6 +3,8 @@
 const Grid = require('./grid');
 const Tile = require('../tile');
 
+const ZOOM_FACTOR = .9;
+
 const createObj = () => {
   const obj = O.obj();
   obj.size = 0;
@@ -20,26 +22,55 @@ class SquareGrid extends Grid{
 
   constructor(reng){
     super(reng);
+
+    this.tx = 0;
+    this.ty = 0;
+    this.scale = 40;
   }
 
   draw(g, t){
-    const {left, top, width: w, height: h} = g.canvas.getBoundingClientRect();
+    const {reng, tx, ty, scale} = this;
+    const {left, top, width: w, height: h} = reng.brect;
     const wh = w / 2;
     const hh = h / 2;
+
+    const xx = -tx * scale + wh;
+    const yy = -ty * scale + hh;
+    const scale1 = scale * 0.9875;
 
     g.fillStyle = 'black';
     g.fillRect(0, 0, w, h);
     g.lineWidth = 1 / 40;
 
-    for(let y = -5; y !== 6; y++){
-      for(let x = -5; x !== 6; x++){
+    const xStart = Math.floor(tx - wh / scale);
+    const yStart = Math.floor(ty - hh / scale);
+    const xEnd = xStart + Math.ceil(w / scale) + 2;
+    const yEnd = yStart + Math.ceil(h / scale) + 2;
+
+    for(let y = yStart; y !== yEnd; y++){
+      for(let x = xStart; x !== xEnd; x++){
         g.save();
-        g.translate(wh + x * 40, hh + y * 40);
-        g.scale(40 - .5, 40 - .5);
+        g.translate(xx + x * scale, yy + y * scale);
+        g.scale(scale1, scale1);
         this.get(x, y).draw(g, t);
         g.restore();
       }
     }
+  }
+
+  zoom(dir){
+    const {reng} = this;
+    const {width: w, height: h} = reng.brect;
+    const {cx, cy} = reng;
+    const wh = w / 2;
+    const hh = h / 2;
+
+    const k = dir < 0 ? 1 / ZOOM_FACTOR : ZOOM_FACTOR;
+    const sk = (k - 1) / (k * this.scale);
+
+    this.tx += (cx - wh) * sk;
+    this.ty += (cy - hh) * sk;
+    this.scale *= k;
   }
 
   has(x, y){
