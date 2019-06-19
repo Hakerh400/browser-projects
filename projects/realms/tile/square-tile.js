@@ -1,6 +1,6 @@
 'use strict';
 
-const Tile = require('./Tile');
+const Tile = require('./tile');
 
 class SquareTile extends Tile{
   constructor(grid, gravDir, x, y){

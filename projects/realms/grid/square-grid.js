@@ -1,6 +1,6 @@
 'use strict';
 
-const Grid = require('./Grid');
+const Grid = require('./grid');
 const Tile = require('../tile');
 
 const createObj = () => {
