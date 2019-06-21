@@ -14,6 +14,10 @@ class SquareTile extends Tile{
 
   get adjsNum(){ return 4; }
 
+  border(g){
+    g.rect(-.5, -.5, 1, 1);
+  }
+
   invDir(dir){
     return dir + 2 & 3;
   }

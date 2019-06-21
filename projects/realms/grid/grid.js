@@ -1,7 +1,9 @@
 'use strict';
 
-class Grid{
+class Grid extends O.EventEmitter{
   constructor(reng){
+    super();
+
     this.reng = reng;
   }
 
@@ -21,7 +23,9 @@ class Grid{
 module.exports = Grid;
 
 const SquareGrid = require('./square-grid');
+const HexagonalGrid = require('./hexagonal-grid');
 
 Object.assign(Grid, {
   SquareGrid,
+  HexagonalGrid,
 });

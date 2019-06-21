@@ -7,18 +7,18 @@ const Tile = require('../tile');
 const ZOOM_FACTOR = .9;
 const DEFAULT_SCALE = 40;
 const LINE_WIDTH = 1 / DEFAULT_SCALE;
-const SPACING = 0.9875;
+const SPACING = 1.12;
 
 const {floor, ceil, round} = Math;
 
-class SquareGrid extends Grid{
+class HexagonalGrid extends Grid{
   #d = createObj();
 
   constructor(reng){
     super(reng);
 
     const {brect} = reng;
-    this.pool = new LayerPool(brect.width, brect.height, SquareGridLayer);
+    this.pool = new LayerPool(brect.width, brect.height, HexagonalGridLayer);
 
     this.tx = 0;
     this.ty = 0;
@@ -33,8 +33,8 @@ class SquareGrid extends Grid{
 
     if(!reng.curIn) return null;
 
-    const x = round(tx + (reng.cx - wh) / scale);
     const y = round(ty + (reng.cy - hh) / scale);
+    const x = round(tx + (reng.cx - wh) / scale - (y & 1 ? .5 : 0));
 
     return this.get(x, y);
   }
@@ -67,8 +67,10 @@ class SquareGrid extends Grid{
     let x = 0, y = 0;
 
     const getCoords = tile => {
-      cs[0] = tile.x;
-      cs[1] = tile.y;
+      const {x, y} = tile;
+
+      cs[0] = x + (y & 1 ? .5 : 0);
+      cs[1] = y;
 
       return cs;
     };
@@ -87,7 +89,7 @@ class SquareGrid extends Grid{
           g.scale(scale, scale);
 
           if(trLen === 0){
-            g.translate(x, y);
+            g.translate(x + (y & 1 ? .5 : 0), y);
             g.scale(SPACING, SPACING);
 
             obj.draw(g, t, k);
@@ -134,14 +136,18 @@ class SquareGrid extends Grid{
     if(!(y in d)) d = createKey(d, y);
     else d = d[y];
 
+    const odd = y & 1;
+
     d.size++;
-    const tile = d[x] = new Tile.SquareTile(this, 2, x, y);
+    const tile = d[x] = new Tile.HexagonalTile(this, odd ? 3 : 2, x, y);
     let adj;
 
-    if(adj = this.getRaw(x, y - 1)) tile.setAdj(0, adj), adj.setAdj(2, tile);
-    if(adj = this.getRaw(x + 1, y)) tile.setAdj(1, adj), adj.setAdj(3, tile);
-    if(adj = this.getRaw(x, y + 1)) tile.setAdj(2, adj), adj.setAdj(0, tile);
-    if(adj = this.getRaw(x - 1, y)) tile.setAdj(3, adj), adj.setAdj(1, tile);
+    if(adj = this.getRaw(odd ? x + 1 : x, y - 1))  tile.setAdj(0, adj), adj.setAdj(3, tile);
+    if(adj = this.getRaw(x + 1, y))                tile.setAdj(1, adj), adj.setAdj(4, tile);
+    if(adj = this.getRaw(odd ? x + 1 : x, y + 1))  tile.setAdj(2, adj), adj.setAdj(5, tile);
+    if(adj = this.getRaw(odd ? x : x - 1, y + 1))  tile.setAdj(3, adj), adj.setAdj(0, tile);
+    if(adj = this.getRaw(x - 1, y))                tile.setAdj(4, adj), adj.setAdj(1, tile);
+    if(adj = this.getRaw(odd ? x : x - 1, y - 1))  tile.setAdj(5, adj), adj.setAdj(2, tile);
 
     this.emit('gen', tile);
 
@@ -165,7 +171,7 @@ class SquareGrid extends Grid{
   }
 }
 
-class SquareGridLayer extends LayerPool.Layer{
+class HexagonalGridLayer extends LayerPool.Layer{
   init(){
     const {g} = this;
 
@@ -182,8 +188,8 @@ class SquareGridLayer extends LayerPool.Layer{
   }
 }
 
-module.exports = Object.assign(SquareGrid, {
-  SquareGridLayer,
+module.exports = Object.assign(HexagonalGrid, {
+  HexagonalGridLayer,
 });
 
 const createObj = () => {

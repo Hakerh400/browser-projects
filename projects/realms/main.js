@@ -20,8 +20,16 @@ function main(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const reng = new RenderEngine(canvas, Grid.SquareGrid);
+  const reng = new RenderEngine(canvas, Grid.HexagonalGrid);
   const {grid} = reng;
+
+  grid.on('gen', tile => {
+    new Object.Ground(tile);
+  });
+
+  grid.on('reset', tile => {
+    new Object.Ground(tile);
+  });
 
   O.repeat(10, i => {
     new Object.Entity(grid.get(i - 10, -11));
@@ -30,7 +38,7 @@ function main(){
 
   O.repeat(20, i => {
     const tile = grid.get(O.rand(-10, 10), O.rand(-10, 10));
-    if(tile.nempty) return;
+    if(tile.has.occupying || tile.has.pickup) return;
     new Object.Wall(tile);
   });
 }

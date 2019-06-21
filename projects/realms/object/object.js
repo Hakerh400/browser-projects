@@ -24,7 +24,6 @@ class Object{
   }
 
   static initTraits(arr=[]){
-    arr.push(this.name);
     return window.Object.assign(O.arr2obj(arr), this.traits);
   }
 
@@ -47,6 +46,7 @@ class Object{
 
       for(let i = 0; i !== adjsNum; i++){
         const newTile = tile.adj(i);
+        if(newTile === null) debugger;
         if(visited.has(newTile)) continue;
 
         const newPath = path.concat(i);
@@ -68,6 +68,19 @@ class Object{
   }
 }
 
+class Ground extends Object{
+  static traits = this.initTraits(['ground']);
+  static layer = 1;
+
+  draw(g, t, k){
+    g.fillStyle = '#08f';
+    g.beginPath();
+    this.tile.border(g);
+    g.stroke();
+    g.fill();
+  }
+}
+
 class Entity extends Object{
   static traits = this.initTraits(['occupying', 'entity']);
   static layer = 5;
@@ -76,7 +89,7 @@ class Entity extends Object{
     super(tile);
 
     this.tickBound = this.tick.bind(this);
-    this.tile.grid.test.on('tick', this.tickBound);
+    this.tile.grid.on('tick', this.tickBound);
   }
 
   tick(){
@@ -94,7 +107,7 @@ class Entity extends Object{
       if(path === null) return;
 
       if(path.length === 0){
-        tile.get('Pickup').collect();
+        tile.get('pickup').collect();
         continue;
       }
 
@@ -120,13 +133,13 @@ class Entity extends Object{
 
   remove(){
     super.remove();
-    this.tile.grid.test.rel('tick', this.tickBound);
+    this.tile.grid.rel('tick', this.tickBound);
   }
 }
 
 class Pickup extends Object{
   static traits = this.initTraits(['pickup']);
-  static layer = 5;
+  static layer = 4;
 
   draw(g, t, k){
     g.fillStyle = 'yellow';
@@ -141,7 +154,7 @@ class Pickup extends Object{
 
     while(1){
       const newTile = tile.grid.get(O.rand(-10, 10), O.rand(-10, 10));
-      if(newTile.nempty) continue;
+      if(newTile.has.occupying || newTile.has.pickup) continue;
 
       tile.removeObj(this);
       newTile.addObj(this);
@@ -154,17 +167,18 @@ class Pickup extends Object{
 
 class Wall extends Object{
   static traits = this.initTraits(['occupying', 'wall']);
-  static layer = 4;
+  static layer = 6;
 
   draw(g, t, k){
     g.fillStyle = '#840';
     g.beginPath();
-    g.rect(-.5, -.5, 1, 1);
+    this.tile.border(g);
     g.stroke();
     g.fill();
   }
 }
 
+Object.Ground = Ground;
 Object.Entity = Entity;
 Object.Pickup = Pickup;
 Object.Wall = Wall;

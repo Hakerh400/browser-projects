@@ -5,7 +5,7 @@ const Tile = require('./tile');
 const Object = require('./object');
 const Action = require('./action');
 
-const TICK_DURATION = 1e3;
+const TICK_DURATION = 300;
 
 const {sign} = Math;
 
@@ -109,8 +109,8 @@ class RenderEngine{
         const {type, tile} = action;
         if(tile === null) continue;
         
-        if(type === 0) new Object.Entity(tile.purge());
-        else new Object.Pickup(tile.purge());
+        if(type === 0) new Object.Entity(tile.reset());
+        else new Object.Pickup(tile.reset());
       }
       actions.length = 0;
 

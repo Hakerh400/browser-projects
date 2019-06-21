@@ -12,6 +12,7 @@ class Tile{
 
   get adjsNum(){ O.virtual('adjsNum'); }
   draw(g, t, k){ O.virtual('draw'); }
+  border(g){ O.virtual('border'); }
   invDir(dir){ O.virtual('invDir'); }
   gen(){ O.virtual('gen'); }
 
@@ -81,6 +82,13 @@ class Tile{
     return this;
   }
 
+  reset(){
+    this.purge();
+    this.grid.emit('reset', this);
+    
+    return this;
+  }
+
   purge(){
     for(const obj of this.objs)
       obj.remove();
@@ -92,7 +100,9 @@ class Tile{
 module.exports = Tile;
 
 const SquareTile = require('./square-tile');
+const HexagonalTile = require('./hexagonal-tile');
 
 Object.assign(Tile, {
   SquareTile,
+  HexagonalTile,
 });
