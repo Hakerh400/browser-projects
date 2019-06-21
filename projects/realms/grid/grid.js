@@ -5,6 +5,7 @@ class Grid{
     this.reng = reng;
   }
 
+  get target(){ O.virtual('target'); }
   draw(g, t){ O.virtual('draw'); }
   zoom(dir){ O.virtual('scroll'); }
   has(){ O.virtual('has'); }

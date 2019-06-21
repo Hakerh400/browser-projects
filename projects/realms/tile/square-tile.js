@@ -8,19 +8,27 @@ class SquareTile extends Tile{
 
     this.x = x;
     this.y = y;
+
+    this.pool = grid.pool;
   }
 
   get adjNum(){ return 4; }
 
-  draw(g){
-    const {objs} = this;
-    const len = objs.length;
+  draw(getCtx, t){
+    const {pool, objs} = this;
+    let g;
 
-    g.fillStyle = O.Color.from(O.hsv(Math.max(Math.abs(this.x), Math.abs(this.y)) / 6 % 1));
+    g = getCtx(0);
+    g.fillStyle = Math.max(Math.abs(this.x), Math.abs(this.y)) & 1 ? '#f00' : '#ff0';
     g.fillRect(-.5, -.5, 1, 1);
 
-    for(let i = this.fstVis; i !== len; i++)
-      objs[i].draw(g);
+    g = getCtx(2);
+    g.fillStyle = 'white';
+    g.fillRect(-.1, -.1, .2, .2);
+
+    g = getCtx(1);
+    g.fillStyle = 'black';
+    g.fillRect(-.2, -.2, .4, .4);
   }
 
   invDir(dir){

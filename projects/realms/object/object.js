@@ -12,6 +12,8 @@ class Object{
 
     tile.addObj(this);
   }
+
+  draw(g, t){ O.virtual('draw'); }
 }
 
 module.exports = Object;

@@ -1,8 +1,10 @@
 'use strict';
 
-class RenderEngine{
-  #listeners = [];
+const Action = require('./action');
 
+const {sign} = Math;
+
+class RenderEngine{
   constructor(canvas, gridCtor){
     this.canvas = canvas;
     this.g = canvas.getContext('2d');
@@ -12,6 +14,9 @@ class RenderEngine{
     this.cy = 0;
     this.curIn = 0;
 
+    this.listeners = [];
+    this.actions = [];
+
     this.disposed = 0;
     this.aels();
 
@@ -20,28 +25,38 @@ class RenderEngine{
   }
 
   aels(){
-    const {canvas} = this;
+    const {canvas, grid, actions, listeners} = this;
 
     this.ael(window, 'mousemove', evt => {
       this.updateCursor(evt);
+    });
+
+    this.ael(window, 'mousedown', evt => {
+      this.updateCursor(evt);
+
+      const btn = evt.button;
+
+      if(btn === 0){
+        actions.push(new Action('select', grid.target));
+      }
     });
 
     this.ael(window, 'wheel', evt => {
       this.updateCursor(evt);
       if(!this.curIn) return;
 
-      const dir = Math.sign(evt.deltaY);
+      const dir = sign(evt.deltaY);
       this.grid.zoom(dir);
     });
   }
 
   ael(...args){
-    this.#listeners.push(args);
+    this.listeners.push(args);
     O.ael(...args);
   }
 
   rels(){
-    for(const args of this.#listeners)
+    for(const args of this.listeners)
       O.rel(...args);
   }
 
@@ -70,8 +85,14 @@ class RenderEngine{
   render(){
     if(this.disposed) return;
 
-    const {canvas, g, grid} = this;
+    const {canvas, g, grid, actions} = this;
     const t = O.now;
+
+    for(const act of actions){
+      if(act.tile === null) continue;
+      act.tile.a ^= 1;
+    }
+    actions.length = 0;
 
     grid.draw(g, t);
 

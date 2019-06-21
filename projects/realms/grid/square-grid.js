@@ -1,21 +1,15 @@
 'use strict';
 
+const LayerPool = require('../layer-pool');
 const Grid = require('./grid');
 const Tile = require('../tile');
 
 const ZOOM_FACTOR = .9;
+const DEFAULT_SCALE = 40;
+const LINE_WIDTH = 1 / DEFAULT_SCALE;
+const SPACING = 0.9875;
 
-const createObj = () => {
-  const obj = O.obj();
-  obj.size = 0;
-  return obj;
-};
-
-const createKey = (obj, key) => {
-  obj.size++;
-  const obj1 = obj[key] = createObj();
-  return obj1;
-};
+const {floor, ceil, round} = Math;
 
 class SquareGrid extends Grid{
   #d = createObj();
@@ -23,39 +17,69 @@ class SquareGrid extends Grid{
   constructor(reng){
     super(reng);
 
+    const {brect} = reng;
+    this.pool = new LayerPool(brect.width, brect.height, SquareGridLayer);
+
     this.tx = 0;
     this.ty = 0;
-    this.scale = 40;
+    this.scale = DEFAULT_SCALE;
   }
 
-  draw(g, t){
+  get target(){
     const {reng, tx, ty, scale} = this;
-    const {left, top, width: w, height: h} = reng.brect;
+    const {width: w, height: h} = reng.brect;
     const wh = w / 2;
     const hh = h / 2;
 
+    if(!reng.curIn) return null;
+
+    const x = tx + (reng.cx - wh) / scale;
+    const y = ty + (reng.cy - hh) / scale;
+
+    return this.get(round(x), round(y));
+  }
+
+  draw(g, t){
+    const {reng, pool, tx, ty, scale} = this;
+    const {width: w, height: h} = reng.brect;
+    const wh = w / 2;
+    const hh = h / 2;
+
+    pool.resize(w, h);
+    pool.prepare();
+
     const xx = -tx * scale + wh;
     const yy = -ty * scale + hh;
-    const scale1 = scale * 0.9875;
+    const scale1 = scale * SPACING;
 
     g.fillStyle = 'black';
     g.fillRect(0, 0, w, h);
-    g.lineWidth = 1 / 40;
 
-    const xStart = Math.floor(tx - wh / scale);
-    const yStart = Math.floor(ty - hh / scale);
-    const xEnd = xStart + Math.ceil(w / scale) + 2;
-    const yEnd = yStart + Math.ceil(h / scale) + 2;
+    const xStart = floor(tx - wh / scale) - 1;
+    const yStart = floor(ty - hh / scale) - 1;
+    const xEnd = xStart + ceil(w / scale) + 2;
+    const yEnd = yStart + ceil(h / scale) + 2;
 
-    for(let y = yStart; y !== yEnd; y++){
-      for(let x = xStart; x !== xEnd; x++){
-        g.save();
-        g.translate(xx + x * scale, yy + y * scale);
-        g.scale(scale1, scale1);
-        this.get(x, y).draw(g, t);
-        g.restore();
+    let x = 0, y = 0;
+
+    const getCtx = zIndex => {
+      const g = pool.getCtx(zIndex);
+
+      g.resetTransform();
+      g.translate(xx + x * scale, yy + y * scale);
+      g.scale(scale1, scale1);
+
+      return g;
+    };
+
+    for(y = yStart; y <= yEnd; y++){
+      for(x = xStart; x <= xEnd; x++){
+        const tile = this.get(x, y);
+        tile.draw(getCtx, t);
       }
     }
+
+    pool.draw(g);
   }
 
   zoom(dir){
@@ -117,4 +141,36 @@ class SquareGrid extends Grid{
   }
 }
 
-module.exports = SquareGrid;
+class SquareGridLayer extends LayerPool.Layer{
+  constructor(pool, zIndex){
+    super(pool, zIndex);
+
+    const {g} = this;
+    g.lineWidth = LINE_WIDTH;
+  }
+
+  prepare(){
+    const {w, h, g} = this;
+
+    g.resetTransform();
+    g.clearRect(0, 0, w, h);
+
+    this.wasUsed = 1;
+  }
+}
+
+module.exports = Object.assign(SquareGrid, {
+  SquareGridLayer,
+});
+
+const createObj = () => {
+  const obj = O.obj();
+  obj.size = 0;
+  return obj;
+};
+
+const createKey = (obj, key) => {
+  obj.size++;
+  const obj1 = obj[key] = createObj();
+  return obj1;
+};

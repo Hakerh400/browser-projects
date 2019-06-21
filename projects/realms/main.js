@@ -1,6 +1,9 @@
 'use strict';
 
 const RenderEngine = require('./render-engine');
+const Action = require('./action');
+const Transition = require('./transition');
+const LayerPool = require('./layer-pool');
 const Grid = require('./grid');
 const Tile = require('./tile');
 const Object = require('./object');
