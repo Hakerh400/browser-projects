@@ -18,17 +18,22 @@ class SquareTile extends Tile{
     const {pool, objs} = this;
     let g;
 
-    g = getCtx(0);
-    g.fillStyle = Math.max(Math.abs(this.x), Math.abs(this.y)) & 1 ? '#f00' : '#ff0';
-    g.fillRect(-.5, -.5, 1, 1);
+    const n = Math.max(Math.abs(this.x), Math.abs(this.y));
+    const k = t / 2e3 % 1;
+    const a = k * O.pi2;
 
-    g = getCtx(2);
-    g.fillStyle = 'white';
-    g.fillRect(-.1, -.1, .2, .2);
+    g = getCtx(0);
+    g.fillStyle = n & 1 ? '#f00' : '#ff0';
+    g.fillRect(-.5 + Math.cos(a), -.5, 1, 1);
 
     g = getCtx(1);
-    g.fillStyle = 'black';
-    g.fillRect(-.2, -.2, .4, .4);
+    g.fillStyle = n & 2 ? '#0f0' : '#0ff';
+    g.fillRect(-.3, -.3 + Math.sin(a), .6, .6);
+
+    g = getCtx(2);
+    g.fillStyle = n & 4 ? '#00f' : '#f0f';
+    g.rotate(a);
+    g.fillRect(-.15, -.15, .3, .3);
   }
 
   invDir(dir){
