@@ -1,7 +1,7 @@
 'use strict';
 
 class Tile{
-  adjs = O.ca(this.adjNum, () => null);
+  adjs = O.ca(this.adjsNum, () => null);
   objs = new Set();
   has = O.obj();
 
@@ -10,10 +10,27 @@ class Tile{
     this.gravDir = gravDir;
   }
 
-  get adjNum(){ O.virtual('adjNum'); }
-  draw(g, t){ O.virtual('draw'); }
+  get adjsNum(){ O.virtual('adjsNum'); }
+  draw(g, t, k){ O.virtual('draw'); }
   invDir(dir){ O.virtual('invDir'); }
   gen(){ O.virtual('gen'); }
+
+  get len(){ return this.objs.size; }
+  get fst(){ return O.fst(this.objs); }
+  get empty(){ return this.objs.size === 0; }
+  get nempty(){ return this.objs.size !== 0; }
+  get sngl(){ return this.objs.size === 1; }
+  get mult(){ return this.objs.size > 1; }
+  get free(){ return !this.has.occupying; }
+  get nfree(){ return this.has.occupying; }
+
+  get(trait){
+    for(const obj of this.objs)
+      if(obj.is[trait])
+        return obj;
+
+    return null;
+  }
 
   hasAdj(dir){
     const {adjs} = this;
@@ -49,15 +66,26 @@ class Tile{
       if(trait in has) has[trait]++;
       else has[trait] = 1;
     }
+
+    return this;
   }
 
   removeObj(obj){
     const {objs, has} = this;
 
-    objs.add(obj);
+    objs.delete(obj);
 
     for(const trait in obj.is)
       has[trait]--;
+
+    return this;
+  }
+
+  purge(){
+    for(const obj of this.objs)
+      obj.remove();
+
+    return this;
   }
 }
 

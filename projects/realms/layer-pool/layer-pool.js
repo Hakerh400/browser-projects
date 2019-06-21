@@ -15,6 +15,14 @@ class CanvasPool{
     this.map = O.obj();
   }
 
+  get len(){
+    return this.layers.length;
+  }
+
+  clear(){
+    this.layers.length = 0;
+  }
+
   createLayer(zIndex){
     const {initFunc, layers, map} = this;
     const len = layers.length;
@@ -99,14 +107,6 @@ class CanvasPool{
 
     for(const layer of this.layers)
       layer.resize();
-  }
-
-  get len(){
-    return this.layers.length;
-  }
-
-  clear(){
-    this.layers.length = 0;
   }
 }
 

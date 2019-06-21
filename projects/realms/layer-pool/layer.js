@@ -17,8 +17,12 @@ class Layer{
     this.g = canvas.getContext('2d');
 
     this.wasUsed = 1;
+
+    this.init();
     this.prepare();
   }
+
+  init(){}
 
   prepare(){
     const {w, h, g} = this;
@@ -46,6 +50,8 @@ class Layer{
 
     this.w = canvas.width = pool.w;
     this.h = canvas.height = pool.h;
+
+    this.init();
   }
 }
 

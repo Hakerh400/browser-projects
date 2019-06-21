@@ -23,6 +23,8 @@ class SquareGrid extends Grid{
     this.tx = 0;
     this.ty = 0;
     this.scale = DEFAULT_SCALE;
+
+    this.test = new O.EventEmitter();
   }
 
   get target(){
@@ -39,7 +41,11 @@ class SquareGrid extends Grid{
     return this.get(round(x), round(y));
   }
 
-  draw(g, t){
+  tick(){
+    this.test.emit('tick');
+  }
+
+  draw(g, t, k){
     const {reng, pool, tx, ty, scale} = this;
     const {width: w, height: h} = reng.brect;
     const wh = w / 2;
@@ -50,7 +56,6 @@ class SquareGrid extends Grid{
 
     const xx = -tx * scale + wh;
     const yy = -ty * scale + hh;
-    const scale1 = scale * SPACING;
 
     g.fillStyle = 'black';
     g.fillRect(0, 0, w, h);
@@ -60,22 +65,52 @@ class SquareGrid extends Grid{
     const xEnd = xStart + ceil(w / scale) + 2;
     const yEnd = yStart + ceil(h / scale) + 2;
 
+    const cs = [0, 0];
     let x = 0, y = 0;
 
-    const getCtx = zIndex => {
-      const g = pool.getCtx(zIndex);
+    const getCoords = tile => {
+      cs[0] = tile.x;
+      cs[1] = tile.y;
 
-      g.resetTransform();
-      g.translate(xx + x * scale, yy + y * scale);
-      g.scale(scale1, scale1);
-
-      return g;
+      return cs;
     };
 
     for(y = yStart; y <= yEnd; y++){
       for(x = xStart; x <= xEnd; x++){
         const tile = this.get(x, y);
-        tile.draw(getCtx, t);
+        
+        const g = pool.getCtx(0);
+        g.resetTransform();
+        g.translate(xx, yy);
+        g.scale(scale, scale);
+        g.translate(x, y);
+        g.scale(SPACING, SPACING);
+        g.fillStyle = '#08f';
+        g.fillRect(-.5, -.5, 1, 1);
+
+        for(const obj of tile.objs){
+          const {layer, transitions} = obj;
+          const trLen = transitions.length;
+          const g = pool.getCtx(layer);
+
+          g.resetTransform();
+          g.translate(xx, yy);
+          g.scale(scale, scale);
+
+          if(trLen === 0){
+            g.translate(x, y);
+            g.scale(SPACING, SPACING);
+
+            obj.draw(g, t, k);
+          }else{
+            for(let i = trLen - 1; i !== -1; i--)
+              transitions[i].apply(g, k, getCoords);
+
+            g.scale(SPACING, SPACING);
+            
+            obj.draw(g, t, k);
+          }
+        }
       }
     }
 
@@ -110,8 +145,6 @@ class SquareGrid extends Grid{
     if(!(y in d)) d = createKey(d, y);
     else d = d[y];
 
-    if(x in d) throw new TypeError(`Already has (${x}, ${y})`);
-
     d.size++;
     const tile = d[x] = new Tile.SquareTile(this, 2, x, y);
     let adj;
@@ -142,10 +175,9 @@ class SquareGrid extends Grid{
 }
 
 class SquareGridLayer extends LayerPool.Layer{
-  constructor(pool, zIndex){
-    super(pool, zIndex);
-
+  init(){
     const {g} = this;
+
     g.lineWidth = LINE_WIDTH;
   }
 

@@ -6,7 +6,8 @@ class Grid{
   }
 
   get target(){ O.virtual('target'); }
-  draw(g, t){ O.virtual('draw'); }
+  tick(){ O.virtual('tick'); }
+  draw(g, t, k){ O.virtual('draw'); }
   zoom(dir){ O.virtual('scroll'); }
   has(){ O.virtual('has'); }
   gen(){ O.virtual('gen'); }

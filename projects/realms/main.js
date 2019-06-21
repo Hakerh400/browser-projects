@@ -21,4 +21,16 @@ function main(){
   canvas.height = window.innerHeight;
 
   const reng = new RenderEngine(canvas, Grid.SquareGrid);
+  const {grid} = reng;
+
+  O.repeat(10, i => {
+    new Object.Entity(grid.get(i - 10, -11));
+    new Object.Pickup(grid.get(i, 11));
+  });
+
+  O.repeat(20, i => {
+    const tile = grid.get(O.rand(-10, 10), O.rand(-10, 10));
+    if(tile.nempty) return;
+    new Object.Wall(tile);
+  });
 }

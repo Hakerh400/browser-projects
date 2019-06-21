@@ -1,6 +1,11 @@
 'use strict';
 
+const Grid = require('./grid');
+const Tile = require('./tile');
+const Object = require('./object');
 const Action = require('./action');
+
+const TICK_DURATION = 1e3;
 
 const {sign} = Math;
 
@@ -20,6 +25,8 @@ class RenderEngine{
     this.disposed = 0;
     this.aels();
 
+    this.time = O.now - TICK_DURATION;
+
     this.renderBound = this.render.bind(this);
     O.raf(this.renderBound);
   }
@@ -36,9 +43,7 @@ class RenderEngine{
 
       const btn = evt.button;
 
-      if(btn === 0){
-        actions.push(new Action('select', grid.target));
-      }
+      actions.push(new Action(btn, grid.target));
     });
 
     this.ael(window, 'wheel', evt => {
@@ -47,6 +52,15 @@ class RenderEngine{
 
       const dir = sign(evt.deltaY);
       this.grid.zoom(dir);
+    });
+
+    this.ael(window, 'resize', evt => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    this.ael(window, 'contextmenu', evt => {
+      O.pd(evt);
     });
   }
 
@@ -87,14 +101,25 @@ class RenderEngine{
 
     const {canvas, g, grid, actions} = this;
     const t = O.now;
+    const dt = t - this.time;
+    const k = dt / TICK_DURATION % 1;
 
-    for(const act of actions){
-      if(act.tile === null) continue;
-      act.tile.a ^= 1;
+    if(dt >= TICK_DURATION){
+      for(const action of actions){
+        const {type, tile} = action;
+        if(tile === null) continue;
+        
+        if(type === 0) new Object.Entity(tile.purge());
+        else new Object.Pickup(tile.purge());
+      }
+      actions.length = 0;
+
+      grid.tick();
+
+      this.time = t;
     }
-    actions.length = 0;
 
-    grid.draw(g, t);
+    grid.draw(g, t, k);
 
     O.raf(this.renderBound);
   }
