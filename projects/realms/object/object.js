@@ -76,7 +76,6 @@ class Ground extends Object{
     g.fillStyle = '#08f';
     g.beginPath();
     this.tile.border(g);
-    g.stroke();
     g.fill();
   }
 }
@@ -126,7 +125,7 @@ class Entity extends Object{
   draw(g, t, k){
     g.fillStyle = 'white';
     g.beginPath();
-    g.arc(0, 0, .45, 0, O.pi2);
+    g.arc(0, 0, .4, 0, O.pi2);
     g.stroke();
     g.fill();
   }
@@ -173,7 +172,6 @@ class Wall extends Object{
     g.fillStyle = '#840';
     g.beginPath();
     this.tile.border(g);
-    g.stroke();
     g.fill();
   }
 }

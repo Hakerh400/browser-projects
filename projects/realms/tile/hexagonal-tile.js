@@ -2,8 +2,8 @@
 
 const Tile = require('./tile');
 
-const offsetX = Math.sqrt(3) / 4;
-const offsetY = .35
+const offsetX = Math.sqrt(3) / 4 + .05;
+const offsetY = .35;
 
 class HexagonalTile extends Tile{
   constructor(grid, gravDir, x, y){
@@ -18,10 +18,10 @@ class HexagonalTile extends Tile{
   get adjsNum(){ return 6; }
 
   border(g){
-    g.moveTo(0, -.5);
+    g.moveTo(0, -.6);
     g.lineTo(offsetX, -offsetY);
     g.lineTo(offsetX, offsetY);
-    g.lineTo(0, .5);
+    g.lineTo(0, .6);
     g.lineTo(-offsetX, offsetY);
     g.lineTo(-offsetX, -offsetY);
     g.closePath();

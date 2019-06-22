@@ -58,10 +58,10 @@ class SquareGrid extends Grid{
     g.fillStyle = 'black';
     g.fillRect(0, 0, w, h);
 
-    const xStart = floor(tx - wh / scale);
-    const yStart = floor(ty - hh / scale);
-    const xEnd = xStart + ceil(w / scale) + 1;
-    const yEnd = yStart + ceil(h / scale) + 1;
+    const xStart = floor(tx - wh / scale) - 1;
+    const yStart = floor(ty - hh / scale) - 1;
+    const xEnd = xStart + ceil(w / scale) + 2;
+    const yEnd = yStart + ceil(h / scale) + 2;
 
     const cs = [0, 0];
     let x = 0, y = 0;
