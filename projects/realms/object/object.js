@@ -1,7 +1,7 @@
 'use strict';
 
-const Pivot = require('../pivot');
 const Transition = require('../transition');
+const Pivot = require('../pivot');
 
 const {
   Translation,
@@ -9,22 +9,40 @@ const {
 } = Transition;
 
 class Object{
-  static traits = O.obj();
   static layer = 0;
+  static traits = O.obj();
+  static listenersG = O.obj();
+  static listenersL = O.obj();
 
-  is = this.constructor.traits;
   layer = this.constructor.layer;
+  is = this.constructor.traits;
+  listensG = this.constructor.listenersG;
+  listensL = this.constructor.listenersL;
 
   transitions = [];
 
   constructor(tile){
+    const {grid} = tile;
+
+    this.grid = grid;
     this.tile = tile;
 
     tile.addObj(this);
+
+    for(const type in this.listensG)
+      grid.addGridEventListener(type, this);
   }
 
   static initTraits(arr=[]){
     return window.Object.assign(O.arr2obj(arr), this.traits);
+  }
+
+  static initListenersG(arr=[]){
+    return window.Object.assign(O.arr2obj(arr), this.listensG);
+  }
+
+  static initListenersL(arr=[]){
+    return window.Object.assign(O.arr2obj(arr), this.listensL);
   }
 
   draw(g, t, k){ O.virtual('draw'); }
@@ -44,7 +62,15 @@ class Object{
       const [tile, path] = queue.shift();
       const {adjsNum} = tile;
 
-      for(let i = 0; i !== adjsNum; i++){
+      const start = O.rand(adjsNum);
+      let first = 1;
+
+      for(let i = start;; ++i === adjsNum && (i = 0)){
+        if(i === start){
+          if(first) first = 0;
+          else break;
+        }
+
         const newTile = tile.adj(i);
         if(newTile === null) debugger;
         if(visited.has(newTile)) continue;
@@ -63,8 +89,17 @@ class Object{
     return null;
   }
 
+  update(){
+    this.tile.update();
+  }
+
   remove(){
-    this.tile.removeObj(this);
+    const {grid, tile} = this;
+
+    tile.removeObj(this);
+
+    for(const type in this.listenersG)
+      grid.removeGridEventListener(type, this);
   }
 }
 
@@ -82,13 +117,13 @@ class Ground extends Object{
 
 class Entity extends Object{
   static traits = this.initTraits(['occupying', 'entity']);
+  static listenersG = this.initListenersG(['tick']);
   static layer = 5;
 
   constructor(tile){
     super(tile);
 
     this.tickBound = this.tick.bind(this);
-    this.tile.grid.on('tick', this.tickBound);
   }
 
   tick(){
@@ -128,11 +163,6 @@ class Entity extends Object{
     g.arc(0, 0, .4, 0, O.pi2);
     g.stroke();
     g.fill();
-  }
-
-  remove(){
-    super.remove();
-    this.tile.grid.rel('tick', this.tickBound);
   }
 }
 

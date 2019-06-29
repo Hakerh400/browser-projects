@@ -1,7 +1,7 @@
 'use strict';
 
 const RenderEngine = require('./render-engine');
-const Action = require('./action');
+const GridEvent = require('./grid-event');
 const Transition = require('./transition');
 const LayerPool = require('./layer-pool');
 const Grid = require('./grid');
@@ -20,7 +20,7 @@ function main(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const reng = new RenderEngine(canvas, Grid.HexagonalGrid);
+  const reng = new RenderEngine(canvas, Grid.SquareGrid);
   const {grid} = reng;
 
   grid.on('gen', tile => {

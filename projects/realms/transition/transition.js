@@ -11,11 +11,3 @@ class Transition{
 }
 
 module.exports = Transition;
-
-const Translation = require('./translation');
-const Rotation = require('./rotation');
-
-Object.assign(Transition, {
-  Translation,
-  Rotation,
-});

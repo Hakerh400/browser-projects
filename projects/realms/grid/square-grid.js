@@ -7,7 +7,7 @@ const Tile = require('../tile');
 const ZOOM_FACTOR = .9;
 const DEFAULT_SCALE = 40;
 const LINE_WIDTH = 1 / DEFAULT_SCALE;
-const SPACING = 0.9875;
+const SPACING = 1 - (1 - 0.9875) * 4;
 
 const {floor, ceil, round} = Math;
 
@@ -37,10 +37,6 @@ class SquareGrid extends Grid{
     const y = round(ty + (reng.cy - hh) / scale);
 
     return this.get(x, y);
-  }
-
-  tick(){
-    this.emit('tick');
   }
 
   draw(g, t, k){

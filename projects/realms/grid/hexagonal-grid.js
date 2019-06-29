@@ -39,10 +39,6 @@ class HexagonalGrid extends Grid{
     return this.get(x, y);
   }
 
-  tick(){
-    this.emit('tick');
-  }
-
   draw(g, t, k){
     const {reng, pool, tx, ty, scale} = this;
     const {width: w, height: h} = reng.brect;

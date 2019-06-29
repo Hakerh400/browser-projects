@@ -82,6 +82,16 @@ class Tile{
     return this;
   }
 
+  update(){
+    const {updates} = this.grid;
+
+    updates.add(this);
+    
+    for(const tile of this.adjRaw)
+      if(tile !== null)
+        updates.add(tile);
+  }
+
   reset(){
     this.purge();
     this.grid.emit('reset', this);
@@ -98,11 +108,3 @@ class Tile{
 }
 
 module.exports = Tile;
-
-const SquareTile = require('./square-tile');
-const HexagonalTile = require('./hexagonal-tile');
-
-Object.assign(Tile, {
-  SquareTile,
-  HexagonalTile,
-});

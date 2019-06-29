@@ -1,10 +1,10 @@
 'use strict';
 
-class Action{
+class GridEvent{
   constructor(type, tile){
     this.type = type;
     this.tile = tile;
   }
 }
 
-module.exports = Action;
+module.exports = GridEvent;
