@@ -48,9 +48,8 @@ class Grid extends O.EventEmitter{
     listeners[type].add(obj);
   }
 
-  removeGridEventListener(evt, obj){
+  removeGridEventListener(type, obj){
     const {listeners} = this;
-    const {type} = evt;
     const set = listeners[type];
 
     if(set.size === 1) delete listeners[type];

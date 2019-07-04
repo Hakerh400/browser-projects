@@ -112,9 +112,8 @@ class RenderEngine{
     return this.canvas.getBoundingClientRect();
   }
 
-  dispose(){
-    this.disposed = 1;
-    this.rels();
+  rand(a, b){
+    return O.rand(a, b);
   }
 
   render(){
@@ -141,7 +140,7 @@ class RenderEngine{
 
         const evt = events.shift();
         if(!grid.emitAndTick(evt)) break main;
-        
+
         this.time = t;
         this.animating = 1;
       }
@@ -150,6 +149,11 @@ class RenderEngine{
     grid.draw(g, t, k);
 
     O.raf(this.renderBound);
+  }
+
+  dispose(){
+    this.disposed = 1;
+    this.rels();
   }
 }
 

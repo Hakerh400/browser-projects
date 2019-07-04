@@ -1,11 +1,14 @@
 'use strict';
 
+const Message = require('../message');
 const Transition = require('../transition');
 const Pivot = require('../pivot');
 
 const {
   Translation,
   Rotation,
+
+  intps,
 } = Transition;
 
 class Object{
@@ -13,11 +16,13 @@ class Object{
   static traits = O.obj();
   static listenersG = O.obj();
   static listenersL = O.obj();
+  static listenersM = O.obj();
 
   layer = this.constructor.layer;
   is = this.constructor.traits;
   listensG = this.constructor.listenersG;
   listensL = this.constructor.listenersL;
+  listensM = this.constructor.listenersM;
 
   transitions = [];
 
@@ -33,17 +38,10 @@ class Object{
       grid.addGridEventListener(type, this);
   }
 
-  static initTraits(arr=[]){
-    return window.Object.assign(O.arr2obj(arr), this.traits);
-  }
-
-  static initListenersG(arr=[]){
-    return window.Object.assign(O.arr2obj(arr), this.listensG);
-  }
-
-  static initListenersL(arr=[]){
-    return window.Object.assign(O.arr2obj(arr), this.listensL);
-  }
+  static initTraits(arr=[]){ return window.Object.assign(O.arr2obj(arr), this.traits); }
+  static initListenersG(arr=[]){ return window.Object.assign(O.arr2obj(arr), this.listensG); }
+  static initListenersL(arr=[]){ return window.Object.assign(O.arr2obj(arr), this.listensL); }
+  static initListenersM(arr=[]){ return window.Object.assign(O.arr2obj(arr), this.listensM); }
 
   draw(g, t, k){ O.virtual('draw'); }
 
@@ -55,7 +53,23 @@ class Object{
     newTile.addObj(this);
     this.tile = newTile;
 
-    this.addTr(new Transition.Translation(tile, newTile));
+    this.addTr(new Translation(tile, newTile));
+  }
+
+  moveToTile(tile){
+    this.tile.removeObj(this);
+    tile.addObj(this);
+    this.tile = tile;
+  }
+
+  send(obj, type, data){
+    const msg = new Message(this, obj, type, data);
+
+    if(type in obj.listensM)
+      if(obj[type](msg))
+        msg.consume();
+
+    return msg;
   }
 
   addTr(transition){
@@ -69,6 +83,7 @@ class Object{
 
   findPath(maxLen, func){
     const {tile} = this;
+    const {rand} = this.grid.reng;
 
     const result = func(null, tile, []);
 
@@ -82,7 +97,7 @@ class Object{
       const [tile, path] = queue.shift();
       const {adjsNum} = tile;
 
-      const start = O.rand(adjsNum);
+      const start = rand(adjsNum);
       let first = 1;
 
       for(let i = start;; ++i === adjsNum && (i = 0)){
@@ -118,7 +133,7 @@ class Object{
 
     tile.removeObj(this);
 
-    for(const type in this.listenersG)
+    for(const type in this.listensG)
       grid.removeGridEventListener(type, this);
   }
 }
@@ -187,12 +202,25 @@ class NPC extends Object{
       if(path === null) return 0;
 
       if(path.length === 0){
-        tile.get('pickup').collect();
+        if(!this.send(tile.get('pickup'), 'collect').consumed){
+          this.remove();
+          return 1;
+        }
+
         continue;
       }
 
       this.move(path[0]);
       break;
+    }
+
+    {
+      const {tile} = this;
+
+      if(tile.has.pickup && !this.send(tile.get('pickup'), 'collect').consumed){
+        this.remove();
+        return 1;
+      }
     }
 
     return 1;
@@ -209,29 +237,37 @@ class NPC extends Object{
 
 class Pickup extends Object{
   static traits = this.initTraits(['pickup']);
+  static listenersM = this.initListenersG(['collect']);
   static layer = 4;
 
+  z = O.rand(2);
+
   draw(g, t, k){
-    g.fillStyle = 'yellow';
+    g.fillStyle = this.z?'red':'yellow';
     g.beginPath();
     g.rect(-.25, -.25, .5, .5);
     g.stroke();
     g.fill();
   }
 
-  collect(){
-    const {tile} = this;
+  collect(msg){
+    const {rand} = this.grid.reng;
+
+    if(this.z) return 0;
 
     while(1){
-      const newTile = tile.grid.get(O.rand(-10, 10), O.rand(-10, 10));
+      const {tile} = this;
+
+      const newTile = tile.grid.get(rand(-10, 10), rand(-10, 10));
       if(newTile.has.occupying || newTile.has.pickup) continue;
 
-      tile.removeObj(this);
-      newTile.addObj(this);
-      this.tile = newTile;
+      this.moveToTile(newTile);
+      this.addTr(new Translation(tile, newTile, intps.DISCRETE));
 
       break;
     }
+
+    return 1;
   }
 }
 
