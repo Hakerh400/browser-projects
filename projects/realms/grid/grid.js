@@ -1,8 +1,13 @@
 'use strict';
 
+const Event = require('../event');
+
+const {events} = Event;
+
 class Grid extends O.EventEmitter{
   listeners = O.obj();
   updates = new Set();
+  transitionsArr = [];
 
   constructor(reng){
     super();
@@ -10,8 +15,8 @@ class Grid extends O.EventEmitter{
     this.reng = reng;
   }
 
-  emitAndTick(type, tile){
-    if(this.emitGridEvent(type, tile)){
+  emitAndTick(evt, tile){
+    if(this.emitGridEvent(evt, tile)){
       this.tick();
       return 1;
     }
@@ -23,8 +28,15 @@ class Grid extends O.EventEmitter{
     const {updates} = this;
 
     this.updates = new Set();
-    this.emitGridEvent('tick');
-    this.emitGridEventToObjs('update', updates);
+    this.emitGridEvent(events.beforeTick);
+    this.emitGridEvent(events.tick);
+    this.emitGridEvent(events.afterTick);
+    this.emitGridEventToObjs(events.update, updates);
+  }
+
+  endAnimation(){
+    for(const transitions of this.transitionsArr)
+      transitions.length = 0;
   }
 
   addGridEventListener(type, obj){
@@ -36,27 +48,29 @@ class Grid extends O.EventEmitter{
     listeners[type].add(obj);
   }
 
-  removeGridEventListener(type, obj){
+  removeGridEventListener(evt, obj){
     const {listeners} = this;
+    const {type} = evt;
     const set = listeners[type];
 
     if(set.size === 1) delete listeners[type];
     else set.delete(obj);
   }
 
-  emitGridEvent(type, tile=null){
-    const objs = this.enumerateListeners(type, tile);
-    return this.emitGridEventToObjs(type, objs);
+  emitGridEvent(evt){
+    const objs = this.enumerateListeners(evt);
+    return this.emitGridEventToObjs(evt, objs);
   }
 
-  emitGridEventToObjs(type, objs){
+  emitGridEventToObjs(evt, objs){
+    const {type} = evt;
     let consumed = 0;
 
     while(1){
       const num = objs.size;
 
       for(const obj of objs){
-        if(obj[type]()){
+        if(obj[type](evt)){
           consumed = 1;
           objs.delete(obj);
         }
@@ -68,8 +82,9 @@ class Grid extends O.EventEmitter{
     return consumed;
   }
 
-  enumerateListeners(type, tile=null){
+  enumerateListeners(evt){
     const {listeners} = this;
+    const {type, tile} = evt;
     const objs = new Set();
 
     if(tile !== null)

@@ -47,6 +47,26 @@ class Object{
 
   draw(g, t, k){ O.virtual('draw'); }
 
+  move(dir){
+    const {tile} = this;
+    const newTile = tile.adj(dir);
+
+    tile.removeObj(this);
+    newTile.addObj(this);
+    this.tile = newTile;
+
+    this.addTr(new Transition.Translation(tile, newTile));
+  }
+
+  addTr(transition){
+    const {transitions} = this;
+
+    transitions.push(transition);
+
+    if(transitions.length === 1)
+      this.grid.transitionsArr.push(transitions);
+  }
+
   findPath(maxLen, func){
     const {tile} = this;
 
@@ -115,7 +135,35 @@ class Ground extends Object{
   }
 }
 
-class Entity extends Object{
+class Player extends Object{
+  static traits = this.initTraits(['occupying', 'entity']);
+  static listenersG = this.initListenersG(['navigate']);
+  static layer = 5;
+
+  navigate(evt){
+    const {dir} = evt;
+
+    const tile = this.tile.adj(evt.dir);
+    const {has} = tile;
+
+    if(has.ground && !has.occupying){
+      this.move(dir);
+      return 1;
+    }
+
+    return 0;
+  }
+
+  draw(g, t, k){
+    g.fillStyle = '#0f0';
+    g.beginPath();
+    g.arc(0, 0, .4, 0, O.pi2);
+    g.stroke();
+    g.fill();
+  }
+}
+
+class NPC extends Object{
   static traits = this.initTraits(['occupying', 'entity']);
   static listenersG = this.initListenersG(['tick']);
   static layer = 5;
@@ -126,10 +174,8 @@ class Entity extends Object{
     this.tickBound = this.tick.bind(this);
   }
 
-  tick(){
-    const {tile, transitions} = this;
-
-    this.transitions.length = 0;
+  tick(evt){
+    const {tile} = this;
 
     while(1){
       const path = this.findPath(100, (prev, tile, path) => {
@@ -138,23 +184,18 @@ class Entity extends Object{
         return 0;
       });
 
-      if(path === null) return;
+      if(path === null) return 0;
 
       if(path.length === 0){
         tile.get('pickup').collect();
         continue;
       }
 
-      const newTile = tile.adj(path[0]);
-
-      tile.removeObj(this);
-      newTile.addObj(this);
-      this.tile = newTile;
-
-      transitions.push(new Transition.Translation(tile, newTile));
-
+      this.move(path[0]);
       break;
     }
+
+    return 1;
   }
 
   draw(g, t, k){
@@ -207,7 +248,8 @@ class Wall extends Object{
 }
 
 Object.Ground = Ground;
-Object.Entity = Entity;
+Object.Player = Player;
+Object.NPC = NPC;
 Object.Pickup = Pickup;
 Object.Wall = Wall;
 

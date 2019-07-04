@@ -5,7 +5,7 @@ const Tile = require('./tile');
 const Object = require('./object');
 const Event = require('./event');
 
-const TICK_DURATION = 300;
+const TICK_DURATION = 100;
 
 const {sign} = Math;
 
@@ -20,19 +20,40 @@ class RenderEngine{
     this.curIn = 0;
 
     this.listeners = [];
-    this.actions = [];
+    this.events = [];
 
     this.disposed = 0;
     this.aels();
 
-    this.time = O.now - TICK_DURATION;
+    this.time = 0;
+    this.animating = 0;
 
     this.renderBound = this.render.bind(this);
     O.raf(this.renderBound);
   }
 
   aels(){
-    const {canvas, grid, actions, listeners} = this;
+    const {canvas, grid, events, listeners} = this;
+
+    this.ael(window, 'keydown', evt => {
+      switch(evt.code){
+        case 'ArrowUp':
+          events.push(new Event.Navigate(0, grid.target));
+          break;
+
+        case 'ArrowRight':
+          events.push(new Event.Navigate(1, grid.target));
+          break;
+
+        case 'ArrowDown':
+          events.push(new Event.Navigate(2, grid.target));
+          break;
+
+        case 'ArrowLeft':
+          events.push(new Event.Navigate(3, grid.target));
+          break;
+      }
+    });
 
     this.ael(window, 'mousemove', evt => {
       this.updateCursor(evt);
@@ -43,7 +64,7 @@ class RenderEngine{
 
       const btn = evt.button;
 
-      actions.push(new Event(btn, grid.target));
+      // events.push(new Event(btn, grid.target));
     });
 
     this.ael(window, 'wheel', evt => {
@@ -99,24 +120,31 @@ class RenderEngine{
   render(){
     if(this.disposed) return;
 
-    const {canvas, g, grid, actions} = this;
+    const {canvas, g, grid, events} = this;
     const t = O.now;
-    const dt = t - this.time;
-    const k = dt / TICK_DURATION % 1;
+    let k = 0;
 
-    if(dt >= TICK_DURATION){
-      for(const action of actions){
-        const {type, tile} = action;
-        if(tile === null) continue;
+    main: {
+      if(this.animating){
+        const dt = t - this.time;
+        k = dt / TICK_DURATION % 1;
+
+        if(dt >= TICK_DURATION){
+          this.animating = 0;
+          grid.endAnimation();
+          break main;
+        }
+
+        break main;
+      }else{
+        if(events.length === 0) break main;
+
+        const evt = events.shift();
+        if(!grid.emitAndTick(evt)) break main;
         
-        if(type === 0) new Object.Entity(tile.reset());
-        else new Object.Wall(tile.reset());
+        this.time = t;
+        this.animating = 1;
       }
-      actions.length = 0;
-
-      grid.tick();
-
-      this.time = t;
     }
 
     grid.draw(g, t, k);

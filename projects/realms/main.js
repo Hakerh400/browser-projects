@@ -32,7 +32,7 @@ function main(){
   });
 
   O.repeat(10, i => {
-    new Object.Entity(grid.get(i - 10, -11));
+    new Object.NPC(grid.get(i - 10, -11));
     new Object.Pickup(grid.get(i, 11));
   });
 
@@ -41,4 +41,6 @@ function main(){
     if(tile.has.occupying || tile.has.pickup) return;
     new Object.Wall(tile);
   });
+
+  new Object.Player(grid.get(0, 0).reset());
 }

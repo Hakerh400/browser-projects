@@ -1,13 +1,16 @@
 'use strict';
 
 const intps = {
-  linear: k => k,
+  LINEAR: k => k,
+  DISCRETE: k => 0,
 };
 
 class Transition{
-  constructor(intp=intps.linear){
+  constructor(intp=intps.LINEAR){
     this.intp = intp;
   }
 }
 
-module.exports = Transition;
+module.exports = Object.assign(Transition, {
+  intps,
+});

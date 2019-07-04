@@ -34,19 +34,28 @@ class Tile{
   }
 
   hasAdj(dir){
-    const {adjs} = this;
+    const {adjs, adjsNum} = this;
+
+    if(dir < 0) dir = dir % adjsNum + adjsNum;
+    else if(dir >= adjsNum) dir %= adjsNum;
 
     return adjs[dir] !== null;
   }
 
   adjRaw(dir){
-    const {adjs} = this;
+    const {adjs, adjsNum} = this;
+
+    if(dir < 0) dir = dir % adjsNum + adjsNum;
+    else if(dir >= adjsNum) dir %= adjsNum;
 
     return adjs[dir];
   }
 
   adj(dir){
-    const {adjs} = this;
+    const {adjs, adjsNum} = this;
+
+    if(dir < 0) dir = dir % adjsNum + adjsNum;
+    else if(dir >= adjsNum) dir %= adjsNum;
 
     if(adjs[dir] === null)
       this.gen(dir);
@@ -55,7 +64,12 @@ class Tile{
   }
 
   setAdj(dir, tile){
-    this.adjs[dir] = tile;
+    const {adjs, adjsNum} = this;
+
+    if(dir < 0) dir = dir % adjsNum + adjsNum;
+    else if(dir >= adjsNum) dir %= adjsNum;
+
+    adjs[dir] = tile;
   }
 
   addObj(obj){
