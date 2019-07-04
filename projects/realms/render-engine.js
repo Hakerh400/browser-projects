@@ -3,7 +3,7 @@
 const Grid = require('./grid');
 const Tile = require('./tile');
 const Object = require('./object');
-const GridEvent = require('./grid-event');
+const Event = require('./event');
 
 const TICK_DURATION = 300;
 
@@ -43,7 +43,7 @@ class RenderEngine{
 
       const btn = evt.button;
 
-      actions.push(new GridEvent(btn, grid.target));
+      actions.push(new Event(btn, grid.target));
     });
 
     this.ael(window, 'wheel', evt => {

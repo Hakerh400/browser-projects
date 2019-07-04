@@ -1,7 +1,7 @@
 'use strict';
 
 const RenderEngine = require('./render-engine');
-const GridEvent = require('./grid-event');
+const Event = require('./event');
 const Transition = require('./transition');
 const LayerPool = require('./layer-pool');
 const Grid = require('./grid');
