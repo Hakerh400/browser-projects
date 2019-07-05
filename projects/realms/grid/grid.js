@@ -2,8 +2,6 @@
 
 const Event = require('../event');
 
-const {events} = Event;
-
 class Grid extends O.EventEmitter{
   listeners = O.obj();
   updates = new Set();
@@ -28,10 +26,8 @@ class Grid extends O.EventEmitter{
     const {updates} = this;
 
     this.updates = new Set();
-    this.emitGridEvent(events.beforeTick);
-    this.emitGridEvent(events.tick);
-    this.emitGridEvent(events.afterTick);
-    this.emitGridEventToObjs(events.update, updates);
+    this.emitGridEvent(new Event('tick'));
+    this.emitGridEventToObjs(new Event('update'), updates);
   }
 
   endAnimation(){

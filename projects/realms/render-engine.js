@@ -36,21 +36,23 @@ class RenderEngine{
     const {canvas, grid, events, listeners} = this;
 
     this.ael(window, 'keydown', evt => {
+      const {target} = grid;
+
       switch(evt.code){
         case 'ArrowUp':
-          events.push(new Event.Navigate(0, grid.target));
+          events.push(new Event.Navigate(0, target));
           break;
 
         case 'ArrowRight':
-          events.push(new Event.Navigate(1, grid.target));
+          events.push(new Event.Navigate(1, target));
           break;
 
         case 'ArrowDown':
-          events.push(new Event.Navigate(2, grid.target));
+          events.push(new Event.Navigate(2, target));
           break;
 
         case 'ArrowLeft':
-          events.push(new Event.Navigate(3, grid.target));
+          events.push(new Event.Navigate(3, target));
           break;
       }
     });
