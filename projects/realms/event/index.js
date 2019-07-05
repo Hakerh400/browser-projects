@@ -2,13 +2,7 @@
 
 const Event = require('./event');
 const Navigate = require('./navigate');
-
-const events = {
-  tick: new Event('tick'),
-  beforeTick: new Event('beforeTick'),
-  afterTick: new Event('afterTick'),
-  update: new Event('update'),
-};
+const events = require('./events');
 
 module.exports = Object.assign(Event, {
   Navigate,

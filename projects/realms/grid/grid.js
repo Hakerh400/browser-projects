@@ -98,6 +98,10 @@ class Grid extends O.EventEmitter{
     return objs;
   }
 
+  rand(a, b){
+    return O.rand(a, b);
+  }
+
   get target(){ O.virtual('target'); }
   draw(g, t, k){ O.virtual('draw'); }
   zoom(dir){ O.virtual('scroll'); }

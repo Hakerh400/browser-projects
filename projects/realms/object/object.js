@@ -49,10 +49,7 @@ class Object{
     const {tile} = this;
     const newTile = tile.adj(dir);
 
-    tile.removeObj(this);
-    newTile.addObj(this);
-    this.tile = newTile;
-
+    this.moveToTile(newTile);
     this.addTr(new Translation(tile, newTile));
   }
 
@@ -65,7 +62,7 @@ class Object{
   send(obj, type, data){
     const msg = new Message(this, obj, type, data);
 
-    if(type in obj.listensM)
+    if(obj !== null && type in obj.listensM)
       if(obj[type](msg))
         msg.consume();
 
@@ -83,7 +80,7 @@ class Object{
 
   findPath(maxLen, func){
     const {tile} = this;
-    const {rand} = this.grid.reng;
+    const {rand} = this.grid;
 
     const result = func(null, tile, []);
 
@@ -240,10 +237,8 @@ class Pickup extends Object{
   static listenersM = this.initListenersG(['collect']);
   static layer = 4;
 
-  z = O.rand(2);
-
   draw(g, t, k){
-    g.fillStyle = this.z?'red':'yellow';
+    g.fillStyle = 'yellow';
     g.beginPath();
     g.rect(-.25, -.25, .5, .5);
     g.stroke();
@@ -251,9 +246,7 @@ class Pickup extends Object{
   }
 
   collect(msg){
-    const {rand} = this.grid.reng;
-
-    if(this.z) return 0;
+    const {rand} = this.grid;
 
     while(1){
       const {tile} = this;

@@ -1,9 +1,6 @@
 'use strict';
 
-const intps = {
-  LINEAR: k => k,
-  DISCRETE: k => 0,
-};
+const intps = require('./intps');
 
 class Transition{
   constructor(intp=intps.LINEAR){
@@ -11,6 +8,4 @@ class Transition{
   }
 }
 
-module.exports = Object.assign(Transition, {
-  intps,
-});
+module.exports = Transition;

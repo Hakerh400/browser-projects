@@ -42,5 +42,7 @@ function main(){
     new Object.Wall(tile);
   });
 
-  new Object.Player(grid.get(0, 0).reset());
+  for(let y = -1; y <= 1; y++)
+    for(let x = -1; x <= 1; x++)
+      new Object.Player(grid.get(x, y).reset());
 }

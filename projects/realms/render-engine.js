@@ -112,10 +112,6 @@ class RenderEngine{
     return this.canvas.getBoundingClientRect();
   }
 
-  rand(a, b){
-    return O.rand(a, b);
-  }
-
   render(){
     if(this.disposed) return;
 
@@ -131,10 +127,7 @@ class RenderEngine{
         if(dt >= TICK_DURATION){
           this.animating = 0;
           grid.endAnimation();
-          break main;
         }
-
-        break main;
       }else{
         if(events.length === 0) break main;
 
