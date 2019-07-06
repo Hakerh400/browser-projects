@@ -31,7 +31,6 @@ class Person extends Entity{
     g.fill();
 
     g.beginPath();
-    // g.arc(0, -.2, .45, O.pih - .4, O.pih + .4);
     g.moveTo(-.1, .2);
     g.lineTo(.1, .2);
     g.stroke();

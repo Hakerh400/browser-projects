@@ -20,13 +20,16 @@ function main(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const reng = new RenderEngine(canvas, Grid.SquareGrid);
+  const reng = new RenderEngine(canvas, [Grid.SquareGrid, Grid.HexagonalGrid][0]);
   const {grid} = reng;
 
   grid.on('reset', resetTile);
   grid.on('gen', genTile);
 
   new realms.sokoban.Player(grid.get(0, 0).reset());
+  new realms.sokoban.Player(grid.get(1, 0).reset());
+  new realms.sokoban.Player(grid.get(0, 1).reset());
+  new realms.sokoban.Player(grid.get(1, 1).reset());
 }
 
 function resetTile(tile){
@@ -37,7 +40,7 @@ function resetTile(tile){
 
 function genTile(tile){
   const {x, y} = tile;
-  
+
   new realms.sokoban.Floor(tile, O.rand(2));
   if(O.rand(2)) new realms.sokoban.Box(tile, O.rand(2));
 }

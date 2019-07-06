@@ -16,9 +16,13 @@ class Object{
   static objName = null;
   static layer = 0;
   static traits = O.obj();
+
   static listenersG = O.obj();
   static listenersL = O.obj();
   static listenersM = O.obj();
+
+  static gradients = [];
+  static gradientInstances = [];
 
   layer = this.constructor.layer;
   is = this.constructor.traits;
@@ -40,13 +44,40 @@ class Object{
       grid.addGridEventListener(type, this);
   }
 
-  static initTraits(arr=[]){ return window.Object.assign(O.arr2obj(arr), this.traits); }
-  static initListenersG(arr=[]){ return window.Object.assign(O.arr2obj(arr), this.listensG); }
-  static initListenersL(arr=[]){ return window.Object.assign(O.arr2obj(arr), this.listensL); }
-  static initListenersM(arr=[]){ return window.Object.assign(O.arr2obj(arr), this.listensM); }
+  static initTraits(arr){ return window.Object.assign(O.arr2obj(arr), this.traits); }
+  static initListenersG(arr){ return window.Object.assign(O.arr2obj(arr), this.listensG); }
+  static initListenersL(arr){ return window.Object.assign(O.arr2obj(arr), this.listensL); }
+  static initListenersM(arr){ return window.Object.assign(O.arr2obj(arr), this.listensM); }
+
+  static initGradients(arr){
+    this.gradients = arr;
+    this.gradientInstances = O.ca(arr.length, () => null)
+
+    return arr;
+  }
 
   ser(s){}
   deser(s){}
+
+  gradient(g, index){
+    const ctor = this.constructor;
+    const instances = ctor.gradientInstances;
+    const instance = instances[index];
+    if(instance !== null) return instance;
+
+    const params = ctor.gradients[index];
+    const coords = params.slice(0, 4);
+    const stops = params.slice(4);
+    const len = stops.length;
+    const len1 = len - 1;
+
+    const grad = g.createLinearGradient.apply(g, coords);
+
+    for(let i = 0; i !== len; i++)
+      grad.addColorStop(i / len1, stops[i]);
+
+    return ctor.gradientInstances[index] = grad;
+  }
   
   draw(g, t, k){ O.virtual('draw'); }
 

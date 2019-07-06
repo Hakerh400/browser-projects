@@ -5,17 +5,22 @@ const cmn = require('../common-objects');
 class Floor extends cmn.Ground{
   static objName = 'floor';
 
+  static gradients = this.initGradients([
+    [-.5, -.5, .5, .5, '#fff', '#888'],
+    [-.5, -.5, .5, .5, '#f0f', '#808'],
+  ]);
+
   constructor(tile, target=0){
     super(tile);
 
-    this.target = target;
+    this.target = target & 1;
   }
 
   ser(s){ s.write(this.target); }
   deser(s){ this.target = s.read(); }
 
   draw(g, t, k){
-    g.fillStyle = this.target ? '#00f' : '#0ff';
+    g.fillStyle = this.gradient(g, this.target);
     super.draw(g, t, k);
   }
 }
@@ -27,9 +32,41 @@ class Box extends cmn.Object{
   static listenersM = this.initListenersM(['push']);
 
   draw(g, t, k){
-    g.fillStyle = 'yellow';
+    const s1 = .3;
+    const s2 = .215;
+    const s3 = .075;
+
+    g.fillStyle = '#ff0';
     g.beginPath();
-    g.rect(-.25, -.25, .5, .5);
+    g.rect(-s1, -s1, s1 * 2, s1 * 2);
+    g.fill();
+    g.stroke();
+
+    g.fillStyle = '#880';
+    g.beginPath();
+    g.rect(-s2, -s2, s2 * 2, s2 * 2);
+    g.fill();
+    g.stroke();
+
+    g.fillStyle = '#ff0';
+    g.beginPath();
+    g.moveTo(s2 - s3, -s2);
+    g.lineTo(s2, -s2);
+    g.lineTo(s2, -s2 + s3);
+    g.lineTo(-s2 + s3, s2);
+    g.lineTo(-s2, s2);
+    g.lineTo(-s2, s2 - s3);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    g.beginPath();
+    g.moveTo(-s2 + s3, -s2);
+    g.lineTo(-s2, -s2);
+    g.lineTo(-s2, -s2 + s3);
+    g.lineTo(s2 - s3, s2);
+    g.lineTo(s2, s2);
+    g.lineTo(s2, s2 - s3);
+    g.closePath();
     g.fill();
     g.stroke();
   }
