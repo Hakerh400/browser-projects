@@ -3,7 +3,7 @@
 const intps = {
   LINEAR: k => k,
   DISCRETE: k => 0,
-  IMMED: k => 1,
+  INSTANT: k => 1,
 };
 
 module.exports = intps;
