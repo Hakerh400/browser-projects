@@ -1,8 +1,8 @@
 'use strict';
 
-const Message = require('../message');
-const Transition = require('../transition');
-const Pivot = require('../pivot');
+const Message = require('./message');
+const Transition = require('./transition');
+const Pivot = require('./pivot');
 
 const {
   Translation,
@@ -12,6 +12,8 @@ const {
 } = Transition;
 
 class Object{
+  static realm = null;
+  static objName = null;
   static layer = 0;
   static traits = O.obj();
   static listenersG = O.obj();
@@ -28,7 +30,7 @@ class Object{
 
   constructor(tile){
     const {grid} = tile;
-
+    
     this.grid = grid;
     this.tile = tile;
 
@@ -43,7 +45,24 @@ class Object{
   static initListenersL(arr=[]){ return window.Object.assign(O.arr2obj(arr), this.listensL); }
   static initListenersM(arr=[]){ return window.Object.assign(O.arr2obj(arr), this.listensM); }
 
+  ser(s){}
+  deser(s){}
+  
   draw(g, t, k){ O.virtual('draw'); }
+
+  canMove(dir){
+    const {tile} = this;
+    const newTile = tile.adj(dir);
+    const {has} = newTile;
+
+    return has.ground && !has.occupying;
+  }
+
+  tryToMove(dir){
+    if(!this.canMove(dir)) return 0;
+    this.move(dir);
+    return 1;
+  }
 
   move(dir){
     const {tile} = this;
@@ -134,152 +153,5 @@ class Object{
       grid.removeGridEventListener(type, this);
   }
 }
-
-class Ground extends Object{
-  static traits = this.initTraits(['ground']);
-  static layer = 1;
-
-  draw(g, t, k){
-    g.fillStyle = '#08f';
-    g.beginPath();
-    this.tile.border(g);
-    g.fill();
-  }
-}
-
-class Player extends Object{
-  static traits = this.initTraits(['occupying', 'entity']);
-  static listenersG = this.initListenersG(['navigate']);
-  static layer = 5;
-
-  navigate(evt){
-    const {dir} = evt;
-
-    const tile = this.tile.adj(evt.dir);
-    const {has} = tile;
-
-    if(has.ground && !has.occupying){
-      this.move(dir);
-      return 1;
-    }
-
-    return 0;
-  }
-
-  draw(g, t, k){
-    g.fillStyle = '#0f0';
-    g.beginPath();
-    g.arc(0, 0, .4, 0, O.pi2);
-    g.stroke();
-    g.fill();
-  }
-}
-
-class NPC extends Object{
-  static traits = this.initTraits(['occupying', 'entity']);
-  static listenersG = this.initListenersG(['tick']);
-  static layer = 5;
-
-  constructor(tile){
-    super(tile);
-
-    this.tickBound = this.tick.bind(this);
-  }
-
-  tick(evt){
-    const {tile} = this;
-
-    while(1){
-      const path = this.findPath(100, (prev, tile, path) => {
-        if(path.length !== 0 && tile.has.occupying) return -1;
-        if(tile.has.pickup) return 1;
-        return 0;
-      });
-
-      if(path === null) return 0;
-
-      if(path.length === 0){
-        if(!this.send(tile.get('pickup'), 'collect').consumed){
-          this.remove();
-          return 1;
-        }
-
-        continue;
-      }
-
-      this.move(path[0]);
-      break;
-    }
-
-    {
-      const {tile} = this;
-
-      if(tile.has.pickup && !this.send(tile.get('pickup'), 'collect').consumed){
-        this.remove();
-        return 1;
-      }
-    }
-
-    return 1;
-  }
-
-  draw(g, t, k){
-    g.fillStyle = 'white';
-    g.beginPath();
-    g.arc(0, 0, .4, 0, O.pi2);
-    g.stroke();
-    g.fill();
-  }
-}
-
-class Pickup extends Object{
-  static traits = this.initTraits(['pickup']);
-  static listenersM = this.initListenersG(['collect']);
-  static layer = 4;
-
-  draw(g, t, k){
-    g.fillStyle = 'yellow';
-    g.beginPath();
-    g.rect(-.25, -.25, .5, .5);
-    g.stroke();
-    g.fill();
-  }
-
-  collect(msg){
-    const {rand} = this.grid;
-
-    while(1){
-      const {tile} = this;
-
-      const newTile = tile.grid.get(rand(-10, 10), rand(-10, 10));
-      if(newTile.has.occupying || newTile.has.pickup) continue;
-
-      this.moveToTile(newTile);
-      this.addTr(new Translation(tile, newTile, intps.DISCRETE));
-
-      break;
-    }
-
-    return 1;
-  }
-}
-
-class Wall extends Object{
-  static traits = this.initTraits(['occupying', 'wall']);
-  static layer = 6;
-
-  draw(g, t, k){
-    g.fillStyle = '#840';
-    g.beginPath();
-    this.tile.border(g);
-    g.fill();
-  }
-}
-
-Object.Ground = Ground;
-Object.Player = Player;
-Object.NPC = NPC;
-Object.Pickup = Pickup;
-Object.Wall = Wall;
 
 module.exports = Object;

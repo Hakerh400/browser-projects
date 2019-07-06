@@ -23,26 +23,21 @@ function main(){
   const reng = new RenderEngine(canvas, Grid.SquareGrid);
   const {grid} = reng;
 
-  grid.on('gen', tile => {
-    new Object.Ground(tile);
-  });
+  grid.on('reset', resetTile);
+  grid.on('gen', genTile);
 
-  grid.on('reset', tile => {
-    new Object.Ground(tile);
-  });
+  new realms.sokoban.Player(grid.get(0, 0).reset());
+}
 
-  O.repeat(10, i => {
-    new Object.NPC(grid.get(i - 10, -11));
-    new Object.Pickup(grid.get(i, 11));
-  });
+function resetTile(tile){
+  const {x, y} = tile;
 
-  O.repeat(20, i => {
-    const tile = grid.get(O.rand(-10, 10), O.rand(-10, 10));
-    if(tile.has.occupying || tile.has.pickup) return;
-    new Object.Wall(tile);
-  });
+  new realms.sokoban.Floor(tile, 0);
+}
 
-  for(let y = -1; y <= 1; y++)
-    for(let x = -1; x <= 1; x++)
-      new Object.Player(grid.get(x, y).reset());
+function genTile(tile){
+  const {x, y} = tile;
+  
+  new realms.sokoban.Floor(tile, O.rand(2));
+  if(O.rand(2)) new realms.sokoban.Box(tile, O.rand(2));
 }

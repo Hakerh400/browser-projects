@@ -65,8 +65,6 @@ class RenderEngine{
       this.updateCursor(evt);
 
       const btn = evt.button;
-
-      // events.push(new Event(btn, grid.target));
     });
 
     this.ael(window, 'wheel', evt => {
