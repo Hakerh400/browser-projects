@@ -27,20 +27,18 @@ function main(){
   grid.on('gen', genTile);
 
   new realms.sokoban.Player(grid.get(0, 0).reset());
-  new realms.sokoban.Player(grid.get(1, 0).reset());
-  new realms.sokoban.Player(grid.get(0, 1).reset());
-  new realms.sokoban.Player(grid.get(1, 1).reset());
 }
 
 function resetTile(tile){
   const {x, y} = tile;
 
-  new realms.sokoban.Floor(tile, 0);
+  new realms.sokoban.Ground(tile, 0);
 }
 
 function genTile(tile){
   const {x, y} = tile;
 
-  new realms.sokoban.Floor(tile, O.rand(2));
-  if(O.rand(2)) new realms.sokoban.Box(tile, O.rand(2));
+  new realms.sokoban.Ground(tile, O.rand(2));
+  if(O.rand(5) === 0) new realms.sokoban.Box(tile, O.rand(2));
+  if(O.rand(5) === 0) new realms.sokoban.Wall(tile.reset());
 }

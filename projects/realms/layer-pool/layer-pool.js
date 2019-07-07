@@ -2,7 +2,7 @@
 
 const Layer = require('./layer');
 
-const DEFAULT_FADE_TIME = 10;
+const DEFAULT_FADE_TIME = 100;
 
 class CanvasPool{
   constructor(w, h, layerCtor=Layer, fadeTime=DEFAULT_FADE_TIME){

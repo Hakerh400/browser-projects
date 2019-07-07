@@ -84,16 +84,32 @@ class SquareGrid extends Grid{
 
           if(trLen === 0){
             g.translate(x, y);
-            g.scale(SPACING, SPACING);
-
-            obj.draw(g, t, k);
           }else{
             for(let i = trLen - 1; i !== -1; i--)
               transitions[i].apply(g, k, getCoords);
+          }
 
-            g.scale(SPACING, SPACING);
+          g.scale(SPACING, SPACING);
+
+          if(obj.draw(g, t, k)){
+            const g = pool.getCtx(layer - .5);
+
+            g.resetTransform();
+            g.translate(xx, yy);
+            g.scale(scale, scale);
+
+            if(trLen === 0){
+              g.translate(x, y);
+            }else{
+              for(let i = trLen - 1; i !== -1; i--)
+                transitions[i].apply(g, k, getCoords);
+            }
             
-            obj.draw(g, t, k);
+            g.translate(.06, .06);
+            g.scale(1.12, 1.12);
+            g.beginPath();
+            tile.border(g);
+            g.fill();
           }
         }
       }
@@ -162,10 +178,18 @@ class SquareGrid extends Grid{
 }
 
 class SquareGridLayer extends LayerPool.Layer{
+  constructor(pool, zIndex){
+    super(pool, zIndex);
+  }
+
   init(){
     const {g} = this;
 
+    this.isShadow = this.zIndex % 1 !== 0;
     g.lineWidth = LINE_WIDTH;
+
+    if(this.isShadow)
+      g.fillStyle = '#000';
   }
 
   prepare(){
@@ -175,6 +199,16 @@ class SquareGridLayer extends LayerPool.Layer{
     g.clearRect(0, 0, w, h);
 
     this.wasUsed = 1;
+  }
+
+  draw(g){
+    if(this.isShadow){
+      g.globalAlpha = .5;
+      super.draw(g);
+      g.globalAlpha = 1;
+    }else{
+      super.draw(g);
+    }
   }
 }
 

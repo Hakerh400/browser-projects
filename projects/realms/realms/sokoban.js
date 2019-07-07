@@ -2,7 +2,7 @@
 
 const cmn = require('../common-objects');
 
-class Floor extends cmn.Ground{
+class Ground extends cmn.Ground{
   static objName = 'floor';
 
   static gradients = this.initGradients([
@@ -110,8 +110,39 @@ class Player extends cmn.Person{
   }
 }
 
+class Wall extends cmn.Wall{
+  static objName = 'wall';
+
+  static gradients = this.initGradients([
+    [-.5, -.5, .5, .5, '#777', '#222'],
+  ]);
+
+  draw(g, t, k){
+    const {tile} = this;
+
+    g.save();
+    g.scale(1.02, 1.02);
+    g.fillStyle = '#222';
+    g.beginPath();
+    tile.border(g);
+    g.fill();
+    g.restore();
+
+    g.fillStyle = this.gradient(g, 0);
+    g.save();
+    g.scale(.9, .9);
+    g.beginPath();
+    tile.border(g);
+    g.fill();
+    g.restore();
+
+    return 1;
+  }
+}
+
 module.exports = {
-  Floor,
+  Ground,
   Box,
   Player,
+  Wall,
 };
