@@ -1,6 +1,6 @@
 'use strict';
 
-const cmn = require('../common-objects');
+const cmn = require('../../common-objects');
 
 class Ground extends cmn.Ground{
   static objName = 'floor';

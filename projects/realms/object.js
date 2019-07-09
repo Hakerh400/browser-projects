@@ -51,7 +51,7 @@ class Object{
 
   static initGradients(arr){
     this.gradients = arr;
-    this.gradientInstances = O.ca(arr.length, () => null)
+    this.gradientInstances = O.ca(arr.length, () => null);
 
     return arr;
   }

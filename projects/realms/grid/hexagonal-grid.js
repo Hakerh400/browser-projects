@@ -36,7 +36,7 @@ class HexagonalGrid extends Grid{
     const y = round(ty + (reng.cy - hh) / scale);
     const x = round(tx + (reng.cx - wh) / scale - (y & 1 ? .5 : 0));
 
-    return this.get(x, y);
+    return this.get(x, y, explicit);
   }
 
   draw(g, t, k){
@@ -73,7 +73,7 @@ class HexagonalGrid extends Grid{
 
     for(y = yStart; y <= yEnd; y++){
       for(x = xStart; x <= xEnd; x++){
-        const tile = this.get(x, y);
+        const tile = this.get(x, y, explicit);
 
         for(const obj of tile.objs){
           const {layer, transitions} = obj;
@@ -142,7 +142,7 @@ class HexagonalGrid extends Grid{
     return x in d;
   }
 
-  gen(x, y){
+  gen(x, y, explicit=0){
     let d = this.#d;
 
     if(!(y in d)) d = createKey(d, y);
@@ -161,7 +161,7 @@ class HexagonalGrid extends Grid{
     if(adj = this.getRaw(x - 1, y))                tile.setAdj(4, adj), adj.setAdj(1, tile);
     if(adj = this.getRaw(odd ? x : x - 1, y - 1))  tile.setAdj(5, adj), adj.setAdj(2, tile);
 
-    this.emit('gen', tile);
+    this.emit('gen', tile, explicit);
 
     return tile;
   }
@@ -174,11 +174,11 @@ class HexagonalGrid extends Grid{
     return d[x];
   }
 
-  get(x, y){
+  get(x, y, explicit=0){
     let d = this.#d;
-    if(!(y in d)) return this.gen(x, y);
+    if(!(y in d)) return this.gen(x, y, explicit);
     d = d[y];
-    if(!(x in d)) return this.gen(x, y);
+    if(!(x in d)) return this.gen(x, y, explicit);
     return d[x];
   }
 }

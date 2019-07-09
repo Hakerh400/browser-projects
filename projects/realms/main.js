@@ -1,6 +1,9 @@
 'use strict';
 
 const RenderEngine = require('./render-engine');
+const Realm = require('./realm');
+const WorldGenerator = require('./world-generator');
+const PredicateSet = require('./predicate-set');
 const Event = require('./event');
 const Transition = require('./transition');
 const LayerPool = require('./layer-pool');
@@ -23,22 +26,23 @@ function main(){
   const reng = new RenderEngine(canvas, [Grid.SquareGrid, Grid.HexagonalGrid][0]);
   const {grid} = reng;
 
-  grid.on('reset', resetTile);
-  grid.on('gen', genTile);
+  const realm = new realms['sokoban'](grid);
+  const cs = new realms.sokoban(grid).ctors;
 
-  new realms.sokoban.Player(grid.get(0, 0).reset());
-}
+  const pset = new PredicateSet(tile => {
+    const {x, y} = tile;
 
-function resetTile(tile){
-  const {x, y} = tile;
+    return O.dist(x, y, 10, 10) > 11;
+  });
 
-  new realms.sokoban.Ground(tile, 0);
-}
+  const generator = realm.createGenerator(grid.get(0, 0), pset);
 
-function genTile(tile){
-  const {x, y} = tile;
+  grid.on('gen', (tile, explicit) => {
+    if(pset.has(tile)){
+      if(explicit) generator.generate(tile);
+      return;
+    }
 
-  new realms.sokoban.Ground(tile, O.rand(2));
-  if(O.rand(5) === 0) new realms.sokoban.Box(tile, O.rand(2));
-  if(O.rand(5) === 0) new realms.sokoban.Wall(tile.reset());
+    new cs.Box(tile);
+  });
 }
