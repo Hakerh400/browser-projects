@@ -6,6 +6,7 @@ class Grid extends O.EventEmitter{
   listeners = O.obj();
   updates = new Set();
   transitionsArr = [];
+  removedObjs = [];
 
   constructor(reng){
     super();
@@ -13,26 +14,43 @@ class Grid extends O.EventEmitter{
     this.reng = reng;
   }
 
+  get tick(){ return this.reng.tick; }
+
   emitAndTick(evt, tile){
+    const {tick} = this.reng;
+
     if(this.emitGridEvent(evt, tile)){
-      this.tick();
+      this.tick(new Event('tick'));
       return 1;
     }
 
     return 0;
   }
 
-  tick(){
+  tick(evt){
     const {updates} = this;
+    const {tick} = this.reng;
+    let updated = 0;
 
     this.updates = new Set();
-    this.emitGridEvent(new Event('tick'));
-    this.emitGridEventToObjs(new Event('update'), updates);
+
+    if(this.emitGridEvent(new Event('tick')))
+      updated = 1;
+
+    if(this.emitGridEventToTiles(new Event('update'), updates))
+      updated = 1;
+
+    return updated;
   }
 
   endAnimation(){
-    for(const transitions of this.transitionsArr)
+    const {transitionsArr, removedObjs} = this;
+
+    for(const transitions of transitionsArr)
       transitions.length = 0;
+
+    transitionsArr.length = 0;
+    removedObjs.length = 0;
   }
 
   addGridEventListener(type, obj){
@@ -54,6 +72,16 @@ class Grid extends O.EventEmitter{
 
   emitGridEvent(evt){
     const objs = this.enumerateListeners(evt);
+    return this.emitGridEventToObjs(evt, objs);
+  }
+
+  emitGridEventToTiles(evt, tiles){
+    const objs = new Set();
+
+    for(const tile of tiles)
+      for(const obj of tile.objs)
+        objs.add(obj);
+
     return this.emitGridEventToObjs(evt, objs);
   }
 

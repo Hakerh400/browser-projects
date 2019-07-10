@@ -1,12 +1,13 @@
 'use strict';
 
-const Message = require('./message');
 const Transition = require('./transition');
 const Pivot = require('./pivot');
+const Message = require('./message');
 
 const {
   Translation,
   Rotation,
+  Scale,
 
   intps,
 } = Transition;
@@ -31,6 +32,11 @@ class Object{
   listensM = this.constructor.listenersM;
 
   transitions = [];
+  keepTranslation = 0;
+
+  tMoved = null;
+
+  removed = 0;
 
   constructor(tile){
     const {grid} = tile;
@@ -45,9 +51,9 @@ class Object{
   }
 
   static initTraits(arr){ return window.Object.assign(O.arr2obj(arr), this.traits); }
-  static initListenersG(arr){ return window.Object.assign(O.arr2obj(arr), this.listensG); }
-  static initListenersL(arr){ return window.Object.assign(O.arr2obj(arr), this.listensL); }
-  static initListenersM(arr){ return window.Object.assign(O.arr2obj(arr), this.listensM); }
+  static initListenersG(arr){ return window.Object.assign(O.arr2obj(arr), this.listenersG); }
+  static initListenersL(arr){ return window.Object.assign(O.arr2obj(arr), this.listenersL); }
+  static initListenersM(arr){ return window.Object.assign(O.arr2obj(arr), this.listenersM); }
 
   static initGradients(arr){
     this.gradients = arr;
@@ -58,6 +64,8 @@ class Object{
 
   ser(s){}
   deser(s){}
+
+  get tick(){ return this.grid.reng.tick; }
 
   gradient(g, index){
     const ctor = this.constructor;
@@ -86,7 +94,7 @@ class Object{
     const newTile = tile.adj(dir);
     const {has} = newTile;
 
-    return has.ground && !has.occupying;
+    return !has.occupying;
   }
 
   tryToMove(dir){
@@ -101,12 +109,25 @@ class Object{
 
     this.moveToTile(newTile);
     this.addTr(new Translation(tile, newTile));
+
+    if(this.is.nonFloating && !this.tile.has.ground)
+      this.collapse();
   }
 
   moveToTile(tile){
     this.tile.removeObj(this);
     tile.addObj(this);
     this.tile = tile;
+    this.tMoved = this.tick;
+  }
+
+  checkGround(){
+    if(this.tMoved !== this.tick && !this.tile.has.ground){
+      this.collapse();
+      return 1;
+    }
+
+    return 0;
   }
 
   send(obj, type, data){
@@ -120,12 +141,22 @@ class Object{
   }
 
   addTr(transition){
-    const {transitions} = this;
+    const {grid, transitions} = this;
 
     transitions.push(transition);
 
-    if(transitions.length === 1)
-      this.grid.transitionsArr.push(transitions);
+    if(transitions.length === 1){
+      if(this.removed) grid.removedObjs.push(this);
+      else grid.transitionsArr.push(transitions);
+    }
+  }
+
+  collapse(){
+    this.remove();
+    this.addTr(new Scale(1, 0));
+
+    if(this.transitions.length === 1)
+      this.keepTranslation = 1;
   }
 
   findPath(maxLen, func){
@@ -135,7 +166,7 @@ class Object{
     const result = func(null, tile, []);
 
     if(result === 1) return [];
-    if(result === -1 || maxLen === 0) return null;
+    if(result === 0 || maxLen === 0) return null;
 
     const visited = new Set([tile]);
     const queue = [[tile, []]];
@@ -161,7 +192,7 @@ class Object{
         const result = func(tile, newTile, newPath);
 
         if(result === 1) return newPath;
-        if(result === -1 || newPath.length === maxLen) continue;
+        if(result === 0 || newPath.length === maxLen) continue;
 
         visited.add(newTile);
         queue.push([newTile, newPath]);
@@ -176,12 +207,17 @@ class Object{
   }
 
   remove(){
-    const {grid, tile} = this;
+    const {grid, tile, transitions} = this;
 
     tile.removeObj(this);
 
     for(const type in this.listensG)
       grid.removeGridEventListener(type, this);
+
+    if(transitions.length !== 0)
+      grid.removedObjs.push(this);
+
+    this.removed = 1;
   }
 }
 

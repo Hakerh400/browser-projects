@@ -163,7 +163,7 @@ class HexagonalGrid extends Grid{
 
     this.emit('gen', tile, explicit);
 
-    return tile;
+    return tile.update();
   }
 
   getRaw(x, y){

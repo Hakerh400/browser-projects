@@ -82,7 +82,7 @@ class Tile{
       else has[trait] = 1;
     }
 
-    return this;
+    return this.update();
   }
 
   removeObj(obj){
@@ -93,7 +93,7 @@ class Tile{
     for(const trait in obj.is)
       has[trait]--;
 
-    return this;
+    return this.update();
   }
 
   update(){
@@ -101,9 +101,11 @@ class Tile{
 
     updates.add(this);
     
-    for(const tile of this.adjRaw)
+    for(const tile of this.adjs)
       if(tile !== null)
         updates.add(tile);
+
+    return this;
   }
 
   reset(){

@@ -15,7 +15,9 @@ class Rotation extends Transition{
 
   apply(g, k, cs){
     const {angle1, angle2, pivot} = this;
-    const angle = angle1 + ((((((angle2 - angle1) % pi2) + pi3) % pi2) - pi) * k) % pi2;
+    
+    const k2 = this.intp(k);
+    const angle = angle1 + ((((((angle2 - angle1) % pi2) + pi3) % pi2) - pi) * k2) % pi2;
 
     if(pivot === null){
       g.rotate(angle);

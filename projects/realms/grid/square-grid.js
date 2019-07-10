@@ -40,7 +40,7 @@ class SquareGrid extends Grid{
   }
 
   draw(g, t, k){
-    const {reng, pool, tx, ty, scale} = this;
+    const {reng, pool, tx, ty, scale, removedObjs} = this;
     const {width: w, height: h} = reng.brect;
     const wh = w / 2;
     const hh = h / 2;
@@ -69,51 +69,61 @@ class SquareGrid extends Grid{
       return cs;
     };
 
+    const drawObj = obj => {
+      const {tile, layer, transitions} = obj;
+      const trLen = transitions.length;
+      const g = pool.getCtx(layer);
+
+      ({x, y} = tile);
+
+      g.resetTransform();
+      g.translate(xx, yy);
+      g.scale(scale, scale);
+
+      if(trLen === 0){
+        g.translate(x, y);
+      }else{
+        if(obj.keepTranslation) g.translate(x, y);
+        for(const tr of transitions)
+          tr.apply(g, k, getCoords);
+      }
+
+      g.scale(SPACING, SPACING);
+
+      if(obj.draw(g, t, k)){
+        const g = pool.getCtx(layer - .5);
+
+        g.resetTransform();
+        g.translate(xx, yy);
+        g.scale(scale, scale);
+
+        if(trLen === 0){
+          g.translate(x, y);
+        }else{
+          if(obj.keepTranslation) g.translate(x, y);
+          for(const tr of transitions)
+            tr.apply(g, k, getCoords);
+        }
+        
+        g.translate(.06, .06);
+        g.scale(1.12, 1.12);
+        g.beginPath();
+        tile.border(g);
+        g.fill();
+      }
+    };
+
     for(y = yStart; y <= yEnd; y++){
       for(x = xStart; x <= xEnd; x++){
         const tile = this.get(x, y, 1);
 
-        for(const obj of tile.objs){
-          const {layer, transitions} = obj;
-          const trLen = transitions.length;
-          const g = pool.getCtx(layer);
-
-          g.resetTransform();
-          g.translate(xx, yy);
-          g.scale(scale, scale);
-
-          if(trLen === 0){
-            g.translate(x, y);
-          }else{
-            for(let i = trLen - 1; i !== -1; i--)
-              transitions[i].apply(g, k, getCoords);
-          }
-
-          g.scale(SPACING, SPACING);
-
-          if(obj.draw(g, t, k)){
-            const g = pool.getCtx(layer - .5);
-
-            g.resetTransform();
-            g.translate(xx, yy);
-            g.scale(scale, scale);
-
-            if(trLen === 0){
-              g.translate(x, y);
-            }else{
-              for(let i = trLen - 1; i !== -1; i--)
-                transitions[i].apply(g, k, getCoords);
-            }
-            
-            g.translate(.06, .06);
-            g.scale(1.12, 1.12);
-            g.beginPath();
-            tile.border(g);
-            g.fill();
-          }
-        }
+        for(const obj of tile.objs)
+          drawObj(obj);
       }
     }
+
+    for(const obj of removedObjs)
+      drawObj(obj);
 
     pool.draw(g);
   }
@@ -157,7 +167,7 @@ class SquareGrid extends Grid{
 
     this.emit('gen', tile, explicit);
 
-    return tile;
+    return tile.update();
   }
 
   getRaw(x, y){

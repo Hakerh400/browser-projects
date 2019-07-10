@@ -1,6 +1,8 @@
 'use strict';
 
 const cmn = require('../../common-objects');
+const Transition = require('../../transition');
+const Pivot = require('../../pivot');
 
 class Ground extends cmn.Ground{
   static objName = 'floor';
@@ -9,6 +11,12 @@ class Ground extends cmn.Ground{
     [-.5, -.5, .5, .5, '#fff', '#888'],
     [-.5, -.5, .5, .5, '#f0f', '#808'],
   ]);
+
+  static listenersG = this.initListenersM(['update']);
+  update(evt){
+    if(this.tile.has.person)
+      this.collapse();
+  }
 
   constructor(tile, target=0){
     super(tile);
@@ -28,8 +36,13 @@ class Ground extends cmn.Ground{
 class Box extends cmn.Object{
   static objName = 'box';
   static layer = 4;
-  static traits = this.initTraits(['occupying', 'pushable']);
+  static traits = this.initTraits(['occupying', 'pushable', 'nonFloating']);
+  static listenersG = this.initListenersM(['update']);
   static listenersM = this.initListenersM(['push']);
+
+  update(evt){
+    return this.checkGround();
+  }
 
   draw(g, t, k){
     const s1 = .3;
@@ -83,15 +96,15 @@ class Box extends cmn.Object{
 
 class Player extends cmn.Person{
   static objName = 'player';
-  static listenersG = this.initListenersG(['navigate']);
+  static traits = this.initTraits(['nonFloating']);
+  static listenersG = this.initListenersG(['navigate', 'update']);
 
   navigate(evt){
+    const {tick} = this;
     const {dir} = evt;
     const tile = this.tile.adj(dir);
     const {has} = tile;
 
-    if(!has.ground) return 0;
-    
     if(!has.occupying){
       this.move(dir);
       return 1;
@@ -102,6 +115,11 @@ class Player extends cmn.Person{
 
     this.move(dir);
     return 1;
+  }
+
+  update(evt){
+    debugger;
+    return this.checkGround();
   }
 
   draw(g, t, k){

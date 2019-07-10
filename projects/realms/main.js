@@ -43,6 +43,7 @@ function main(){
       return;
     }
 
-    new cs.Box(tile);
+    new cs.Ground(tile);
+    if(O.rand(10) === 0) new cs.Box(tile);
   });
 }

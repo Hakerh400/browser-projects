@@ -27,6 +27,7 @@ class RenderEngine{
 
     this.time = 0;
     this.animating = 0;
+    this.tick = null;
 
     this.renderBound = this.render.bind(this);
     O.raf(this.renderBound);
@@ -53,6 +54,10 @@ class RenderEngine{
 
         case 'ArrowLeft':
           events.push(new Event.Navigate(3, target));
+          break;
+
+        case 'Enter':
+          events.push(new Event('tick', target));
           break;
       }
     });
@@ -132,7 +137,15 @@ class RenderEngine{
         if(events.length === 0) break main;
 
         const evt = events.shift();
-        if(!grid.emitAndTick(evt)) break main;
+        this.tick = Symbol();
+
+        if(evt.type === 'tick'){
+          if(!grid.tick(evt))
+            break main;
+        }else{
+          if(!grid.emitAndTick(evt))
+            break main;
+        }
 
         this.time = t;
         this.animating = 1;
