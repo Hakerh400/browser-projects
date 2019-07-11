@@ -16,10 +16,10 @@ class Grid extends O.EventEmitter{
 
   get tick(){ return this.reng.tick; }
 
-  emitAndTick(evt, tile){
+  emitAndTick(evt){
     const {tick} = this.reng;
 
-    if(this.emitGridEvent(evt, tile)){
+    if(this.emitGridEvent(evt)){
       this.tick(new Event('tick'));
       return 1;
     }
@@ -76,11 +76,13 @@ class Grid extends O.EventEmitter{
   }
 
   emitGridEventToTiles(evt, tiles){
+    const {type} = evt;
     const objs = new Set();
 
     for(const tile of tiles)
       for(const obj of tile.objs)
-        objs.add(obj);
+        if(obj.listensL[type])
+          objs.add(obj);
 
     return this.emitGridEventToObjs(evt, objs);
   }

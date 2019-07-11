@@ -35,11 +35,13 @@ function main(){
     return 1;
   });
 
-  const generator = realm.createGenerator(grid.get(0, 0), pset);
+  const start = grid.get(0, 0);
+  const generator = realm.createGenerator(start, pset);
+  generator.gen(start);
 
   grid.on('gen', (tile, explicit) => {
     if(pset.has(tile)){
-      if(explicit) generator.generate(tile);
+      if(explicit) generator.gen(tile);
       return;
     }
   });

@@ -31,7 +31,7 @@ class Box extends cmn.Object{
   static objName = 'box';
   static layer = 4;
   static traits = this.initTraits(['occupying', 'pushable', 'nonFloating', 'heavy']);
-  static listenersG = this.initListenersM(['update']);
+  static listenersL = this.initListenersL(['update']);
   static listenersM = this.initListenersM(['push']);
 
   update(evt){
@@ -91,7 +91,8 @@ class Box extends cmn.Object{
 class Player extends cmn.Person{
   static objName = 'player';
   static traits = this.initTraits(['nonFloating', 'heavy']);
-  static listenersG = this.initListenersG(['navigate', 'update']);
+  static listenersG = this.initListenersG(['navigate']);
+  static listenersL = this.initListenersL(['update']);
 
   navigate(evt){
     const {tick} = this;

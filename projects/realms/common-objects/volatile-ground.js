@@ -5,13 +5,15 @@ const Ground = require('./ground');
 
 class VolatileGround extends Ground{
   static traits = this.initTraits(['volatile']);
-  static listenersG = this.initListenersM(['update']);
+  static listenersL = this.initListenersL(['update']);
 
   update(evt){
-    log(this.tile.has.heavy);
-
-    if(this.tile.has.heavy)
+    if(this.tile.has.heavy){
       this.collapse();
+      return 1;
+    }
+
+    return 0;
   }
 }
 

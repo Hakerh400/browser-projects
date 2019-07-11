@@ -8,14 +8,12 @@ class WorldGenerator extends WorldGeneratorBase{
     super(realm, start, pset);
 
     this.generated = new Set([start]);
-
-    new cs.Ground(start);
-    new cs.Player(start);
+    this.first = 1;
   }
 
-  generate(tile){
-    const {grid, pset, generated} = this;
-    const [start, allocated] = this.allocate(tile);
+  gen(tile){
+    const {grid, pset, generated, first} = this;
+    const [start, allocated] = this.allocate(tile, 0);
 
     const map = new Map();
 
@@ -30,7 +28,8 @@ class WorldGenerator extends WorldGeneratorBase{
       obj.visited = tile === start;
     }
 
-    const pathLen = allocated.size * 2;
+    const pathLen = allocated.size * 4;
+    let pushed = 0;
     tile = start;
 
     for(let i = 0; i !== pathLen; i++){
@@ -49,22 +48,25 @@ class WorldGenerator extends WorldGeneratorBase{
       }
 
       const nextNext = next.adjRaw(dir);
-      if(!allocated.has(nextNext)) continue;
+      if(!allocated.has(nextNext) || nextNext === start) continue;
 
       const objNextNext = map.get(nextNext);
-      if(nextNext.box) continue;
+      if(objNextNext.box) continue;
 
       objNext.box = 0;
       objNextNext.box = 1;
       objNext.visited = 1;
       objNextNext.visited = 1;
       tile = next;
+      pushed = 1;
     }
+
+    if(first) new cs.Player(start);
 
     for(const tile of allocated){
       const obj = map.get(tile);
 
-      if(!obj.visited){
+      if(!(tile === start && first || pushed && obj.visited)){
         new cs.Ground(tile);
         new cs.Wall(tile);
         continue;
@@ -73,6 +75,8 @@ class WorldGenerator extends WorldGeneratorBase{
       new cs.Ground(tile, obj.box);
       if(obj.boxInit) new cs.Box(tile);
     }
+
+    if(first) this.first = 0;
   }
 }
 

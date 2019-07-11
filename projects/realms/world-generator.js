@@ -1,7 +1,7 @@
 'use strict';
 
-const ALLOC_SIZE = 400;
 const ALLOC_OFFSET = 100;
+const ALLOC_SIZE = 400;
 
 class WorldGenerator{
   constructor(realm, start, pset){
@@ -12,9 +12,9 @@ class WorldGenerator{
     this.pset = pset;
   }
 
-  generate(tile){ O.virtual('generate'); }
+  gen(tile){ O.virtual('gen'); }
 
-  allocate(tile, size=ALLOC_SIZE, offset=ALLOC_OFFSET){
+  allocate(tile, offset=ALLOC_OFFSET, size=ALLOC_SIZE){
     const {grid, generated, pset} = this;
     const path = new Set([tile]);
 

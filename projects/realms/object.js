@@ -159,10 +159,6 @@ class Object{
       this.keepTranslation = 1;
   }
 
-  update(){
-    this.tile.update();
-  }
-
   remove(){
     const {grid, tile, transitions} = this;
 
