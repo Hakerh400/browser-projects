@@ -12,12 +12,6 @@ class Ground extends cmn.Ground{
     [-.5, -.5, .5, .5, '#f0f', '#808'],
   ]);
 
-  static listenersG = this.initListenersM(['update']);
-  update(evt){
-    if(this.tile.has.person)
-      this.collapse();
-  }
-
   constructor(tile, target=0){
     super(tile);
 
@@ -36,7 +30,7 @@ class Ground extends cmn.Ground{
 class Box extends cmn.Object{
   static objName = 'box';
   static layer = 4;
-  static traits = this.initTraits(['occupying', 'pushable', 'nonFloating']);
+  static traits = this.initTraits(['occupying', 'pushable', 'nonFloating', 'heavy']);
   static listenersG = this.initListenersM(['update']);
   static listenersM = this.initListenersM(['push']);
 
@@ -96,7 +90,7 @@ class Box extends cmn.Object{
 
 class Player extends cmn.Person{
   static objName = 'player';
-  static traits = this.initTraits(['nonFloating']);
+  static traits = this.initTraits(['nonFloating', 'heavy']);
   static listenersG = this.initListenersG(['navigate', 'update']);
 
   navigate(evt){
@@ -118,7 +112,6 @@ class Player extends cmn.Person{
   }
 
   update(evt){
-    debugger;
     return this.checkGround();
   }
 

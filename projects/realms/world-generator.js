@@ -34,7 +34,7 @@ class WorldGenerator{
     while(allocated.size < size){
       if(queue.length === 0) break;
 
-      const tile = grid.randElem(queue, 1);
+      const tile = grid.randElem(queue, 1, 1);
       queued.delete(tile);
       visited.add(tile);
       allocated.add(tile);

@@ -2570,18 +2570,20 @@ const O = {
     return label;
   },
 
-  ceCanvas(enhanced=false){
+  ceCanvas(enhanced=0){
     O.body.classList.add('has-canvas');
 
-    var w = window.innerWidth;
-    var h = window.innerHeight;
-    var canvas = O.ce(O.body, 'canvas');
-    var g = canvas.getContext('2d');
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const [wh, hh] = [w, h].map(a => a / 2);
+
+    const canvas = O.ce(O.body, 'canvas');
+    const g = canvas.getContext('2d');
 
     canvas.width = w;
     canvas.height = h;
 
-    var {style} = canvas;
+    const {style} = canvas;
     style.position = 'absolute';
     style.left = '0px';
     style.top = '0px';
@@ -2593,7 +2595,7 @@ const O = {
     if(enhanced)
       g = new O.EnhancedRenderingContext(g);
 
-    return {w, h, g};
+    return {g, w, h, wh, hh};
   },
 
   /*
@@ -3031,10 +3033,17 @@ const O = {
     return num;
   },
 
-  randElem(arr, splice=0){
-    var index = O.rand(arr.length);
-    if(splice) return arr.splice(index, 1)[0];
-    return arr[index];
+  randElem(arr, splice=0, fast=0){
+    const index = O.rand(arr.length);
+
+    if(!splice) return arr[index];
+    if(!fast) return arr.splice(index, 1)[0];
+
+    const val = arr[index];
+    const last = arr.pop();
+
+    if(index !== arr.length) arr[index] = last;
+    return val;
   },
 
   randBuf(len){

@@ -32,7 +32,7 @@ function main(){
   const pset = new PredicateSet(tile => {
     const {x, y} = tile;
 
-    return O.dist(x, y, 10, 10) > 11;
+    return 1;
   });
 
   const generator = realm.createGenerator(grid.get(0, 0), pset);
@@ -42,8 +42,5 @@ function main(){
       if(explicit) generator.generate(tile);
       return;
     }
-
-    new cs.Ground(tile);
-    if(O.rand(10) === 0) new cs.Box(tile);
   });
 }

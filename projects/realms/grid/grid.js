@@ -126,8 +126,8 @@ class Grid extends O.EventEmitter{
     return O.rand(a, b);
   }
 
-  randElem(arr, splice=0){
-    return O.randElem(arr, splice);
+  randElem(arr, splice=0, fast=0){
+    return O.randElem(arr, splice, fast);
   }
 
   get target(){ O.virtual('target'); }

@@ -159,49 +159,6 @@ class Object{
       this.keepTranslation = 1;
   }
 
-  findPath(maxLen, func){
-    const {tile} = this;
-    const {rand} = this.grid;
-
-    const result = func(null, tile, []);
-
-    if(result === 1) return [];
-    if(result === 0 || maxLen === 0) return null;
-
-    const visited = new Set([tile]);
-    const queue = [[tile, []]];
-
-    while(queue.length !== 0){
-      const [tile, path] = queue.shift();
-      const {adjsNum} = tile;
-
-      const start = rand(adjsNum);
-      let first = 1;
-
-      for(let i = start;; ++i === adjsNum && (i = 0)){
-        if(i === start){
-          if(first) first = 0;
-          else break;
-        }
-
-        const newTile = tile.adj(i);
-        if(newTile === null) debugger;
-        if(visited.has(newTile)) continue;
-
-        const newPath = path.concat(i);
-        const result = func(tile, newTile, newPath);
-
-        if(result === 1) return newPath;
-        if(result === 0 || newPath.length === maxLen) continue;
-
-        visited.add(newTile);
-        queue.push([newTile, newPath]);
-      }
-    }
-
-    return null;
-  }
-
   update(){
     this.tile.update();
   }
