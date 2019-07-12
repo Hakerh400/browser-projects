@@ -134,7 +134,8 @@ class Grid extends O.EventEmitter{
 
   get target(){ O.virtual('target'); }
   draw(g, t, k){ O.virtual('draw'); }
-  zoom(dir){ O.virtual('scroll'); }
+  drag(dx, dy){ O.virtual('drag'); }
+  zoom(dir){ O.virtual('zoom'); }
   has(){ O.virtual('has'); }
   gen(){ O.virtual('gen'); }
   getRaw(){ O.virtual('getRaw'); }

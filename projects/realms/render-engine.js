@@ -36,6 +36,8 @@ class RenderEngine{
   aels(){
     const {canvas, grid, events, listeners} = this;
 
+    let clicked = 0;
+
     this.ael(window, 'keydown', evt => {
       const {target} = grid;
 
@@ -63,13 +65,30 @@ class RenderEngine{
     });
 
     this.ael(window, 'mousemove', evt => {
+      const {cx, cy, curIn} = this;
       this.updateCursor(evt);
+
+      if(clicked && curIn && this.curIn){
+        const dx = this.cx - cx;
+        const dy = this.cy - cy;
+        this.grid.drag(dx, dy);
+      }
     });
 
     this.ael(window, 'mousedown', evt => {
       this.updateCursor(evt);
 
       const btn = evt.button;
+
+      if(btn === 0) clicked = 1;
+    });
+
+    this.ael(window, 'mouseup', evt => {
+      this.updateCursor(evt);
+
+      const btn = evt.button;
+
+      if(btn === 0) clicked = 0;
     });
 
     this.ael(window, 'wheel', evt => {
@@ -87,6 +106,10 @@ class RenderEngine{
 
     this.ael(window, 'contextmenu', evt => {
       O.pd(evt);
+    });
+
+    this.ael(window, 'blur', evt => {
+      clicked = 0;
     });
   }
 
@@ -137,9 +160,21 @@ class RenderEngine{
         if(events.length === 0) break main;
 
         const evt = events.shift();
+        const {type} = evt;
+
         this.tick = Symbol();
 
-        if(evt.type === 'tick'){
+        if(type === 'navigate'){
+          const {dir} = evt;
+
+          grid.txPrev = grid.tx;
+          grid.tyPrev = grid.ty;
+          grid.txNext = grid.tx + (dir === 3 ? -1 : dir === 1 ? 1 : 0);
+          grid.tyNext = grid.ty + (dir === 0 ? -1 : dir === 2 ? 1 : 0);
+          grid.trEnabled = 1;
+        }
+
+        if(type === 'tick'){
           if(!grid.tick(evt))
             break main;
         }else{

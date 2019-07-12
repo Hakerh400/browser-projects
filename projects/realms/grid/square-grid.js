@@ -5,7 +5,7 @@ const Grid = require('./grid');
 const Tile = require('../tile');
 
 const ZOOM_FACTOR = .9;
-const DEFAULT_SCALE = 40;
+const DEFAULT_SCALE = 50;
 const LINE_WIDTH = 1 / DEFAULT_SCALE;
 const SPACING = 1 - (1 - 0.9875) * 4;
 
@@ -23,6 +23,12 @@ class SquareGrid extends Grid{
     this.tx = 0;
     this.ty = 0;
     this.scale = DEFAULT_SCALE;
+
+    this.txPrev = this.tx;
+    this.tyPrev = this.ty;
+    this.txNext = this.tx;
+    this.tyNext = this.ty;
+    this.trEnabled = 0;
   }
 
   get target(){
@@ -40,6 +46,14 @@ class SquareGrid extends Grid{
   }
 
   draw(g, t, k){
+    if(this.trEnabled){
+      const k1 = 1 - k;
+      const k2 = k;
+
+      this.tx = this.txPrev * k1 + this.txNext * k2;
+      this.ty = this.tyPrev * k1 + this.tyNext * k2;
+    }
+
     const {reng, pool, tx, ty, scale, removedObjs} = this;
     const {width: w, height: h} = reng.brect;
     const wh = w / 2;
@@ -128,9 +142,20 @@ class SquareGrid extends Grid{
     pool.draw(g);
   }
 
+  drag(dx, dy){
+    const {scale} = this;
+
+    this.tx -= dx / scale;
+    this.ty -= dy / scale;
+  }
+
   zoom(dir){
     const {reng} = this;
     const {width: w, height: h} = reng.brect;
+
+    reng.cx = w / 2;
+    reng.cy = h / 2;
+
     const {cx, cy} = reng;
     const wh = w / 2;
     const hh = h / 2;
@@ -141,6 +166,16 @@ class SquareGrid extends Grid{
     this.tx += (cx - wh) * sk;
     this.ty += (cy - hh) * sk;
     this.scale *= k;
+  }
+
+  endAnimation(){
+    super.endAnimation();
+
+    if(this.trEnabled){
+      this.tx = this.txNext;
+      this.ty = this.tyNext;
+      this.trEnabled = 0;
+    }
   }
 
   has(x, y){

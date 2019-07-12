@@ -18,14 +18,15 @@ class WorldGenerator extends WorldGeneratorBase{
     const map = new Map();
 
     for(const tile of allocated){
+      const isFirst = tile === start;
       generated.add(tile);
 
       const obj = O.obj();
       map.set(tile, obj);
 
-      obj.boxInit = O.rand(20) === 0;
+      obj.boxInit = !isFirst && O.rand(20) === 0;
       obj.box = obj.boxInit;
-      obj.visited = tile === start;
+      obj.visited = isFirst;
     }
 
     const pathLen = allocated.size * 4;
@@ -66,7 +67,7 @@ class WorldGenerator extends WorldGeneratorBase{
     for(const tile of allocated){
       const obj = map.get(tile);
 
-      if(!(tile === start && first || pushed && obj.visited)){
+      if(!(first && tile === start || pushed && obj.visited)){
         new cs.Ground(tile);
         new cs.Wall(tile);
         continue;
