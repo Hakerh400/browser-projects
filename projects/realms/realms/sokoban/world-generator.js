@@ -7,7 +7,7 @@ class WorldGenerator extends WorldGeneratorBase{
   constructor(realm, start, pset){
     super(realm, start, pset);
 
-    this.generated = new Set([start]);
+    this.generated = new Set();
     this.first = 1;
   }
 

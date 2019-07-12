@@ -4,8 +4,10 @@ const LayerPool = require('../layer-pool');
 const Grid = require('./grid');
 const Tile = require('../tile');
 
+const {isElectron} = O;
+
 const ZOOM_FACTOR = .9;
-const DEFAULT_SCALE = 50;
+const DEFAULT_SCALE = 40;
 const LINE_WIDTH = 1 / DEFAULT_SCALE;
 const SPACING = 1 - (1 - 0.9875) * 4;
 
@@ -153,8 +155,10 @@ class SquareGrid extends Grid{
     const {reng} = this;
     const {width: w, height: h} = reng.brect;
 
-    reng.cx = w / 2;
-    reng.cy = h / 2;
+    if(isElectron){
+      reng.cx = w / 2;
+      reng.cy = h / 2;
+    }
 
     const {cx, cy} = reng;
     const wh = w / 2;
@@ -185,7 +189,7 @@ class SquareGrid extends Grid{
     return x in d;
   }
 
-  gen(x, y, explicit=0){
+  gen(x, y){
     let d = this.#d;
 
     if(!(y in d)) d = createKey(d, y);
@@ -200,7 +204,7 @@ class SquareGrid extends Grid{
     if(adj = this.getRaw(x, y + 1)) tile.setAdj(2, adj), adj.setAdj(0, tile);
     if(adj = this.getRaw(x - 1, y)) tile.setAdj(3, adj), adj.setAdj(1, tile);
 
-    this.emit('gen', tile, explicit);
+    this.emit('gen', tile);
 
     return tile.update();
   }
@@ -213,11 +217,11 @@ class SquareGrid extends Grid{
     return d[x];
   }
 
-  get(x, y, explicit=0){
+  get(x, y){
     let d = this.#d;
-    if(!(y in d)) return this.gen(x, y, explicit);
+    if(!(y in d)) return this.gen(x, y);
     d = d[y];
-    if(!(x in d)) return this.gen(x, y, explicit);
+    if(!(x in d)) return this.gen(x, y);
     return d[x];
   }
 }

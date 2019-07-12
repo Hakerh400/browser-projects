@@ -2182,6 +2182,9 @@ const O = {
   pi32: Math.PI * 3 / 2,
   pi34: Math.PI * 3 / 4,
 
+  iw: null,
+  ih: null,
+
   static: Symbol('static'),
   project: null,
   storage: null,
@@ -2258,6 +2261,9 @@ const O = {
     if(isBrowser){
       if(CHROME_ONLY && global.navigator.vendor !== 'Google Inc.')
         return O.error('Please use Chrome.');
+
+      O.iw = window.innerWidth;
+      O.ih = window.innerHeight;
 
       if(!isElectron){
         global.global = global;

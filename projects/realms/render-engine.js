@@ -5,7 +5,9 @@ const Tile = require('./tile');
 const Object = require('./object');
 const Event = require('./event');
 
-const TICK_DURATION = 100;
+const {isElectron} = O;
+
+const TICK_DURATION = isElectron ? 500 : 100;
 
 const {sign} = Math;
 
@@ -157,14 +159,34 @@ class RenderEngine{
           grid.endAnimation();
         }
       }else{
-        if(events.length === 0) break main;
+        if(events.length === 0){
+          if(!isElectron) break main;
+
+          const {tx: x, ty: y} = grid;
+          const tile = grid.get(x, y);
+
+          const len = 30;
+          let path = null;
+
+          while(path === null){
+            path = tile.findPath(len, (prev, tile, path) => {
+              if(prev === null) return -1;
+              if(tile.has.occupying) return 0;
+              if(path.length !== len) return -1;
+              return 1;
+            });
+          }
+
+          for(const dir of path)
+            events.push(new Event.Navigate(dir));
+        }
 
         const evt = events.shift();
         const {type} = evt;
 
         this.tick = Symbol();
 
-        if(type === 'navigate'){
+        if(isElectron && type === 'navigate'){
           const {dir} = evt;
 
           grid.txPrev = grid.tx;

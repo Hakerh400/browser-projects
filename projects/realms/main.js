@@ -13,15 +13,15 @@ const Object = require('./object');
 const realmsList = require('./realms-list');
 const realms = require('./realms');
 
-setTimeout(main);
+main();
 
 function main(){
   O.body.style.margin = '0px';
   O.body.style.overflow = 'hidden';
 
   const canvas = O.ce(O.body, 'canvas');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = O.iw;
+  canvas.height = O.ih;
 
   const reng = new RenderEngine(canvas, [Grid.SquareGrid, Grid.HexagonalGrid][0]);
   const {grid} = reng;
@@ -39,9 +39,16 @@ function main(){
   const generator = realm.createGenerator(start, pset);
   generator.gen(start);
 
-  grid.on('gen', (tile, explicit) => {
+  let generating = 0;
+
+  grid.on('gen', tile => {
     if(pset.has(tile)){
-      if(explicit) generator.gen(tile);
+      if(generating) return;
+
+      generating = 1;
+      generator.gen(tile);
+      generating = 0;
+
       return;
     }
   });
