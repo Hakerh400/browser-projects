@@ -6,20 +6,17 @@ const cs = require('./ctors');
 class WorldGenerator extends WorldGeneratorBase{
   constructor(realm, start, pset){
     super(realm, start, pset);
-
-    this.generated = new Set();
-    this.first = 1;
   }
 
   gen(tile){
     const {grid, pset, generated, first} = this;
-    const [start, allocated] = this.allocate(tile, 0);
+    const set = this.allocIsland(tile, 400);
 
     const map = new Map();
+    const start = tile;
 
-    for(const tile of allocated){
+    for(const tile of set){
       const isFirst = tile === start;
-      generated.add(tile);
 
       const obj = O.obj();
       map.set(tile, obj);
@@ -29,7 +26,7 @@ class WorldGenerator extends WorldGeneratorBase{
       obj.visited = isFirst;
     }
 
-    const pathLen = allocated.size * 4;
+    const pathLen = set.size * 4;
     let pushed = 0;
     tile = start;
 
@@ -38,7 +35,7 @@ class WorldGenerator extends WorldGeneratorBase{
 
       const dir = grid.rand(tile.adjsNum);
       const next = tile.adjRaw(dir);
-      if(!allocated.has(next)) continue;
+      if(!set.has(next)) continue;
 
       const objNext = map.get(next);
 
@@ -49,7 +46,7 @@ class WorldGenerator extends WorldGeneratorBase{
       }
 
       const nextNext = next.adjRaw(dir);
-      if(!allocated.has(nextNext) || nextNext === start) continue;
+      if(!set.has(nextNext) || nextNext === start) continue;
 
       const objNextNext = map.get(nextNext);
       if(objNextNext.box) continue;
@@ -64,7 +61,7 @@ class WorldGenerator extends WorldGeneratorBase{
 
     if(first) new cs.Player(start);
 
-    for(const tile of allocated){
+    for(const tile of set){
       const obj = map.get(tile);
 
       if(!(first && tile === start || pushed && obj.visited)){

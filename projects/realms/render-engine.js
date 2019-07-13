@@ -162,23 +162,7 @@ class RenderEngine{
         if(events.length === 0){
           if(!isElectron) break main;
 
-          const {tx: x, ty: y} = grid;
-          const tile = grid.get(x, y);
-
-          const len = 30;
-          let path = null;
-
-          while(path === null){
-            path = tile.findPath(len, (prev, tile, path) => {
-              if(prev === null) return -1;
-              if(tile.has.occupying) return 0;
-              if(path.length !== len) return -1;
-              return 1;
-            });
-          }
-
-          for(const dir of path)
-            events.push(new Event.Navigate(dir));
+          events.push(new Event.Navigate(grid.rand(4)));
         }
 
         const evt = events.shift();

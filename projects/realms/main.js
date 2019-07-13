@@ -16,6 +16,9 @@ const realms = require('./realms');
 main();
 
 function main(){
+  // O.enhanceRNG();
+  // O.randSeed(0);
+
   O.body.style.margin = '0px';
   O.body.style.overflow = 'hidden';
 
