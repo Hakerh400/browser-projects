@@ -13,6 +13,8 @@ const Object = require('./object');
 const realmsList = require('./realms-list');
 const realms = require('./realms');
 
+const REALM = 'sokoban';
+
 main();
 
 function main(){
@@ -26,11 +28,11 @@ function main(){
   canvas.width = O.iw;
   canvas.height = O.ih;
 
-  const reng = new RenderEngine(canvas, [Grid.SquareGrid, Grid.HexagonalGrid][0]);
+  const reng = new RenderEngine(canvas, Grid.SquareGrid);
   const {grid} = reng;
 
-  const realm = new realms['sokoban'](grid);
-  const cs = new realms.sokoban(grid).ctors;
+  const realm = new realms[REALM](grid);
+  const cs = realm.ctors;
 
   const pset = new PredicateSet(tile => {
     const {x, y} = tile;

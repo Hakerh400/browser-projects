@@ -8,10 +8,16 @@ class WorldGenerator extends WorldGeneratorBase{
     super(realm, start, pset);
   }
 
-  gen(tile){
-    const {grid, pset, generated, first} = this;
-    const set = this.allocIsland(tile, 400);
+  defaultTile(tile){
+    new cs.Ground(tile);
+    new cs.Wall(tile);
+  }
 
+  gen(tile){
+    const {grid, first} = this;
+    this.startGen();
+
+    const set = this.allocIsland(tile, 400).tiles;
     const map = new Map();
     const start = tile;
 
@@ -65,8 +71,7 @@ class WorldGenerator extends WorldGeneratorBase{
       const obj = map.get(tile);
 
       if(!(first && tile === start || pushed && obj.visited)){
-        new cs.Ground(tile);
-        new cs.Wall(tile);
+        this.defaultTile(tile);
         continue;
       }
 
@@ -74,7 +79,7 @@ class WorldGenerator extends WorldGeneratorBase{
       if(obj.boxInit) new cs.Box(tile);
     }
 
-    if(first) this.first = 0;
+    this.endGen();
   }
 }
 

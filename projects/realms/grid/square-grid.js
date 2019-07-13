@@ -239,6 +239,10 @@ class SquareGridLayer extends LayerPool.Layer{
 
     if(this.isShadow)
       g.fillStyle = '#000';
+
+    g.textBaseline = 'middle';
+    g.textAlign = 'center';
+    g.font = `.8px arial`;
   }
 
   prepare(){

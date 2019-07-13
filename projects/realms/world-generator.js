@@ -1,9 +1,6 @@
 'use strict';
 
 class WorldGenerator{
-  #set = null;
-  #allocating = 0;
-
   constructor(realm, start, pset){
     this.realm = realm;
     this.grid = realm.grid;
@@ -12,69 +9,92 @@ class WorldGenerator{
     this.pset = pset;
 
     this.generated = new Set();
+    this.generating = null;
+    this.allocated = null;
+
     this.first = 1;
   }
 
   defaultTile(tile){}
   gen(tile){ O.virtual('gen'); }
 
-  get size(){ return this.#set.size; }
+  get size(){ return this.allocated.size; }
 
-  prepare(tile=null){
-    this.#set = new Set();
-    this.#allocating = 1;
+  startGen(){
+    this.generating = new Set();
+  }
+
+  endGen(){
+    for(const tile of this.generating)
+      this.generated.add(tile);
+
+    this.generating = null;
+    if(this.first) this.first = 0;
+  }
+
+  startAlloc(tile=null){
+    this.allocated = new Set();
     if(tile !== null) this.add(tile);
   }
 
   add(tile){
-    this.generated.add(tile);
-    this.#set.add(tile);
+    this.generating.add(tile);
+    this.allocated.add(tile);
   }
 
   adj(tile, dir){
-    if(!this.#allocating)
-      return tile.adjRaw(dir);
+    if(this.allocating === null){
+      const adj = tile.adjRaw(dir);
 
-    const adj = tile.adj(dir);
+      if(adj === null) return null;
+      if(!this.pset.has(adj)) return null;
+      if(this.generated.has(adj)) return null;
 
-    if(!this.pset.has(adj)) return null;
-    if(this.#set.has(adj)) return adj;
-    if(this.generated.has(adj)) return null;
+      return adj;
+    }else{
+      const adj = tile.adj(dir);
 
-    return adj;
+      if(!this.pset.has(adj)) return null;
+      if(this.allocated.has(adj)) return adj;
+      if(this.generated.has(adj)) return null;
+
+      return adj;
+    }
   }
 
   randAdj(tile){
     return this.adj(tile, this.grid.rand(tile.adjsNum))
   }
 
-  getTiles(){
-    const set = this.#set;
-
-    this.#set = null;
-    this.#allocating = 0;
-
-    return set;
+  endAlloc(data=O.obj()){
+    const tiles = this.allocated;
+    this.allocated = null;
+    return Object.assign(data, {tiles});
   }
 
   allocPath(tile, len){
     const {grid} = this;
-    this.prepare(tile);
+    this.startAlloc(tile);
+
+    const path = [tile];
 
     for(let i = 0; i !== len; i++){
       const next = this.randAdj(tile);
       if(next === null) continue;
 
       this.add(next);
+      path.push(next);
       tile = next;
     }
 
-    return this.getTiles();
+    return this.endAlloc({
+      path,
+    });
   }
 
   allocIsland(tile, size){
     const {grid} = this;
-    this.prepare();
+    this.startAlloc();
     
     const visited = new Set();
     const queue = [tile];
@@ -99,12 +119,12 @@ class WorldGenerator{
       }
     }
 
-    return this.getTiles();
+    return this.endAlloc();
   }
 
   allocRect(tile, w, h){
     const {grid} = this;
-    this.prepare();
+    this.startAlloc();
 
     const w1 = w >> 1;
     const h1 = h >> 1;
@@ -147,7 +167,7 @@ class WorldGenerator{
       row(tile1);
     }
 
-    return this.getTiles();
+    return this.endAlloc();
   }
 }
 
