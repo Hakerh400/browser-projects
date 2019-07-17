@@ -1,11 +1,11 @@
 'use strict';
 
-const WorldGeneratorBase = require('../../world-generator');
+const RealmGenerator = require('../../realm-generator');
 const cs = require('./ctors');
 
-class WorldGenerator extends WorldGeneratorBase{
-  constructor(realm, start, pset){
-    super(realm, start, pset);
+class Generator extends RealmGenerator{
+  constructor(realm, key, pset){
+    super(realm, key, pset);
   }
 
   defaultTile(tile){
@@ -83,4 +83,4 @@ class WorldGenerator extends WorldGeneratorBase{
   }
 }
 
-module.exports = WorldGenerator;
+module.exports = Generator;

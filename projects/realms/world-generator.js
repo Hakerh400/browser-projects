@@ -1,173 +1,72 @@
 'use strict';
 
+const RealmGenerator = require('./realm-generator');
+const PredicateSet = require('./predicate-set');
+const realms = require('./realms');
+
 class WorldGenerator{
-  constructor(realm, start, pset){
-    this.realm = realm;
-    this.grid = realm.grid;
+  constructor(grid){
+    this.grid = grid;
+    this.gens = new Map();
+    this.onGenBound = this.onGen.bind(this);
 
-    this.start = start;
-    this.pset = pset;
-
-    this.generated = new Set();
-    this.generating = null;
-    this.allocated = null;
-
-    this.first = 1;
+    this.init();
   }
 
-  defaultTile(tile){}
-  gen(tile){ O.virtual('gen'); }
-
-  get size(){ return this.allocated.size; }
-
-  startGen(){
-    this.generating = new Set();
+  hasGen(realm, key){
+    const {gens} = this;
+    return gens.has(realm) && key in gens.get(realm);
   }
 
-  endGen(){
-    for(const tile of this.generating)
-      this.generated.add(tile);
-
-    this.generating = null;
-    if(this.first) this.first = 0;
+  createGen(realm, key){
+    const {gens} = this;
+    const gen = new RealmGenerator();
   }
 
-  startAlloc(tile=null){
-    this.allocated = new Set();
-    if(tile !== null) this.add(tile);
+  getGen(realm, key){
+    const {gens} = this;
+    if(this.hasGen(realm, key)) return gens.get(realm)[key];
+    return this.createGen(realm, key);
   }
 
-  add(tile){
-    this.generating.add(tile);
-    this.allocated.add(tile);
+  getGenRaw(realm, key){
+    const {gens} = this;
+    if(this.hasGen(realm, key)) return gens.get(realm)[key];
+    return null;
   }
 
-  adj(tile, dir){
-    if(this.allocating === null){
-      const adj = tile.adjRaw(dir);
-
-      if(adj === null) return null;
-      if(!this.pset.has(adj)) return null;
-      if(this.generated.has(adj)) return null;
-
-      return adj;
-    }else{
-      const adj = tile.adj(dir);
-
-      if(!this.pset.has(adj)) return null;
-      if(this.allocated.has(adj)) return adj;
-      if(this.generated.has(adj)) return null;
-
-      return adj;
-    }
-  }
-
-  randAdj(tile){
-    return this.adj(tile, this.grid.rand(tile.adjsNum))
-  }
-
-  endAlloc(data=O.obj()){
-    const tiles = this.allocated;
-    this.allocated = null;
-    return Object.assign(data, {tiles});
-  }
-
-  allocPath(tile, len){
+  init(){
     const {grid} = this;
-    this.startAlloc(tile);
 
-    const path = [tile];
+    const realm1 = new realms['sokoban'](grid);
+    const realm2 = new realms['sudoku'](grid);
 
-    for(let i = 0; i !== len; i++){
-      const next = this.randAdj(tile);
-      if(next === null) continue;
-
-      this.add(next);
-      path.push(next);
-      tile = next;
-    }
-
-    return this.endAlloc({
-      path,
-    });
-  }
-
-  allocIsland(tile, size){
-    const {grid} = this;
-    this.startAlloc();
-    
-    const visited = new Set();
-    const queue = [tile];
-    const queued = new Set(queue);
-
-    this.add(tile);
-
-    while(this.size < size){
-      if(queue.length === 0) break;
-
-      const tile = grid.randElem(queue, 1, 1);
-      queued.delete(tile);
-      visited.add(tile);
-
-      for(let j = 0; j !== tile.adjsNum; j++){
-        const next = this.adj(tile, j);
-        if(next === null || visited.has(next) || queued.has(next)) continue;
-
-        queue.push(next);
-        queued.add(next);
-        this.add(next);
-      }
-    }
-
-    return this.endAlloc();
-  }
-
-  allocRect(tile, w, h){
-    const {grid} = this;
-    this.startAlloc();
-
-    const w1 = w >> 1;
-    const h1 = h >> 1;
-    const w2 = w - w1 - 1;
-    const h2 = h - h1 - 1;
-
-    const row = tile => {
-      let tile1 = tile;
-      this.add(tile1);
-
-      for(let x = 0; x !== w1; x++){
-        tile1 = this.adj(tile1, 3);
-        if(tile1 === null) break;
-        this.add(tile1);
-      }
-
-      tile1 = tile;
-
-      for(let x = 0; x !== w2; x++){
-        tile1 = this.adj(tile1, 1);
-        if(tile1 === null) break;
-        this.add(tile1);
-      }
+    const f = (x, y) => {
+      return Math.sin(O.hypot(x, y) / 2) >= 0;
     };
 
-    let tile1 = tile;
-    row(tile1);
+    const pset1 = new PredicateSet(tile => {
+      const {x, y} = tile;
 
-    for(let y = 0; y !== h1; y++){
-      tile1 = this.adj(tile1, 0);
-      if(tile1 === null) break;
-      row(tile1);
-    }
+      return f(x, y);
+    });
 
-    tile1 = tile;
+    const pset2 = new PredicateSet(tile => {
+      const {x, y} = tile;
 
-    for(let y = 0; y !== h2; y++){
-      tile1 = this.adj(tile1, 2);
-      if(tile1 === null) break;
-      row(tile1);
-    }
+      return !f(x, y);
+    });
 
-    return this.endAlloc();
+    const start = grid.get(0, 0);
+    const gen1 = realm1.createGenerator(start, pset1);
+    const gen2 = realm2.createGenerator(start, pset2);
+    gen1.gen(start);
+
+    grid.on('gen', this.onGenBound);
+  }
+
+  onGen(tile){
+
   }
 }
 

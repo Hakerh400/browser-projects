@@ -2579,12 +2579,12 @@ const O = {
   ceCanvas(enhanced=0){
     O.body.classList.add('has-canvas');
 
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const w = O.iw;
+    const h = O.ih;
     const [wh, hh] = [w, h].map(a => a / 2);
 
     const canvas = O.ce(O.body, 'canvas');
-    const g = canvas.getContext('2d');
+    let g = canvas.getContext('2d');
 
     canvas.width = w;
     canvas.height = h;
@@ -3034,9 +3034,25 @@ const O = {
   },
 
   randInt(start, prob){
-    var num = start;
+    let num = start;
     while(O.randf() < prob) num++;
     return num;
+  },
+
+  randInt2(min=0, max=Infinity){
+    mainLoop: while(1){
+      let num = -1;
+      let n = 1;
+
+      while(n !== 0){
+        const a = O.rand(3);
+        if(a === 0) n--;
+        else if(a === 1) n++;
+        if(++num > max) continue mainLoop;
+      }
+
+      if(num >= min) return num;
+    }
   },
 
   randElem(arr, splice=0, fast=0){
@@ -3071,6 +3087,11 @@ const O = {
   async repeata(num, func){
     for(var i = 0; i !== num; i++)
       await func(i, i / num, num);
+  },
+
+  *repeatg(num, func){
+    for(var i = 0; i !== num; i++)
+      yield [i, i / num, num];
   },
 
   sleep(time){

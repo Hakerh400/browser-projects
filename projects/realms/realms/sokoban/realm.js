@@ -1,7 +1,7 @@
 'use strict';
 
 const RealmBase = require('../../realm');
-const WorldGenerator = require('./world-generator');
+const Generator = require('./generator');
 const cs = require('./ctors');
 
 const NAME = 'sokoban';
@@ -14,7 +14,7 @@ class Realm extends RealmBase{
   get ctors(){ return cs }
 
   createGenerator(start, pset){
-    return new WorldGenerator(this, start, pset);
+    return new Generator(this, start, pset);
   }
 }
 

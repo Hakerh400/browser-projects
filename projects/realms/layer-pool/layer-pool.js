@@ -4,7 +4,7 @@ const Layer = require('./layer');
 
 const DEFAULT_FADE_TIME = 100;
 
-class CanvasPool{
+class LayerPool{
   constructor(w, h, layerCtor=Layer, fadeTime=DEFAULT_FADE_TIME){
     this.w = w;
     this.h = h;
@@ -110,6 +110,6 @@ class CanvasPool{
   }
 }
 
-module.exports = Object.assign(CanvasPool, {
+module.exports = Object.assign(LayerPool, {
   Layer,
 });
