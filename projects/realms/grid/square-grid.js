@@ -191,38 +191,51 @@ class SquareGrid extends Grid{
 
   gen(x, y){
     let d = this.#d;
+    let tile;
 
     if(!(y in d)) d = createKey(d, y);
     else d = d[y];
 
-    d.size++;
-    const tile = d[x] = new Tile.SquareTile(this, 2, x, y);
-    let adj;
+    if(x in d){
+      tile = d[x];
+      tile.removed = 0;
+    }else{
+      d.size++;
+      tile = d[x] = new Tile.SquareTile(this, 2, x, y);
+      let adj;
 
-    if(adj = this.getRaw(x, y - 1)) tile.setAdj(0, adj), adj.setAdj(2, tile);
-    if(adj = this.getRaw(x + 1, y)) tile.setAdj(1, adj), adj.setAdj(3, tile);
-    if(adj = this.getRaw(x, y + 1)) tile.setAdj(2, adj), adj.setAdj(0, tile);
-    if(adj = this.getRaw(x - 1, y)) tile.setAdj(3, adj), adj.setAdj(1, tile);
+      if(adj = this.getRaw(x, y - 1)) tile.setAdj(0, adj), adj.setAdj(2, tile);
+      if(adj = this.getRaw(x + 1, y)) tile.setAdj(1, adj), adj.setAdj(3, tile);
+      if(adj = this.getRaw(x, y + 1)) tile.setAdj(2, adj), adj.setAdj(0, tile);
+      if(adj = this.getRaw(x - 1, y)) tile.setAdj(3, adj), adj.setAdj(1, tile);
+    }
 
     this.emit('gen', tile);
-
     return tile.update();
   }
 
   getRaw(x, y){
     let d = this.#d;
+
     if(!(y in d)) return null;
     d = d[y];
     if(!(x in d)) return null;
-    return d[x];
+
+    const tile = d[x];
+    if(tile.removed) return null;
+    return tile;
   }
 
   get(x, y){
     let d = this.#d;
+
     if(!(y in d)) return this.gen(x, y);
     d = d[y];
     if(!(x in d)) return this.gen(x, y);
-    return d[x];
+
+    const tile = d[x];
+    if(tile.removed) return this.gen(x, y);
+    return tile;
   }
 }
 
@@ -234,15 +247,15 @@ class SquareGridLayer extends LayerPool.Layer{
   init(){
     const {g} = this;
 
-    this.isShadow = this.zIndex % 1 !== 0;
+    const isShadow = this.isShadow = this.zIndex % 1 !== 0;
     g.lineWidth = LINE_WIDTH;
-
-    if(this.isShadow)
-      g.fillStyle = '#000';
 
     g.textBaseline = 'middle';
     g.textAlign = 'center';
     g.font = `.8px arial`;
+
+    if(isShadow)
+      g.fillStyle = '#000';
   }
 
   prepare(){

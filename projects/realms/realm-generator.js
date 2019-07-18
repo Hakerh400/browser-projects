@@ -1,11 +1,11 @@
 'use strict';
 
 class RealmGenerator{
-  constructor(realm, key, pset){
+  constructor(realm, wgen, key){
     this.realm = realm;
-    this.grid = realm.grid;
+    this.wgen = wgen;
+    this.grid = wgen.grid;
     this.key = key;
-    this.pset = pset;
 
     this.generated = new Set();
     this.generating = null;
@@ -41,21 +41,26 @@ class RealmGenerator{
     this.allocated.add(tile);
   }
 
+  maintains(tile){
+    const {cache} = this.wgen;
+    return cache.has(tile) && cache.get(tile) === this;
+  }
+
   adj(tile, dir){
-    if(this.allocating === null){
+    if(this.allocated === null){
       const adj = tile.adjRaw(dir);
 
       if(adj === null) return null;
-      if(!this.pset.has(adj)) return null;
       if(this.generated.has(adj)) return null;
+      if(!this.maintains(adj)) return null;
 
       return adj;
     }else{
       const adj = tile.adj(dir);
 
-      if(!this.pset.has(adj)) return null;
       if(this.allocated.has(adj)) return adj;
       if(this.generated.has(adj)) return null;
+      if(!this.maintains(adj)) return null;
 
       return adj;
     }

@@ -2443,7 +2443,7 @@ const O = {
     Project functions
   */
 
-  uppercaseWords: ['fs', '2d', '3d'],
+  upperCaseWords: ['fs', '2d', '3d'],
 
   projectToName(project){
     return project.split(/\-/g).map((word, index) => {
@@ -2460,7 +2460,7 @@ const O = {
       .replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
   },
 
-  shouldUpper(word){ return O.uppercaseWords.includes(word); },
+  shouldUpper(word){ return O.upperCaseWords.includes(word); },
   projectTest(project){ return /^[\!-\~]+$/.test(project); },
 
   /*
@@ -3258,11 +3258,15 @@ const O = {
   sfcc(cc){ return String.fromCharCode(cc); },
   hex(val, bytesNum){ return val.toString(16).toUpperCase().padStart(bytesNum << 1, '0'); },
   hypot(x, y){ return Math.sqrt(x * x + y * y); },
-  proto(obj){ return Object.getPrototypeOf(obj); },
   sf(val){ return JSON.stringify(val, null, 2); },
   rev(str){ return str.split('').reverse().join(''); },
   has(obj, key){ return Object.hasOwnProperty.call(obj, key); },
   desc(obj, key){ return Object.getOwnPropertyDescriptor(obj, key); },
+
+  proto(obj, n=1){
+    while(n-- !== 0) obj = Object.getPrototypeOf(obj);
+    return obj;
+  },
 
   /*
     Time simulation

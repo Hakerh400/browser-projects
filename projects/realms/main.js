@@ -4,7 +4,6 @@ const RenderEngine = require('./render-engine');
 const Realm = require('./realm');
 const WorldGenerator = require('./world-generator');
 const RealmGenerator = require('./realm-generator');
-const PredicateSet = require('./predicate-set');
 const Event = require('./event');
 const Transition = require('./transition');
 const LayerPool = require('./layer-pool');
@@ -32,5 +31,9 @@ function main(){
   const reng = new RenderEngine(canvas, Grid.SquareGrid);
   const {grid} = reng;
 
-  new WorldGenerator(grid);
+  new WorldGenerator(grid, tile => {
+    const {x, y} = tile;
+
+    return x <= 0 ? ['sokoban', 'a'] : ['sudoku', 'a'];
+  });
 }

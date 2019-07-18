@@ -32,7 +32,7 @@ class SquareTile extends Tile{
       case 3: x--; break;
     }
 
-    this.grid.gen(x, y);
+    return this.grid.gen(x, y);
   }
 }
 

@@ -13,9 +13,9 @@ class Realm extends RealmBase{
   get name(){ return NAME; }
   get ctors(){ return cs }
 
-  createGenerator(start, pset){
+  createGen(start, pset){
     return new Generator(this, start, pset);
   }
 }
 
-module.exports = Realm;
+module.exports = new Realm();

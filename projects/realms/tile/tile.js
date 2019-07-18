@@ -39,7 +39,8 @@ class Tile{
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
-    return adjs[dir] !== null;
+    const tile = adjs[dir];
+    return tile !== null && !tile.removed;
   }
 
   adjRaw(dir){
@@ -48,7 +49,8 @@ class Tile{
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
-    return adjs[dir];
+    const tile = adjs[dir];
+    return tile !== null && !tile.removed ? tile : null;
   }
 
   adj(dir){
@@ -57,10 +59,9 @@ class Tile{
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
-    if(adjs[dir] === null)
-      this.gen(dir);
-
-    return adjs[dir];
+    const tile = adjs[dir];
+    if(tile === null || tile.removed) return this.gen(dir);
+    return tile;
   }
 
   setAdj(dir, tile){
@@ -163,6 +164,12 @@ class Tile{
     }
 
     return null;
+  }
+
+  remove(){
+    this.purge();
+    this.removed = 1;
+    this.grid.emit('remove', this);
   }
 }
 
