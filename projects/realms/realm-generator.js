@@ -67,7 +67,7 @@ class RealmGenerator{
   }
 
   randAdj(tile){
-    return this.adj(tile, this.grid.rand(tile.adjsNum))
+    return this.adj(tile, this.grid.rand(tile.adjsNum));
   }
 
   endAlloc(data=O.obj()){

@@ -3,8 +3,8 @@
 const Tile = require('./tile');
 
 class SquareTile extends Tile{
-  constructor(grid, gravDir, x, y){
-    super(grid, gravDir);
+  constructor(grid, x, y){
+    super(grid);
 
     this.x = x;
     this.y = y;

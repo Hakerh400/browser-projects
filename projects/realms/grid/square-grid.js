@@ -201,20 +201,20 @@ class SquareGrid extends Grid{
       tile.removed = 0;
     }else{
       d.size++;
-      tile = d[x] = new Tile.SquareTile(this, 2, x, y);
+      tile = d[x] = new Tile.SquareTile(this, x, y);
       let adj;
 
-      if(adj = this.getRaw(x, y - 1)) tile.setAdj(0, adj), adj.setAdj(2, tile);
-      if(adj = this.getRaw(x + 1, y)) tile.setAdj(1, adj), adj.setAdj(3, tile);
-      if(adj = this.getRaw(x, y + 1)) tile.setAdj(2, adj), adj.setAdj(0, tile);
-      if(adj = this.getRaw(x - 1, y)) tile.setAdj(3, adj), adj.setAdj(1, tile);
+      if(adj = this.getRaw(x, y - 1, 1)) tile.setAdj(0, adj), adj.setAdj(2, tile);
+      if(adj = this.getRaw(x + 1, y, 1)) tile.setAdj(1, adj), adj.setAdj(3, tile);
+      if(adj = this.getRaw(x, y + 1, 1)) tile.setAdj(2, adj), adj.setAdj(0, tile);
+      if(adj = this.getRaw(x - 1, y, 1)) tile.setAdj(3, adj), adj.setAdj(1, tile);
     }
 
     this.emit('gen', tile);
     return tile.update();
   }
 
-  getRaw(x, y){
+  getRaw(x, y, includeRemoved=0){
     let d = this.#d;
 
     if(!(y in d)) return null;
@@ -222,7 +222,7 @@ class SquareGrid extends Grid{
     if(!(x in d)) return null;
 
     const tile = d[x];
-    if(tile.removed) return null;
+    if(!includeRemoved && tile.removed) return null;
     return tile;
   }
 

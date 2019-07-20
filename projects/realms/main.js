@@ -34,6 +34,8 @@ function main(){
   new WorldGenerator(grid, tile => {
     const {x, y} = tile;
 
-    return x <= 0 ? ['sokoban', 'a'] : ['sudoku', 'a'];
+    return Math.sin(O.hypot(x, y) / 2) >= 0 ? ['sokoban', 'a'] : ['sudoku', 'a'];
   });
+
+  grid.get(0, 0);
 }

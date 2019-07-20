@@ -5,9 +5,8 @@ class Tile{
   objs = new Set();
   has = O.obj();
 
-  constructor(grid, gravDir){
+  constructor(grid){
     this.grid = grid;
-    this.gravDir = gravDir;
   }
 
   get adjsNum(){ O.virtual('adjsNum'); }
