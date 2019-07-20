@@ -6,8 +6,11 @@ const Object = require('./object');
 const Event = require('./event');
 
 const {isElectron} = O;
+const isBrowser = !isElectron;
 
-const TICK_DURATION = isElectron ? 500 : 100;
+const CAM_FOLLOW_PLAYER = isElectron;
+const EVENT_QUEUE_MAX_LEN = isBrowser ? 2 : Infinity;
+const TICK_DURATION = isBrowser ? 100 : 500;
 
 const {sign} = Math;
 
@@ -36,7 +39,7 @@ class RenderEngine{
   }
 
   aels(){
-    const {canvas, grid, events, listeners} = this;
+    const {canvas, grid} = this;
 
     let clicked = 0;
 
@@ -45,23 +48,23 @@ class RenderEngine{
 
       switch(evt.code){
         case 'ArrowUp':
-          events.push(new Event.Navigate(0, target));
+          this.addEvt(new Event.Navigate(0, target));
           break;
 
         case 'ArrowRight':
-          events.push(new Event.Navigate(1, target));
+          this.addEvt(new Event.Navigate(1, target));
           break;
 
         case 'ArrowDown':
-          events.push(new Event.Navigate(2, target));
+          this.addEvt(new Event.Navigate(2, target));
           break;
 
         case 'ArrowLeft':
-          events.push(new Event.Navigate(3, target));
+          this.addEvt(new Event.Navigate(3, target));
           break;
 
         case 'Enter':
-          events.push(new Event('tick', target));
+          this.addEvt(new Event('tick', target));
           break;
       }
     });
@@ -125,6 +128,12 @@ class RenderEngine{
       O.rel(...args);
   }
 
+  addEvt(evt){
+    const {events} = this;
+    events.push(evt);
+    if(events.length > EVENT_QUEUE_MAX_LEN) events.shift();
+  }
+
   updateCursor(evt){
     const {left, top, width: w, height: h} = this.brect;
     const {clientX: x, clientY: y} = evt;
@@ -139,7 +148,14 @@ class RenderEngine{
   }
 
   get brect(){
-    return this.canvas.getBoundingClientRect();
+    const brect = this.canvas.getBoundingClientRect();
+
+    if(CAM_FOLLOW_PLAYER){
+      this.cx = (brect.left + brect.width) / 2;
+      this.cy = (brect.top + brect.height) / 2;
+    }
+
+    return brect;
   }
 
   render(){
@@ -160,9 +176,9 @@ class RenderEngine{
         }
       }else{
         if(events.length === 0){
-          if(!isElectron) break main;
+          if(isBrowser) break main;
 
-          events.push(new Event.Navigate(grid.rand(4)));
+          this.addEvt(new Event.Navigate(grid.rand(4)));
         }
 
         const evt = events.shift();
@@ -170,7 +186,7 @@ class RenderEngine{
 
         this.tick = Symbol();
 
-        if(isElectron && type === 'navigate'){
+        if(CAM_FOLLOW_PLAYER && type === 'navigate'){
           const {dir} = evt;
 
           grid.txPrev = grid.tx;

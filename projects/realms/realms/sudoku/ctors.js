@@ -15,10 +15,11 @@ class Ground extends cmn.Ground{
   static objName = 'tile';
   static DigitType = DigitType;
 
-  constructor(tile, type=DigitType.HIDDEN, digit=null){
+  constructor(tile, tileType=0, digitType=DigitType.HIDDEN, digit=null){
     super(tile);
 
-    this.type = type;
+    this.tileType = tileType;
+    this.digitType = digitType;
     this.digit = digit;
   }
 
@@ -35,13 +36,13 @@ class Ground extends cmn.Ground{
   }
 
   draw(g, t, k){
-    const {type, digit} = this;
+    const {tileType, digitType, digit} = this;
 
-    g.fillStyle = '#888';
+    g.fillStyle = tileType === 0 ? '#777' : '#bbb';
     super.draw(g, t, k);
 
-    if(type !== DigitType.HIDDEN){
-      switch(type){
+    if(digitType !== DigitType.HIDDEN){
+      switch(digitType){
         case DigitType.GIVEN: g.fillStyle = '#000'; break;
         case DigitType.WRITTEN: g.fillStyle = '#00f'; break;
         case DigitType.ILLEGAL: g.fillStyle = '#f00'; break;

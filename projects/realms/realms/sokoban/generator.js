@@ -4,8 +4,8 @@ const RealmGenerator = require('../../realm-generator');
 const cs = require('./ctors');
 
 class Generator extends RealmGenerator{
-  constructor(realm, key, pset){
-    super(realm, key, pset);
+  constructor(realm, wgen, key){
+    super(realm, wgen, key);
   }
 
   defaultTile(tile){

@@ -4,8 +4,6 @@ const LayerPool = require('../layer-pool');
 const Grid = require('./grid');
 const Tile = require('../tile');
 
-const {isElectron} = O;
-
 const ZOOM_FACTOR = .9;
 const DEFAULT_SCALE = 40;
 const LINE_WIDTH = 1 / DEFAULT_SCALE;
@@ -154,11 +152,6 @@ class SquareGrid extends Grid{
   zoom(dir){
     const {reng} = this;
     const {width: w, height: h} = reng.brect;
-
-    if(isElectron){
-      reng.cx = w / 2;
-      reng.cy = h / 2;
-    }
 
     const {cx, cy} = reng;
     const wh = w / 2;
