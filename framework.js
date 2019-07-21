@@ -2745,7 +2745,7 @@ const O = {
             '__filename',
             '__dirname',
 
-            `return(async()=>{\n${data}\n})();`,
+            `return(async()=>{\n// ${pathOrig}\n\n${data}\n})();`,
           );
         };
 
@@ -2940,7 +2940,7 @@ const O = {
     while(arr.length !== 0){
       var e = arr.shift();
 
-      if(!Array.isArray(e)){
+      if(!O.isArr(e)){
         a.push(e);
         continue;
       }
@@ -2970,6 +2970,7 @@ const O = {
   },
 
   fst(set, defaultVal){ return O.first(set, defaultVal); },
+  isArr(val){ return Array.isArray(val); },
 
   /*
     Random number generator

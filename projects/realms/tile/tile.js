@@ -24,12 +24,17 @@ class Tile{
   get free(){ return !this.has.occupying; }
   get nfree(){ return this.has.occupying; }
 
-  get(trait){
-    for(const obj of this.objs)
-      if(obj.is[trait])
-        return obj;
+  *get(traits){
+    if(!O.isArr(traits))
+      traits = [traits];
 
-    return null;
+    main: for(const obj of this.objs){
+      for(const trait of traits)
+        if(!obj.is[trait])
+          continue main;
+
+      yield obj;
+    }
   }
 
   hasAdj(dir){
@@ -148,7 +153,6 @@ class Tile{
         }
 
         const newTile = tile.adj(i);
-        if(newTile === null) debugger;
         if(visited.has(newTile)) continue;
 
         const newPath = path.concat(i);

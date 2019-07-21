@@ -106,9 +106,9 @@ class Player extends cmn.Person{
     }
 
     if(!has.pushable) return 0;
-    if(!this.send(tile.get('pushable'), 'push').consumed) return 0;
+    if(!this.send(tile, 'pushable', 'push')) return 0;
+    if(!has.occupying) this.move(dir);
 
-    this.move(dir);
     return 1;
   }
 

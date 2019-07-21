@@ -91,9 +91,7 @@ class RealmGenerator{
       tile = next;
     }
 
-    return this.endAlloc({
-      path,
-    });
+    return this.endAlloc({path});
   }
 
   allocIsland(tile, size){
@@ -135,22 +133,33 @@ class RealmGenerator{
     const w2 = w - w1 - 1;
     const h2 = h - h1 - 1;
 
+    const set = new Set();
+
+    let full = 1;
+    let overlaps = 0;
+
+    const add = tile => {
+      if(set.has(tile)) overlpas = 1;
+      else set.add(tile);
+      this.add(tile);
+    };
+
     const row = tile => {
       let tile1 = tile;
-      this.add(tile1);
+      add(tile1);
 
       for(let x = 0; x !== w1; x++){
         tile1 = this.adj(tile1, 3);
-        if(tile1 === null) break;
-        this.add(tile1);
+        if(tile1 === null) { full = 0; break; }
+        add(tile1);
       }
 
       tile1 = tile;
 
       for(let x = 0; x !== w2; x++){
         tile1 = this.adj(tile1, 1);
-        if(tile1 === null) break;
-        this.add(tile1);
+        if(tile1 === null) { full = 0; break; }
+        add(tile1);
       }
     };
 
@@ -159,7 +168,7 @@ class RealmGenerator{
 
     for(let y = 0; y !== h1; y++){
       tile1 = this.adj(tile1, 0);
-      if(tile1 === null) break;
+      if(tile1 === null) { full = 0; break; }
       row(tile1);
     }
 
@@ -167,11 +176,11 @@ class RealmGenerator{
 
     for(let y = 0; y !== h2; y++){
       tile1 = this.adj(tile1, 2);
-      if(tile1 === null) break;
+      if(tile1 === null) { full = 0; break; }
       row(tile1);
     }
 
-    return this.endAlloc();
+    return this.endAlloc({full, overlaps});
   }
 }
 

@@ -1,8 +1,12 @@
 'use strict';
 
+const Event = require('./event');
 const Transition = require('./transition');
 const Pivot = require('./pivot');
-const Message = require('./message');
+
+const {
+  Request,
+} = Event;
 
 const {
   Translation,
@@ -130,14 +134,30 @@ class Object{
     return 0;
   }
 
-  send(obj, type, data){
-    const msg = new Message(this, obj, type, data);
+  send(tile, traits, type, data){
+    const req = new Request(this, type, data);
+    const objs = new Set(tile.get(traits));
+    let consumed = 0;
 
-    if(obj !== null && type in obj.listensM)
-      if(obj[type](msg))
-        msg.consume();
+    while(1){
+      const num = objs.size;
 
-    return msg;
+      for(const obj of objs){
+        if(!(type in obj.listensM)){
+          objs.delete(obj);
+          continue;
+        }
+
+        if(obj[type](req)){
+          consumed = 1;
+          objs.delete(obj);
+        }
+      }
+
+      if(objs.size === num) break;
+    }
+
+    return consumed;
   }
 
   addTr(transition){

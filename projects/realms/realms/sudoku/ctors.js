@@ -11,32 +11,67 @@ const DigitType = O.enum([
   'ILLEGAL',
 ]);
 
+const tileSym = Symbol('sudokuTile');
+
 class Ground extends cmn.Ground{
   static objName = 'tile';
+  static traits = this.initTraits([tileSym]);
+  static listenersL = this.initListenersL(['digit']);
   static DigitType = DigitType;
+
+  #digit;
 
   constructor(tile, tileType=0, digitType=DigitType.HIDDEN, digit=null){
     super(tile);
 
     this.tileType = tileType;
     this.digitType = digitType;
-    this.digit = digit;
+    this.#digit = digit;
   }
 
   ser(s){
-    const {type, digit} = this;
+    const {tileType, digitType, digit} = this;
 
-    s.write(type, 3);
-    if(type !== DigitType.HIDDEN) s.write(digit - 1, 8);
+    s.write(tileType);
+    s.write(digitType, 3);
+    if(digitType !== DigitType.HIDDEN) s.write(digit - 1, 8);
   }
 
   deser(s){
-    const type = this.type = s.read(3);
-    this.digit = type !== DigitType.HIDDEN ? s.read(8) + 1 : null;
+    const tileType = this.tileType = s.read();
+    const digitType = this.digitType = s.read(3);
+    this.digit = digitType !== DigitType.HIDDEN ? s.read(8) + 1 : null;
+  }
+
+  getDigit(){
+    return this.#digit;
+  }
+
+  setDigit(digit){
+    if(digit === this.#digit) return;
+    this.#digit = digit;
+    this.update();
+  }
+
+  digit(evt){
+    const digit = this.#digit;
+    const newDigit = evt.digit || null;
+
+    if(this.digitType === DigitType.GIVEN) return 0;
+    if(newDigit === digit) return 0;
+
+    if(newDigit === null) this.digitType = DigitType.HIDDEN;
+    this.digit = null;
+
+    this.update();
+    this.checkAdj();
+
+    return 1;
   }
 
   draw(g, t, k){
-    const {tileType, digitType, digit} = this;
+    const {tileType, digitType} = this;
+    const digit = this.#digit;
 
     g.fillStyle = tileType === 0 ? '#777' : '#bbb';
     super.draw(g, t, k);
@@ -49,6 +84,14 @@ class Ground extends cmn.Ground{
       }
 
       g.fillText(digit, 0, 0);
+    }
+  }
+
+  checkAdj(){
+    const {tile, digit} = this;
+
+    for(let i = 0; i !== 9; i++){
+      
     }
   }
 }

@@ -12,6 +12,11 @@ const CAM_FOLLOW_PLAYER = isElectron;
 const EVENT_QUEUE_MAX_LEN = isBrowser ? 2 : Infinity;
 const TICK_DURATION = isBrowser ? 100 : 500;
 
+const {
+  Navigate,
+  Digit,
+} = Event;
+
 const {sign} = Math;
 
 class RenderEngine{
@@ -34,6 +39,8 @@ class RenderEngine{
     this.animating = 0;
     this.tick = null;
 
+    this.playerTile = null;
+
     this.renderBound = this.render.bind(this);
     O.raf(this.renderBound);
   }
@@ -45,24 +52,21 @@ class RenderEngine{
 
     this.ael(window, 'keydown', evt => {
       const {target} = grid;
+      const {code} = evt;
 
-      switch(evt.code){
-        case 'ArrowUp':
-          this.addEvt(new Event.Navigate(0, target));
-          break;
+      if(/^Arrow/.test(code)){
+        const dir = ['Up', 'Right', 'Down', 'Left'].findIndex(a => code.endsWith(a));
+        this.addEvt(new Navigate(dir, target));
+        return;
+      }
 
-        case 'ArrowRight':
-          this.addEvt(new Event.Navigate(1, target));
-          break;
+      if(/^Digit|Numpad/.test(code)){
+        const digit = O.last(code) | 0;
+        this.addEvt(new Digit(digit, target));
+        return;
+      }
 
-        case 'ArrowDown':
-          this.addEvt(new Event.Navigate(2, target));
-          break;
-
-        case 'ArrowLeft':
-          this.addEvt(new Event.Navigate(3, target));
-          break;
-
+      switch(code){
         case 'Enter':
           this.addEvt(new Event('tick', target));
           break;
@@ -178,8 +182,41 @@ class RenderEngine{
         if(events.length === 0){
           if(isBrowser) break main;
 
-          this.addEvt(new Event.Navigate(grid.rand(4)));
+          if(this.playerTile === null)
+            this.playerTile = grid.get(0, 0);
+
+          const {playerTile} = this;
+          const n = 100;
+
+          while(1){
+            let target = playerTile;
+            O.repeat(n, () => target = target.adj(grid.rand(target.adjsNum)));
+            if(target === playerTile) continue;
+
+            const {has} = target;
+            if(!has.ground || has.occupying) continue;
+
+            const path = playerTile.findPath(n, (prev, tile, path) => {
+              if(prev === null) return -1;
+
+              const {has} = tile;
+              if(!has.ground || has.occupying) return 0;
+
+              if(tile === target) return 1;
+              return -1;
+            });
+
+            if(path === null) continue;
+
+            for(const dir of path)
+              this.addEvt(new Navigate(dir));
+
+            this.playerTile = target;
+            break;
+          }
         }
+
+        if(events.length === 0) break main;
 
         const evt = events.shift();
         const {type} = evt;

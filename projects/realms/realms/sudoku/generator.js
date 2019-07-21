@@ -14,11 +14,8 @@ class Generator extends RealmGenerator{
     const {grid, first} = this;
     this.startGen();
 
-    const island = this.allocIsland(tile, 121).tiles;
-
-    for(const center of island){
-      const rect = this.allocRect(center, 11, 11).tiles;
-      if(rect.size !== 121) continue;
+    for(const center of this.allocIsland(tile, 120).tiles){
+      if(!this.allocRect(center, 11, 11).full) continue;
 
       const table = new O.Grid(9, 9, (x, y) => [0, 0]);
 
@@ -63,6 +60,7 @@ class Generator extends RealmGenerator{
 
       for(let y = 0; y !== 9; y++){
         for(let x = 0; x !== 9; x++){
+          const tileType = (x / 3 ^ y / 3) & 1;
           let d = center;
 
           for(let i = Math.abs(y - 4), dir = y < 4 ? 0 : 2; i !== 0; i--)
@@ -71,12 +69,12 @@ class Generator extends RealmGenerator{
           for(let i = Math.abs(x - 4), dir = x < 4 ? 3 : 1; i !== 0; i--)
             d = this.adj(d, dir);
 
-          new cs.Ground(
-            d,
-            (x / 3 ^ y / 3) & 1,
-            DigitType.GIVEN,
-            table.get(x, y)[1],
-          );
+          if(d.has.ground) continue;
+
+          if(grid.rand(3) === 0)
+            new cs.Ground(d, tileType, DigitType.GIVEN, table.get(x, y)[1]);
+          else
+            new cs.Ground(d, tileType);
         }
       }
 
