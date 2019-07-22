@@ -24,10 +24,13 @@ class Tile{
   get free(){ return !this.has.occupying; }
   get nfree(){ return this.has.occupying; }
 
-  *get(traits){
-    if(!O.isArr(traits))
-      traits = [traits];
+  *get(trait){
+    for(const obj of this.objs)
+      if(obj.is[trait])
+        yield obj;
+  }
 
+  *getm(traits){
     main: for(const obj of this.objs){
       for(const trait of traits)
         if(!obj.is[trait])
@@ -37,9 +40,24 @@ class Tile{
     }
   }
 
-  hasAdj(dir){
+  *getc(ctor){
+    for(const obj of this.objs)
+      if(obj.constructor === ctor)
+        yield obj;
+  }
+
+  hasCtor(ctor){
+    for(const obj of this.objs)
+      if(obj.constructor === ctor)
+        return 1;
+
+    return 0;
+  }
+
+  hasAdj(dir, num=null){
     const {adjs, adjsNum} = this;
 
+    if(num !== null && num !== adjsNum) dir = Math.floor((dir + .5) / num * adjsNum);
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
@@ -47,9 +65,10 @@ class Tile{
     return tile !== null && !tile.removed;
   }
 
-  adjRaw(dir){
+  adjRaw(dir, num=null){
     const {adjs, adjsNum} = this;
 
+    if(num !== null && num !== adjsNum) dir = Math.floor((dir + .5) / num * adjsNum);
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
@@ -57,9 +76,10 @@ class Tile{
     return tile !== null && !tile.removed ? tile : null;
   }
 
-  adj(dir){
+  adj(dir, num=null){
     const {adjs, adjsNum} = this;
 
+    if(num !== null && num !== adjsNum) dir = Math.floor((dir + .5) / num * adjsNum);
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
@@ -68,9 +88,15 @@ class Tile{
     return tile;
   }
 
-  setAdj(dir, tile){
+  setAdj(dir, num, tile=null){
     const {adjs, adjsNum} = this;
 
+    if(tile === null){
+      tile = num;
+      num = null;
+    }
+
+    if(num !== null && num !== adjsNum) dir = Math.floor((dir + .5) / num * adjsNum);
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
@@ -175,5 +201,7 @@ class Tile{
     this.grid.emit('remove', this);
   }
 }
+
+O.alias(Tile.prototype, 'findPath', 'iter');
 
 module.exports = Tile;

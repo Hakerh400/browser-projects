@@ -3219,6 +3219,16 @@ const O = {
     return arr;
   },
 
+  alias(obj, key, aliases){
+    if(!O.isArr(aliases)) aliases = [aliases];
+
+    const desc = O.desc(obj, key);
+    for(const alias of aliases)
+      Object.defineProperty(obj, alias, desc);
+
+    return obj;
+  },
+
   match(str, reg){
     const match = str.match(reg);
     if(match === null) return [];

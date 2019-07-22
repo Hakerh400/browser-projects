@@ -46,9 +46,9 @@ class RealmGenerator{
     return cache.has(tile) && cache.get(tile) === this;
   }
 
-  adj(tile, dir){
+  adj(tile, dir, num){
     if(this.allocated === null){
-      const adj = tile.adjRaw(dir);
+      const adj = tile.adjRaw(dir, num);
 
       if(adj === null) return null;
       if(this.generated.has(adj)) return null;
@@ -56,7 +56,7 @@ class RealmGenerator{
 
       return adj;
     }else{
-      const adj = tile.adj(dir);
+      const adj = tile.adj(dir, num);
 
       if(this.allocated.has(adj)) return adj;
       if(this.generated.has(adj)) return null;
@@ -149,7 +149,7 @@ class RealmGenerator{
       add(tile1);
 
       for(let x = 0; x !== w1; x++){
-        tile1 = this.adj(tile1, 3);
+        tile1 = this.adj(tile1, 3, 4);
         if(tile1 === null) { full = 0; break; }
         add(tile1);
       }
@@ -157,7 +157,7 @@ class RealmGenerator{
       tile1 = tile;
 
       for(let x = 0; x !== w2; x++){
-        tile1 = this.adj(tile1, 1);
+        tile1 = this.adj(tile1, 1, 4);
         if(tile1 === null) { full = 0; break; }
         add(tile1);
       }
@@ -167,7 +167,7 @@ class RealmGenerator{
     row(tile1);
 
     for(let y = 0; y !== h1; y++){
-      tile1 = this.adj(tile1, 0);
+      tile1 = this.adj(tile1, 0, 4);
       if(tile1 === null) { full = 0; break; }
       row(tile1);
     }
@@ -175,7 +175,7 @@ class RealmGenerator{
     tile1 = tile;
 
     for(let y = 0; y !== h2; y++){
-      tile1 = this.adj(tile1, 2);
+      tile1 = this.adj(tile1, 2, 4);
       if(tile1 === null) { full = 0; break; }
       row(tile1);
     }

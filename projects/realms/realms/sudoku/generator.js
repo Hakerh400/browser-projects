@@ -64,10 +64,10 @@ class Generator extends RealmGenerator{
           let d = center;
 
           for(let i = Math.abs(y - 4), dir = y < 4 ? 0 : 2; i !== 0; i--)
-            d = this.adj(d, dir);
+            d = this.adj(d, dir, 4);
 
           for(let i = Math.abs(x - 4), dir = x < 4 ? 3 : 1; i !== 0; i--)
-            d = this.adj(d, dir);
+            d = this.adj(d, dir, 4);
 
           if(d.has.ground) continue;
 

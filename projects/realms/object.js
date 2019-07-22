@@ -93,23 +93,23 @@ class Object{
   
   draw(g, t, k){ O.virtual('draw'); }
 
-  canMove(dir){
+  canMove(dir, num){
     const {tile} = this;
-    const newTile = tile.adj(dir);
+    const newTile = tile.adj(dir, num);
     const {has} = newTile;
 
     return !has.occupying;
   }
 
-  tryToMove(dir){
-    if(!this.canMove(dir)) return 0;
-    this.move(dir);
+  tryToMove(dir, num){
+    if(!this.canMove(dir, num)) return 0;
+    this.move(dir, num);
     return 1;
   }
 
-  move(dir){
+  move(dir, num){
     const {tile} = this;
-    const newTile = tile.adj(dir);
+    const newTile = tile.adj(dir, num);
 
     this.moveToTile(newTile);
     this.addTr(new Translation(tile, newTile));

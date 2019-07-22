@@ -101,13 +101,13 @@ class Player extends cmn.Person{
     const {has} = tile;
 
     if(!has.occupying){
-      this.move(dir);
+      this.move(dir, 4);
       return 1;
     }
 
     if(!has.pushable) return 0;
     if(!this.send(tile, 'pushable', 'push')) return 0;
-    if(!has.occupying) this.move(dir);
+    if(!has.occupying) this.move(dir, 4);
 
     return 1;
   }
