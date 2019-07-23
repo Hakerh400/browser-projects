@@ -31,6 +31,8 @@ class SquareGrid extends Grid{
     this.trEnabled = 0;
   }
 
+  get type(){ return 'square'; }
+
   get target(){
     const {reng, tx, ty, scale} = this;
     const {width: w, height: h} = reng.brect;
@@ -129,7 +131,7 @@ class SquareGrid extends Grid{
 
     for(y = yStart; y <= yEnd; y++){
       for(x = xStart; x <= xEnd; x++){
-        const tile = this.get(x, y, 1);
+        const tile = this.get(x, y);
 
         for(const obj of tile.objs)
           drawObj(obj);
@@ -195,6 +197,7 @@ class SquareGrid extends Grid{
     }else{
       d.size++;
       tile = d[x] = new Tile.SquareTile(this, x, y);
+      
       let adj;
 
       if(adj = this.getRaw(x, y - 1, 1)) tile.setAdj(0, adj), adj.setAdj(2, tile);
@@ -271,10 +274,6 @@ class SquareGridLayer extends LayerPool.Layer{
   }
 }
 
-module.exports = Object.assign(SquareGrid, {
-  SquareGridLayer,
-});
-
 const createObj = () => {
   const obj = O.obj();
   obj.size = 0;
@@ -286,3 +285,7 @@ const createKey = (obj, key) => {
   const obj1 = obj[key] = createObj();
   return obj1;
 };
+
+module.exports = Object.assign(SquareGrid, {
+  SquareGridLayer,
+});

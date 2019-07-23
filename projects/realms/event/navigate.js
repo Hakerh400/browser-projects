@@ -3,9 +3,11 @@
 const Event = require('./event');
 
 class Navigate extends Event{
-  constructor(dir, tile){
+  constructor(dir, dmax, tile){
     super('navigate', tile);
+
     this.dir = dir;
+    this.dmax = dmax;
   }
 }
 

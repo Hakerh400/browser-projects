@@ -81,10 +81,10 @@ class Box extends cmn.Object{
   push(evt){
     const {tile} = this;
 
-    const dir = evt.src.tile.adjs.indexOf(tile);
+    const dir = tile.adjDir(evt.src.tile);
     if(dir === -1) return 0;
 
-    return this.tryToMove(dir);
+    return this.tryToMove(tile.invDir(dir));
   }
 }
 
@@ -96,18 +96,18 @@ class Player extends cmn.Person{
 
   navigate(evt){
     const {tick} = this;
-    const {dir} = evt;
-    const tile = this.tile.adj(dir);
+    const {dir, dmax} = evt;
+    const tile = this.tile.adj(dir, dmax);
     const {has} = tile;
 
     if(!has.occupying){
-      this.move(dir, 4);
+      this.move(dir, dmax);
       return 1;
     }
 
     if(!has.pushable) return 0;
     if(!this.send(tile, 'pushable', 'push')) return 0;
-    if(!has.occupying) this.move(dir, 4);
+    if(!has.occupying) this.move(dir, dmax);
 
     return 1;
   }

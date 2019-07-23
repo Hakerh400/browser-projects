@@ -1,18 +1,21 @@
 'use strict';
 
+const {floor} = Math;
+
 class Tile{
-  adjs = O.ca(this.adjsNum, () => null);
+  #adjs = O.ca(this.adjsNum, () => null);
   objs = new Set();
   has = O.obj();
 
   constructor(grid){
     this.grid = grid;
+
+    this.removed = 0;
   }
 
   get adjsNum(){ O.virtual('adjsNum'); }
   draw(g, t, k){ O.virtual('draw'); }
   border(g){ O.virtual('border'); }
-  invDir(dir){ O.virtual('invDir'); }
   gen(){ O.virtual('gen'); }
 
   get len(){ return this.objs.size; }
@@ -54,10 +57,11 @@ class Tile{
     return 0;
   }
 
-  hasAdj(dir, num=null){
-    const {adjs, adjsNum} = this;
+  hasAdj(dir, dmax=null){
+    const {adjsNum} = this;
+    const adjs = this.#adjs;
 
-    if(num !== null && num !== adjsNum) dir = Math.floor((dir + .5) / num * adjsNum);
+    if(dmax !== null && dmax !== adjsNum) dir = floor((dir + .5) / dmax * adjsNum);
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
@@ -65,10 +69,11 @@ class Tile{
     return tile !== null && !tile.removed;
   }
 
-  adjRaw(dir, num=null){
-    const {adjs, adjsNum} = this;
+  adjRaw(dir, dmax=null){
+    const {adjsNum} = this;
+    const adjs = this.#adjs;
 
-    if(num !== null && num !== adjsNum) dir = Math.floor((dir + .5) / num * adjsNum);
+    if(dmax !== null && dmax !== adjsNum) dir = floor((dir + .5) / dmax * adjsNum);
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
@@ -76,10 +81,11 @@ class Tile{
     return tile !== null && !tile.removed ? tile : null;
   }
 
-  adj(dir, num=null){
-    const {adjs, adjsNum} = this;
+  adj(dir, dmax=null){
+    const {adjsNum} = this;
+    const adjs = this.#adjs;
 
-    if(num !== null && num !== adjsNum) dir = Math.floor((dir + .5) / num * adjsNum);
+    if(dmax !== null && dmax !== adjsNum) dir = floor((dir + .5) / dmax * adjsNum);
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
@@ -88,19 +94,35 @@ class Tile{
     return tile;
   }
 
-  setAdj(dir, num, tile=null){
-    const {adjs, adjsNum} = this;
+  setAdj(dir, dmax, tile=null){
+    const {adjsNum} = this;
+    const adjs = this.#adjs;
 
     if(tile === null){
-      tile = num;
-      num = null;
+      tile = dmax;
+      dmax = null;
     }
 
-    if(num !== null && num !== adjsNum) dir = Math.floor((dir + .5) / num * adjsNum);
+    if(dmax !== null && dmax !== adjsNum) dir = floor((dir + .5) / dmax * adjsNum);
     if(dir < 0) dir = dir % adjsNum + adjsNum;
     else if(dir >= adjsNum) dir %= adjsNum;
 
     adjs[dir] = tile;
+  }
+
+  adjDir(tile){
+    if(tile.removed) return -1;
+    return this.#adjs.indexOf(tile);
+  }
+
+  invDir(dir){
+    const {adjsNum} = this;
+
+    dir += adjsNum >> 1;
+    if(dir < 0) dir = dir % adjsNum + adjsNum;
+    else if(dir >= adjsNum) dir %= adjsNum;
+
+    return dir;
   }
 
   addObj(obj){
@@ -132,7 +154,7 @@ class Tile{
 
     updates.add(this);
     
-    for(const tile of this.adjs)
+    for(const tile of this.#adjs)
       if(tile !== null)
         updates.add(tile);
 

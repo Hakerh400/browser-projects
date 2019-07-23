@@ -16,6 +16,8 @@ const realms = require('./realms');
 const {isElectron} = O;
 const isBrowser = !isElectron;
 
+const {floor, ceil, round} = Math;
+
 main();
 
 function main(){
@@ -43,17 +45,28 @@ function main(){
   canvas.width = O.iw;
   canvas.height = O.ih;
 
-  const reng = new RenderEngine(canvas, Grid.SquareGrid);
+  const reng = new RenderEngine(canvas, [Grid.SquareGrid, Grid.HexagonalGrid][1]);
   const {grid} = reng;
+
+  const map = new O.Map2D();
+  const chunkSize = 30;
+
+  const addInfo = (xs, ys, realm) => {
+    map.set(xs, ys, [realm, '']);
+  };
+
+  addInfo(0, 0, 'sokoban');
 
   new WorldGenerator(grid, tile => {
     const {x, y} = tile;
 
-    const r1 = ['sokoban', 'a'];
-    const r2 = ['sudoku', 'a'];
-    if(x === 0 && y === 0) return r1;
+    const xs = round(x / chunkSize);
+    const ys = round(y / chunkSize);
 
-    return x <= 0 ? r1 : r2;
+    if(!map.has(xs, ys))
+      addInfo(xs, ys, O.randElem(realmsList));
+
+    return map.get(xs, ys);
   });
 
   grid.get(0, 0);

@@ -56,7 +56,7 @@ class RenderEngine{
 
       if(/^Arrow/.test(code)){
         const dir = ['Up', 'Right', 'Down', 'Left'].findIndex(a => code.endsWith(a));
-        this.addEvt(new Navigate(dir, target));
+        this.addEvt(new Navigate(dir, 4, target));
         return;
       }
 
@@ -208,8 +208,11 @@ class RenderEngine{
 
             if(path === null) continue;
 
-            for(const dir of path)
-              this.addEvt(new Navigate(dir));
+            let d = playerTile;
+            for(const dir of path){
+              this.addEvt(new Navigate(dir, d.adjsNum));
+              d = d.adj(dir);
+            }
 
             this.playerTile = target;
             break;
@@ -224,12 +227,19 @@ class RenderEngine{
         this.tick = Symbol();
 
         if(CAM_FOLLOW_PLAYER && type === 'navigate'){
-          const {dir} = evt;
+          const {dir, dmax} = evt;
 
           grid.txPrev = grid.tx;
           grid.tyPrev = grid.ty;
-          grid.txNext = grid.tx + (dir === 3 ? -1 : dir === 1 ? 1 : 0);
-          grid.tyNext = grid.ty + (dir === 0 ? -1 : dir === 2 ? 1 : 0);
+
+          if(dmax === 4){
+            grid.txNext = grid.tx + (dir === 3 ? -1 : dir === 1 ? 1 : 0);
+            grid.tyNext = grid.ty + (dir === 0 ? -1 : dir === 2 ? 1 : 0);
+          }else if(dmax === 6){
+            grid.txNext = grid.tx + (dir === 4 ? -1 : dir === 1 ? 1 : dir === 3 || dir === 5 ? -.5 : .5);
+            grid.tyNext = grid.ty + (dir === 0 || dir === 5 ? -1 : dir === 2 || dir === 3 ? 1 : 0);
+          }
+
           grid.trEnabled = 1;
         }
 

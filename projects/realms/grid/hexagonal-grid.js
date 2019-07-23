@@ -23,7 +23,15 @@ class HexagonalGrid extends Grid{
     this.tx = 0;
     this.ty = 0;
     this.scale = DEFAULT_SCALE;
+
+    this.txPrev = this.tx;
+    this.tyPrev = this.ty;
+    this.txNext = this.tx;
+    this.tyNext = this.ty;
+    this.trEnabled = 0;
   }
+
+  get type(){ return 'hexagonal'; }
 
   get target(){
     const {reng, tx, ty, scale} = this;
@@ -36,11 +44,19 @@ class HexagonalGrid extends Grid{
     const y = round(ty + (reng.cy - hh) / scale);
     const x = round(tx + (reng.cx - wh) / scale - (y & 1 ? .5 : 0));
 
-    return this.get(x, y, explicit);
+    return this.get(x, y, 1);
   }
 
   draw(g, t, k){
-    const {reng, pool, tx, ty, scale} = this;
+    if(this.trEnabled){
+      const k1 = 1 - k;
+      const k2 = k;
+
+      this.tx = this.txPrev * k1 + this.txNext * k2;
+      this.ty = this.tyPrev * k1 + this.tyNext * k2;
+    }
+
+    const {reng, pool, tx, ty, scale, removedObjs} = this;
     const {width: w, height: h} = reng.brect;
     const wh = w / 2;
     const hh = h / 2;
@@ -71,53 +87,70 @@ class HexagonalGrid extends Grid{
       return cs;
     };
 
+    const drawObj = obj => {
+      const {tile, layer, transitions} = obj;
+      const trLen = transitions.length;
+      const g = pool.getCtx(layer);
+
+      ({x, y} = tile);
+
+      g.resetTransform();
+      g.translate(xx, yy);
+      g.scale(scale, scale);
+
+      if(trLen === 0){
+        g.translate(x + (y & 1 ? .5 : 0), y);
+      }else{
+        if(obj.keepTranslation) g.translate(x, y);
+        for(const tr of transitions)
+          tr.apply(g, k, getCoords);
+      }
+
+      g.scale(SPACING, SPACING);
+
+      if(obj.draw(g, t, k)){
+        const g = pool.getCtx(layer - .5);
+
+        g.resetTransform();
+        g.translate(xx, yy);
+        g.scale(scale, scale);
+
+        if(trLen === 0){
+          g.translate(x + (y & 1 ? .5 : 0), y);
+        }else{
+          if(obj.keepTranslation) g.translate(x, y);
+          for(const tr of transitions)
+            tr.apply(g, k, getCoords);
+        }
+        
+        g.translate(.06, .06);
+        g.scale(1.12, 1.12);
+        g.beginPath();
+        tile.border(g);
+        g.fill();
+      }
+    };
+
     for(y = yStart; y <= yEnd; y++){
       for(x = xStart; x <= xEnd; x++){
-        const tile = this.get(x, y, explicit);
+        const tile = this.get(x, y);
 
-        for(const obj of tile.objs){
-          const {layer, transitions} = obj;
-          const trLen = transitions.length;
-          const g = pool.getCtx(layer);
-
-          g.resetTransform();
-          g.translate(xx, yy);
-          g.scale(scale, scale);
-
-          if(trLen === 0){
-            g.translate(x + (y & 1 ? .5 : 0), y);
-          }else{
-            for(let i = trLen - 1; i !== -1; i--)
-              transitions[i].apply(g, k, getCoords);
-          }
-
-          g.scale(SPACING, SPACING);
-          
-          if(obj.draw(g, t, k)){
-            const g = pool.getCtx(layer - .5);
-
-            g.resetTransform();
-            g.translate(xx, yy);
-            g.scale(scale, scale);
-
-            if(trLen === 0){
-              g.translate(x + (y & 1 ? .5 : 0), y);
-            }else{
-              for(let i = trLen - 1; i !== -1; i--)
-                transitions[i].apply(g, k, getCoords);
-            }
-
-            g.translate(.06, .06);
-            g.scale(1.12, 1.12);
-            g.beginPath();
-            tile.border(g);
-            g.fill();
-          }
-        }
+        for(const obj of tile.objs)
+          drawObj(obj);
       }
     }
 
+    for(const obj of removedObjs)
+      drawObj(obj);
+
     pool.draw(g);
+  }
+
+  drag(dx, dy){
+    const {scale} = this;
+
+    this.tx -= dx / scale;
+    this.ty -= dy / scale;
   }
 
   zoom(dir){
@@ -135,6 +168,16 @@ class HexagonalGrid extends Grid{
     this.scale *= k;
   }
 
+  endAnimation(){
+    super.endAnimation();
+
+    if(this.trEnabled){
+      this.tx = this.txNext;
+      this.ty = this.tyNext;
+      this.trEnabled = 0;
+    }
+  }
+
   has(x, y){
     let d = this.#d;
     if(!(y in d)) return 0;
@@ -142,44 +185,57 @@ class HexagonalGrid extends Grid{
     return x in d;
   }
 
-  gen(x, y, explicit=0){
+  gen(x, y){
     let d = this.#d;
+    let tile;
 
     if(!(y in d)) d = createKey(d, y);
     else d = d[y];
 
-    const odd = y & 1;
+    if(x in d){
+      tile = d[x];
+      tile.removed = 0;
+    }else{
+      d.size++;
+      tile = d[x] = new Tile.HexagonalTile(this, x, y);
+      
+      const odd = y & 1;
+      let adj;
 
-    d.size++;
-    const tile = d[x] = new Tile.HexagonalTile(this, odd ? 3 : 2, x, y);
-    let adj;
+      if(adj = this.getRaw(odd ? x + 1 : x, y - 1, 1))  tile.setAdj(0, adj), adj.setAdj(3, tile);
+      if(adj = this.getRaw(x + 1, y, 1))                tile.setAdj(1, adj), adj.setAdj(4, tile);
+      if(adj = this.getRaw(odd ? x + 1 : x, y + 1, 1))  tile.setAdj(2, adj), adj.setAdj(5, tile);
+      if(adj = this.getRaw(odd ? x : x - 1, y + 1, 1))  tile.setAdj(3, adj), adj.setAdj(0, tile);
+      if(adj = this.getRaw(x - 1, y, 1))                tile.setAdj(4, adj), adj.setAdj(1, tile);
+      if(adj = this.getRaw(odd ? x : x - 1, y - 1, 1))  tile.setAdj(5, adj), adj.setAdj(2, tile);
+    }
 
-    if(adj = this.getRaw(odd ? x + 1 : x, y - 1))  tile.setAdj(0, adj), adj.setAdj(3, tile);
-    if(adj = this.getRaw(x + 1, y))                tile.setAdj(1, adj), adj.setAdj(4, tile);
-    if(adj = this.getRaw(odd ? x + 1 : x, y + 1))  tile.setAdj(2, adj), adj.setAdj(5, tile);
-    if(adj = this.getRaw(odd ? x : x - 1, y + 1))  tile.setAdj(3, adj), adj.setAdj(0, tile);
-    if(adj = this.getRaw(x - 1, y))                tile.setAdj(4, adj), adj.setAdj(1, tile);
-    if(adj = this.getRaw(odd ? x : x - 1, y - 1))  tile.setAdj(5, adj), adj.setAdj(2, tile);
-
-    this.emit('gen', tile, explicit);
-
+    this.emit('gen', tile);
     return tile.update();
   }
 
-  getRaw(x, y){
+  getRaw(x, y, includeRemoved=0){
     let d = this.#d;
+
     if(!(y in d)) return null;
     d = d[y];
     if(!(x in d)) return null;
-    return d[x];
+    
+    const tile = d[x];
+    if(!includeRemoved && tile.removed) return null;
+    return tile;
   }
 
-  get(x, y, explicit=0){
+  get(x, y){
     let d = this.#d;
-    if(!(y in d)) return this.gen(x, y, explicit);
+
+    if(!(y in d)) return this.gen(x, y);
     d = d[y];
-    if(!(x in d)) return this.gen(x, y, explicit);
-    return d[x];
+    if(!(x in d)) return this.gen(x, y);
+    
+    const tile = d[x];
+    if(tile.removed) return this.gen(x, y);
+    return tile;
   }
 }
 
@@ -191,10 +247,14 @@ class HexagonalGridLayer extends LayerPool.Layer{
   init(){
     const {g} = this;
 
-    this.isShadow = this.zIndex % 1 !== 0;
+    const isShadow = this.isShadow = this.zIndex % 1 !== 0;
     g.lineWidth = LINE_WIDTH;
 
-    if(this.isShadow)
+    g.textBaseline = 'middle';
+    g.textAlign = 'center';
+    g.font = `.8px arial`;
+
+    if(isShadow)
       g.fillStyle = '#000';
   }
 
@@ -218,10 +278,6 @@ class HexagonalGridLayer extends LayerPool.Layer{
   }
 }
 
-module.exports = Object.assign(HexagonalGrid, {
-  HexagonalGridLayer,
-});
-
 const createObj = () => {
   const obj = O.obj();
   obj.size = 0;
@@ -233,3 +289,7 @@ const createKey = (obj, key) => {
   const obj1 = obj[key] = createObj();
   return obj1;
 };
+
+module.exports = Object.assign(HexagonalGrid, {
+  HexagonalGridLayer,
+});

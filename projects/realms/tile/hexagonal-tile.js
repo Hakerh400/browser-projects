@@ -6,8 +6,8 @@ const offsetX = Math.sqrt(3) / 4 + .05;
 const offsetY = .35;
 
 class HexagonalTile extends Tile{
-  constructor(grid, gravDir, x, y){
-    super(grid, gravDir);
+  constructor(grid, x, y){
+    super(grid);
 
     this.x = x;
     this.y = y;
@@ -27,10 +27,6 @@ class HexagonalTile extends Tile{
     g.closePath();
   }
 
-  invDir(dir){
-    return dir + 3 & 6;
-  }
-
   gen(dir){
     let {x, y} = this;
     const odd = y & 1;
@@ -44,7 +40,7 @@ class HexagonalTile extends Tile{
       case 5: y--; if(!odd) x--; break;
     }
 
-    this.grid.gen(x, y);
+    return this.grid.gen(x, y);
   }
 }
 

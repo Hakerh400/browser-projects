@@ -1,5 +1,5 @@
 'use strict';
 
-const Realm = require('./realm');
+const realm = require('./realm');
 
-module.exports = Realm;
+module.exports = realm;

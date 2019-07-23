@@ -14,6 +14,7 @@ class Grid extends O.EventEmitter{
     this.reng = reng;
   }
 
+  get type(){ O.virtual('type'); }
   get tick(){ return this.reng.tick; }
 
   emitAndTick(evt){

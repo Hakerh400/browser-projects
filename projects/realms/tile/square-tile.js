@@ -18,10 +18,6 @@ class SquareTile extends Tile{
     g.rect(-.5, -.5, 1, 1);
   }
 
-  invDir(dir){
-    return dir + 2 & 3;
-  }
-
   gen(dir){
     let {x, y} = this;
 
