@@ -7,3 +7,4 @@ zbuffer
 polygons
 hyper
 random-integers
+timer

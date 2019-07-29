@@ -18,7 +18,7 @@ class SquareGrid extends Grid{
     super(reng);
 
     const {brect} = reng;
-    this.pool = new LayerPool(brect.width, brect.height, SquareGridLayer);
+    this.pool = new LayerPool(brect.width, brect.height, Layer);
 
     this.tx = 0;
     this.ty = 0;
@@ -167,8 +167,8 @@ class SquareGrid extends Grid{
     this.scale *= k;
   }
 
-  endAnimation(){
-    super.endAnimation();
+  endAnim(){
+    super.endAnim();
 
     if(this.trEnabled){
       this.tx = this.txNext;
@@ -235,7 +235,7 @@ class SquareGrid extends Grid{
   }
 }
 
-class SquareGridLayer extends LayerPool.Layer{
+class Layer extends LayerPool.Layer{
   constructor(pool, zIndex){
     super(pool, zIndex);
   }
@@ -287,5 +287,5 @@ const createKey = (obj, key) => {
 };
 
 module.exports = Object.assign(SquareGrid, {
-  SquareGridLayer,
+  Layer,
 });

@@ -18,7 +18,7 @@ class HexagonalGrid extends Grid{
     super(reng);
 
     const {brect} = reng;
-    this.pool = new LayerPool(brect.width, brect.height, HexagonalGridLayer);
+    this.pool = new LayerPool(brect.width, brect.height, Layer);
 
     this.tx = 0;
     this.ty = 0;
@@ -168,8 +168,8 @@ class HexagonalGrid extends Grid{
     this.scale *= k;
   }
 
-  endAnimation(){
-    super.endAnimation();
+  endAnim(){
+    super.endAnim();
 
     if(this.trEnabled){
       this.tx = this.txNext;
@@ -239,7 +239,7 @@ class HexagonalGrid extends Grid{
   }
 }
 
-class HexagonalGridLayer extends LayerPool.Layer{
+class Layer extends LayerPool.Layer{
   constructor(pool, zIndex){
     super(pool, zIndex);
   }
@@ -291,5 +291,5 @@ const createKey = (obj, key) => {
 };
 
 module.exports = Object.assign(HexagonalGrid, {
-  HexagonalGridLayer,
+  Layer,
 });

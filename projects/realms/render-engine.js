@@ -176,7 +176,7 @@ class RenderEngine{
 
         if(dt >= TICK_DURATION){
           this.animating = 0;
-          grid.endAnimation();
+          grid.endAnim();
         }
       }else{
         if(events.length === 0){

@@ -2886,7 +2886,60 @@ const O = {
     while(1){
       const match = reg.exec(str);
       if(match === null) break;
+
+      if(match[0].length === 0)
+        throw new TypeError('Empty string match is not allowed');
+
       yield match;
+    }
+  },
+
+  *tokenize(str, tokens, firstMatch=0){
+    const names = O.keys(tokens);
+
+    tokens = (original => {
+      const tokens = O.obj();
+
+      for(const name of names){
+        const rstr = String(original[name]);
+        tokens[name] = new RegExp(`^${rstr.slice(1, rstr.length - 1)}`);
+      }
+
+      return tokens;
+    })(tokens);
+
+    while(str !== ''){
+      let match = null;
+
+      for(const name of names){
+        const reg = tokens[name];
+        const m = str.match(reg);
+        if(m === null) continue;
+
+        if(m[0].length === 0)
+          throw new TypeError('Empty string match is not allowed');
+
+        if(firstMatch){
+          match = [name, m];
+          break;
+        }
+
+        if(match === null || m.length > match[1].length)
+          match = [name, m];
+      }
+
+      if(match === null){
+        const i = str.search(/[\r\n]/);
+        const s = i !== -i ? str.slice(0, i) : str;
+        throw new SyntaxError(`Invalid syntax near ${O.sf(s)}`);
+      }
+
+      const name = match[0];
+      const s = match[1][0];
+      const groups = match[1].slice(1);
+      yield [name, s, groups];
+
+      str = str.slice(s.length);
     }
   },
 

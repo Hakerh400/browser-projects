@@ -44,7 +44,7 @@ class Grid extends O.EventEmitter{
     return updated;
   }
 
-  endAnimation(){
+  endAnim(){
     const {transitionsArr, removedObjs} = this;
 
     for(const transitions of transitionsArr)
