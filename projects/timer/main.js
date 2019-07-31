@@ -14,7 +14,6 @@ let start = null;
 main();
 
 function main(){
-
   O.ael('keydown', evt => {
     if(evt.code !== 'Space') return;
     setTimeout(() => start = O.now, 1e3);
@@ -28,6 +27,7 @@ function render(){
 
   g.clearRect(0, 0, w, h);
   g.fillText(formatTime(tt), wh - xOffset, hh);
+  
   O.raf(render);
 }
 

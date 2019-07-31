@@ -1,162 +1,5 @@
 'use strict';
 
-class Vector{
-  constructor(x=0, y=0){
-    this.set(x, y);
-  }
-
-  static fromAngle(len, angle){
-    var x = Math.cos(angle) * len;
-    var y = Math.sin(angle) * len;
-
-    return new O.Vector(x, y);
-  }
-
-  set(x, y){
-    if(x instanceof O.Vector)
-      ({x, y} = x);
-
-    this.x = x;
-    this.y = y;
-
-    return this;
-  }
-
-  clone(){
-    return new O.Vector(this.x, this.y);
-  }
-
-  add(x, y){
-    if(x instanceof O.Vector)
-      ({x, y} = x);
-
-    this.x += x;
-    this.y += y;
-
-    return this;
-  }
-
-  sub(x, y){
-    if(x instanceof O.Vector)
-      ({x, y} = x);
-
-    this.x -= x;
-    this.y -= y;
-
-    return this;
-  }
-
-  mul(val){
-    this.x *= val;
-    this.y *= val;
-
-    return this;
-  }
-
-  div(val){
-    this.x /= val;
-    this.y /= val;
-
-    return this;
-  }
-
-  combine(len, angle){
-    this.x += Math.cos(angle) * len;
-    this.y += Math.sin(angle) * len;
-
-    return this;
-  }
-
-  dec(x, y){
-    if(x instanceof O.Vector)
-      ({x, y} = x);
-
-    if(x !== 0){
-      var sx = this.x > 0 ? 1 : -1;
-      if(Math.abs(this.x) > x) this.x = x * sx - this.x;
-      else this.x = 0;
-    }
-
-    if(y !== 0){
-      var sy = this.y > 0 ? 1 : -1;
-      if(Math.abs(this.y) > y) this.y = y * sy - this.y;
-      else this.y = 0;
-    }
-
-    return this;
-  }
-
-  len(){
-    return Math.sqrt(this.x * this.x + this.y * this.y);
-  }
-
-  lenM(){
-    return Math.abs(this.x) + Math.abs(this.y);
-  }
-
-  setLen(len){
-    var angle = this.angle();
-
-    this.x = Math.cos(angle) * len;
-    this.y = Math.sin(angle) * len;
-
-    return this;
-  }
-
-  angle(){
-    return Math.atan2(this.y, this.x);
-  }
-
-  setAngle(angle){
-    var len = this.len();
-
-    this.x = Math.cos(angle) * len;
-    this.y = Math.sin(angle) * len;
-
-    return this;
-  }
-
-  norm(){
-    this.div(this.len());
-
-    return this;
-  }
-
-  dist(x, y){
-    if(x instanceof O.Vector)
-      ({x, y} = x);
-
-    var dx = this.x - x;
-    var dy = this.y - y;
-
-    return Math.sqrt(dx * dx + dy * dy);;
-  }
-
-  maxLen(maxLen){
-    if(this.len() > maxLen)
-      this.setLen(maxLen);
-
-    return this;
-  }
-
-  rotate(angle){
-    var sin = Math.sin(angle);
-    var cos = Math.cos(angle);
-    var x = this.x * cos - this.y * sin;
-    var y = this.x * sin + this.y * cos;
-
-    this.x = x;
-    this.y = y;
-
-    return this;
-  }
-
-  isIn(x1, y1, x2, y2){
-    var {x, y} = this;
-    return x >= x1 && y >= y1 && x < x2 && y < y2;
-  }
-};
-
 class Color extends Uint8ClampedArray{
   constructor(r, g, b){
     super(3);
@@ -219,7 +62,7 @@ class Color extends Uint8ClampedArray{
   toString(){
     return this.str;
   }
-};
+}
 
 class EventEmitter{
   #ls = O.obj();
@@ -276,7 +119,7 @@ class EventEmitter{
 
     return val;
   }
-};
+}
 
 class Grid{
   constructor(w, h, func=null, d=null){
@@ -560,217 +403,7 @@ class Grid{
   includes(x, y){
     return this.has(x, y);
   }
-};
-
-class GridUI extends EventEmitter{
-  constructor(g, w, h, s, func=() => O.obj()){
-    super();
-
-    this.canvas = g.canvas;
-    this.func = func;
-    this.grid = new O.Grid(w, h, func);
-    this.scale = s;
-
-    g.concaveMode = 1;
-
-    this.g = g;
-    this.iw = g.w;
-    this.ih = g.h;
-    this.iwh = g.w / 2;
-    this.ihh = g.h / 2;
-
-    this.transform();
-
-    this.keys = O.obj();
-    this.mbs = 0;
-    this.cur = new O.Vector;
-
-    this.funcs = {
-      draw: [],
-      frame: [],
-    };
-
-    this.wrap = 0;
-
-    this.aels();
-  }
-
-  aels(){
-    const btnName = btn => 'lmr'[btn];
-    const {keys, cur} = this;
-
-    O.ael('keydown', evt => {
-      const key = evt.code;
-
-      keys[key] = 1;
-      this.emit(`k${key}`, cur.x, cur.y);
-    });
-
-    O.ael('keyup', evt => {
-      const key = evt.code;
-
-      keys[key] = 0;
-      this.emit(`ku${key}`, cur.x, cur.y);
-    });
-
-    O.ael('mousedown', evt => {
-      const btn = evt.button;
-
-      this.mbs |= 1 << btn;
-      this.updateCur(evt);
-
-      this.emit(`${btnName(btn)}mb`, cur.x, cur.y);
-    });
-
-    O.ael('mousemove', evt => {
-      const {mbs} = this;
-      const {x, y} = cur;
-
-      this.updateCur(evt);
-
-      if(cur.x !== x || cur.y !== y){
-        const dx = Math.sign(cur.x - x);
-        const dy = Math.sign(cur.y - y);
-
-        let xx = x, yy = y;
-        let dir = dx === 1 ? 1 : 3;
-        let prev;
-
-        while(xx !== cur.x){
-          prev = xx;
-          xx += dx;
-
-          this.emit('move', xx, yy);
-          for(let btn = 0; btn !== 3; btn++)
-            if(mbs & (1 << btn))
-              this.emit(`drag${btnName(btn)}`, prev, yy, xx, yy, dir);
-        }
-
-        dir = dy === 1 ? 2 : 0;
-
-        while(yy !== cur.y){
-          prev = yy;
-          yy += dy;
-
-          this.emit('move', xx, yy);
-          for(let btn = 0; btn !== 3; btn++)
-            if(mbs & (1 << btn))
-              this.emit(`drag${btnName(btn)}`, xx, prev, xx, yy, dir);
-        }
-      }
-    });
-
-    O.ael('mouseup', evt => {
-      const btn = evt.button;
-
-      this.mbs &= ~(1 << btn);
-      this.updateCur(evt);
-
-      this.emit(`${btnName(btn)}mbu`, cur.x, cur.y);
-    });
-
-    O.ael('blur', evt => {
-      this.mbs = 0;
-    });
-
-    O.ael('contextmenu', evt => {
-      O.pd(evt);
-    });
-  }
-
-  on(type, func){
-    if(type === 'draw'){
-      this.funcs.draw.push(func);
-      return;
-    }
-
-    if(type === 'frame'){
-      this.funcs.frame.push(func);
-      return;
-    }
-
-    super.on(type, func);
-  }
-
-  updateCur(evt){
-    const {scale, g, cur} = this;
-
-    const rect = this.canvas.getBoundingClientRect();
-    cur.x = Math.floor((evt.clientX - g.tx - rect.x) / scale);
-    cur.y = Math.floor((evt.clientY - g.ty - rect.y) / scale);
-  }
-
-  transform(){
-    const {grid, g} = this;
-
-    g.resetTransform();
-    g.translate(this.iwh, this.ihh);
-    g.scale(this.scale);
-    g.translate(-grid.w / 2, -grid.h / 2);
-  }
-
-  tick(){
-    this.emit('tick');
-  }
-
-  draw(){
-    const {grid, g, funcs, wrap} = this;
-
-    g.clearCanvas('darkgray');
-
-    for(const drawf of funcs.draw){
-      g.save();
-      grid.iter((x, y, d) => {
-        g.translate(x, y);
-        drawf(g, d, x, y);
-        g.restore();
-      });
-    }
-
-    for(const framef of funcs.frame){
-      g.beginPath();
-
-      grid.iter((x, y, d1) => {
-        grid.adj(x, y, wrap, (xx, yy, d2, dir) => {
-          if(dir === 3 && x !== 0) return;
-          if(dir === 0 && y !== 0) return;
-          if(!framef(g, d1, d2, x, y, dir)) return;
-
-          switch(dir){
-            case 0:
-              g.moveTo(x, y);
-              g.lineTo(x + 1, y);
-              break;
-
-            case 1:
-              g.moveTo(x + 1, y);
-              g.lineTo(x + 1, y + 1);
-              break;
-
-            case 2:
-              g.moveTo(x, y + 1);
-              g.lineTo(x + 1, y + 1);
-              break;
-
-            case 3:
-              g.moveTo(x, y);
-              g.lineTo(x, y + 1);
-              break;
-          }
-        });
-      });
-
-      g.stroke();
-    }
-  }
-
-  render(){
-    this.tick();
-    this.draw();
-
-    O.raf(this.render.bind(this));
-  }
-};
+}
 
 class Map2D{
   constructor(x=null, y=null, val=1){
@@ -901,7 +534,7 @@ class Map2D{
       for(let x in d[y |= 0])
         yield [x |= 0, y, d[y][x]];
   }
-};
+}
 
 class Map3D{
   constructor(x=null, y=null, z=null, val=1){
@@ -972,7 +605,7 @@ class Map3D{
 
     return arr;
   }
-};
+}
 
 class MultidimensionalMap{
   constructor(){
@@ -1027,139 +660,7 @@ class MultidimensionalMap{
   delete(arr){
     this.remove(arr);
   }
-};
-
-class CoordsColle{
-  constructor(x=null, y=null){
-    this.map = new O.Map2D();
-    this.arr = [];
-
-    if(x !== null)
-      this.add(x, y);
-  }
-
-  reset(x=null, y=null){
-    this.map.reset();
-    this.arr.length = 0;
-
-    if(x !== null)
-      this.add(x, y);
-  }
-
-  empty(){
-    this.reset();
-  }
-
-  len(){
-    return this.arr.length >> 1;
-  }
-
-  isEmpty(){
-    return this.len() === 0;
-  }
-
-  eq(cc){
-    if(this.len() !== cc.len()) return 0;
-    return !this.some((x, y) => !cc.has(x, y));
-  }
-
-  neq(cc){
-    return !this.eq(cc);
-  }
-
-  has(x, y){
-    return this.map.has(x, y);
-  }
-
-  add(x, y, top=1){
-    const {map, arr} = this;
-
-    if(!map.has(x, y)){
-      map.add(x, y, arr.length);
-      arr.push(x, y);
-      return;
-    }
-
-    if(!top) return;
-
-    const i = map.get(x, y);
-    const j = arr.length - 2;
-    if(i === j) return;
-
-    const x1 = arr[j];
-    const y1 = arr[j + 1];
-
-    map.set(x, y, j);
-    map.set(x1, y1, i);
-    arr[j] = x, arr[j + 1] = y;
-    arr[i] = x1, arr[i + 1] = y1;
-  }
-
-  push(x, y){
-    this.add(x, y);
-  }
-
-  remove(x, y){
-    const {map, arr} = this;
-    if(!map.has(x, y)) return;
-
-    const i = map.get(x, y);
-    this.removeByIndex(i);
-  }
-
-  delete(x, y){
-    this.remove(x, y);
-  }
-
-  del(x, y){
-    this.remove(x, y);
-  }
-
-  removeByIndex(i){
-    const {map, arr} = this;
-    const j = arr.length - 2;
-
-    const x = arr[i];
-    const y = arr[i + 1];
-    map.remove(x, y);
-
-    if(i !== j){
-      const x1 = arr[j];
-      const y1 = arr[j + 1];
-
-      map.set(x1, y1, i);
-      arr[i] = x1, arr[i + 1] = y1;
-    }
-
-    arr.length = j;
-  }
-
-  pop(v){
-    return this.getByIndex(v, this.arr.length - 2, 1);
-  }
-
-  rand(v, remove=0){
-    return this.getByIndex(v, O.rand(this.arr.length) & ~1, remove);
-  }
-
-  getByIndex(v, i, remove=0){
-    const {arr} = this;
-    if((i & 1) || i < 0 || i >= arr.length) return null;
-
-    v.x = arr[i];
-    v.y = arr[i + 1];
-
-    if(remove)
-      this.removeByIndex(i);
-
-    return v;
-  }
-
-  iter(func){ return this.map.iter(func); }
-  some(func){ return this.map.some(func); }
-  find(v, func){ return this.map.find(v, func); }
-  [Symbol.iterator](){ return this.map[Symbol.iterator](); }
-};
+}
 
 class EnhancedRenderingContext{
   constructor(g){
@@ -1633,7 +1134,7 @@ class EnhancedRenderingContext{
       g.strokeStyle = col;
     }
   }
-};
+}
 
 class Buffer extends Uint8Array{
   constructor(...params){
@@ -1737,7 +1238,7 @@ class Buffer extends Uint8Array{
   errEnc(encoding){
     throw new TypeError(`Unsupported encoding ${O.sf(encoding)}`);
   }
-};
+}
 
 class IO{
   constructor(input='', checksum=0, pad=0){
@@ -1881,7 +1382,7 @@ class IO{
     if(encoding !== null) buf = buf.toString(encoding);
     return buf;
   }
-};
+}
 
 class Serializer extends IO{
   static #abuf = new ArrayBuffer(8);
@@ -2047,7 +1548,7 @@ class Serializer extends IO{
     if(encoding !== null) buf = buf.toString(encoding);
     return buf;
   }
-};
+}
 
 class Serializable{
   ser(ser=new O.Serializer()){ O.virtual('ser'); }
@@ -2055,82 +1556,7 @@ class Serializable{
 
   static deser(ser){ return new this().deser(ser); }
   reser(){ return this.deser(new O.Serializer(this.ser().getOutput())); }
-};
-
-class Storage extends Serializable{
-  constructor(storage=window.localStorage, prop=O.project){
-    super();
-
-    this.storage = storage;
-    this.prop = prop;
-
-    if(this.check()){
-      this.load();
-    }else{
-      this.init();
-      this.save();
-    }
-  }
-
-  static get version(){ O.virtual('version'); }
-  static get checksum(){ return 1; }
-  static get encoding(){ return 'base64'; }
-
-  get version(){ return this.constructor.version; }
-  get encoding(){ return this.constructor.encoding; }
-  get checksum(){ return this.constructor.checksum; }
-
-  init(){ O.virtual('init'); }
-
-  getSer(){
-    const {storage, prop} = this;
-
-    const str = storage[prop];
-    const buf = O.Buffer.from(str, this.encoding);
-
-    let ser;
-    try{
-      ser = new O.Serializer(buf, this.checksum);
-    }catch{
-      this.init();
-      this.save();
-      ser = this.getSer();
-    }
-
-    return ser;
-  }
-
-  check(){
-    const {storage, prop} = this;
-    if(!O.has(storage, prop)) return 0;
-
-    const ser = this.getSer();
-    const ver = ser.readInt();
-
-    return this.constructor.name, ver === this.version;
-  }
-
-  load(){
-    const ser = this.getSer();
-    const ver = ser.readInt();
-
-    this.deser(ser);
-  }
-
-  save(){
-    const {storage, prop} = this;
-
-    const ser = new O.Serializer();
-    ser.writeInt(this.version);
-
-    this.ser(ser);
-
-    const buf = ser.getOutput(this.checksum);
-    const str = buf.toString(this.encoding);
-
-    storage[prop] = str;
-  }
-};
+}
 
 class Semaphore{
   constructor(s){
@@ -2163,7 +1589,7 @@ class Semaphore{
 
     setTimeout(blocked.shift());
   }
-};
+}
 
 const O = {
   global: null,
@@ -2227,21 +1653,17 @@ const O = {
 
   // Classes
 
-  Vector,
   Color,
   EventEmitter,
   Grid,
-  GridUI,
   Map2D,
   Map3D,
   MultidimensionalMap,
-  CoordsColle,
   EnhancedRenderingContext,
   Buffer,
   IO,
   Serializer,
   Serializable,
-  Storage,
   Semaphore,
 
   init(loadProject=1){
@@ -2894,25 +2316,31 @@ const O = {
     }
   },
 
-  *tokenize(str, tokens, firstMatch=0){
-    const names = O.keys(tokens);
+  tokenize(str, tokens, throwOnError=1, firstMatch=0){
+    const tlen = tokens.length;
+    const len = tlen >> 1;
+    const lastIndex = tlen - 1;
 
-    tokens = (original => {
-      const tokens = O.obj();
+    const regs = [];
+    const funcs = [];
 
-      for(const name of names){
-        const rstr = String(original[name]);
-        tokens[name] = new RegExp(`^${rstr.slice(1, rstr.length - 1)}`);
+    tokens.forEach((val, index) => {
+      if((index & 1) === 1 || index === lastIndex){
+        funcs.push(val);
+        return;
       }
 
-      return tokens;
-    })(tokens);
+      const rstr = String(val);
+      const reg = new RegExp(`^${rstr.slice(1, rstr.length - 1)}`);
+      regs.push(reg);
+    });
 
     while(str !== ''){
       let match = null;
+      let index = -1;
 
-      for(const name of names){
-        const reg = tokens[name];
+      for(let i = 0; i !== len; i++){
+        const reg = regs[i];
         const m = str.match(reg);
         if(m === null) continue;
 
@@ -2920,24 +2348,30 @@ const O = {
           throw new TypeError('Empty string match is not allowed');
 
         if(firstMatch){
-          match = [name, m];
+          match = [reg, m];
+          index = i;
           break;
         }
 
-        if(match === null || m.length > match[1].length)
-          match = [name, m];
+        if(match === null || m.length > match[1].length){
+          match = [reg, m];
+          index = i;
+        }
       }
 
       if(match === null){
         const i = str.search(/[\r\n]/);
         const s = i !== -i ? str.slice(0, i) : str;
-        throw new SyntaxError(`Invalid syntax near ${O.sf(s)}`);
+
+        if(throwOnError) throw new SyntaxError(`Invalid syntax near ${O.sf(s)}`);
+
+        return O.last(funcs)(null, s, []);
       }
 
-      const name = match[0];
+      const reg = match[0];
       const s = match[1][0];
       const groups = match[1].slice(1);
-      yield [name, s, groups];
+      funcs[index](reg, s, groups);
 
       str = str.slice(s.length);
     }
@@ -3312,6 +2746,12 @@ const O = {
     return `${day}.${month}.${year}. ${hour}:${minute}`;
   },
 
+  perf(func){
+    const t = O.now;
+    func();
+    log(((O.now - t) / 1e3).toFixed(3));
+  },
+
   bool(val){ return Boolean(O.int(val)); },
   sortAsc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? 1 : elem1 < elem2 ? -1 : 0); },
   sortDesc(arr){ return arr.sort((elem1, elem2) => elem1 > elem2 ? -1 : elem1 < elem2 ? 1 : 0); },
@@ -3326,10 +2766,17 @@ const O = {
   rev(str){ return str.split('').reverse().join(''); },
   has(obj, key){ return Object.hasOwnProperty.call(obj, key); },
   desc(obj, key){ return Object.getOwnPropertyDescriptor(obj, key); },
+  nproto(obj){ return Object.assign(O.obj(), obj); },
 
   proto(obj, n=1){
     while(n-- !== 0) obj = Object.getPrototypeOf(obj);
     return obj;
+  },
+
+  resObj(obj){
+    const res = O.obj();
+    for(const key of O.keys(obj)) res[key] = obj[key]();
+    return res;
   },
 
   /*
