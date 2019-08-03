@@ -2316,7 +2316,7 @@ const O = {
     }
   },
 
-  tokenize(str, tokens, throwOnError=1, firstMatch=0){
+  tokenize(str, tokens, throwOnError=0, firstMatch=0){
     const tlen = tokens.length;
     const len = tlen >> 1;
     const lastIndex = tlen - 1;
@@ -2353,7 +2353,7 @@ const O = {
           break;
         }
 
-        if(match === null || m.length > match[1].length){
+        if(match === null || m[0].length > match[1][0].length){
           match = [reg, m];
           index = i;
         }
@@ -2365,13 +2365,13 @@ const O = {
 
         if(throwOnError) throw new SyntaxError(`Invalid syntax near ${O.sf(s)}`);
 
-        return O.last(funcs)(null, s, []);
+        return O.last(funcs)(s, []);
       }
 
       const reg = match[0];
       const s = match[1][0];
       const groups = match[1].slice(1);
-      funcs[index](reg, s, groups);
+      funcs[index](s, groups);
 
       str = str.slice(s.length);
     }
