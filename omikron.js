@@ -2003,7 +2003,6 @@ const O = {
 
     const w = O.iw;
     const h = O.ih;
-    const [wh, hh] = [w, h].map(a => a / 2);
 
     const canvas = O.ce(O.body, 'canvas');
     let g = canvas.getContext('2d');
@@ -2023,7 +2022,13 @@ const O = {
     if(enhanced)
       g = new O.EnhancedRenderingContext(g);
 
-    return {g, w, h, wh, hh};
+    return {
+      g, w, h,
+      wh : w / 2,
+      hh : h / 2,
+      w1: w - 1,
+      h1: h - 1,
+    };
   },
 
   /*
@@ -2316,7 +2321,7 @@ const O = {
     }
   },
 
-  tokenize(str, tokens, throwOnError=0, firstMatch=0){
+  tokenize(str, tokens, firstMatch=1, throwOnError=0){
     const tlen = tokens.length;
     const len = tlen >> 1;
     const lastIndex = tlen - 1;

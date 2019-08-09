@@ -8,3 +8,4 @@ polygons
 hyper
 random-integers
 timer
+sequence-plot
