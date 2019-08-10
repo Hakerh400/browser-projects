@@ -76,15 +76,7 @@ function genRug(g, rec=0){
         break genTile;
       }
 
-      if(rec){
-        genRug(g1, rec - 1);
-
-        O.repeat(5, () => {
-          g1.beginPath();
-          g1.arc(O.rand(sx), O.rand(sy), O.rand(min(sx, sy)), 0, O.pi2);
-          g1.stroke();
-        });
-      }
+      if(rec) genRug(g1, rec - 1);
 
       const imgd = g1.getImageData(0, 0, sx, sy);
       const d = imgd.data;
@@ -93,22 +85,16 @@ function genRug(g, rec=0){
       const yy = O.rand(256);
 
       for(let y = 0; y !== sy; y++){
+        const i = x + y * sx << 2;
         const xEnd = y <= syh ? y * sx / sy : -1;
 
         for(let x = 0; x !== sx; x++){
-          const i = x + y * sx << 2;
+          d[i + 3] = 255;
+          if(x > xEnd) continue;
 
-          if(x > xEnd){
-            d[i + 3] = 0;
-            continue;
-          }
-
-          if(rec) break;
-          
           d[i + 0] = (xx + x) & 255;
           d[i + 1] = (yy + y) & 255;
           d[i + 2] = (xx + yy ^ x + y) & 255;
-          d[i + 3] = 255;
         }
       }
 
