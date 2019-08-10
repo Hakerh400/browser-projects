@@ -13,7 +13,7 @@ function main(){
   g.fillStyle = '#000';
   g.fillRect(0, 0, w, h);
 
-  const seqsNum = seqs.length
+  const seqsNum = seqs.length;
 
   for(let si = 0; si !== seqsNum; si++){
     const seq = seqs[si];
