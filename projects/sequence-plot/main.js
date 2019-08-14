@@ -2,6 +2,7 @@
 
 const seqs = require('./sequences');
 
+const TEST_MODE = 0;
 const LENGTH = 1e4;
 const SCALE = .8;
 
@@ -10,6 +11,27 @@ const {g, w, h, wh, hh, w1, h1} = O.ceCanvas();
 main();
 
 function main(){
+  if(TEST_MODE){
+    g.fillStyle = '#fff';
+    g.fillRect(0, 0, w, h);
+
+    g.textBaseline = 'top';
+    g.textAlign = 'left';
+    g.font = '32px arial';
+
+    let s = '';
+    let i = 0;
+    for(const val of O.last(seqs)()){
+      if(s !== '') s += ', ';
+      s += val;
+      if(++i === 100) break;
+    }
+
+    g.fillStyle = '#000';
+    g.fillText(s, 5, 5);
+    return;
+  }
+
   g.fillStyle = '#000';
   g.fillRect(0, 0, w, h);
 

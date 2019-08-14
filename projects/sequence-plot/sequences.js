@@ -25,6 +25,56 @@ const sequences = [
       a = nextPrime(a);
     }
   },
+
+  function*(){
+    let i = 0;
+
+    while(1){
+      yield (i++).toString(3).split('').reduce((a, b) => {
+        b |= 0;
+        return a * 3 + (b === 2 ? -1 : b);
+      }, 0);
+    }
+  },
+
+  function*(){
+    let i = 1;
+
+    while(1){
+      yield i - (i++).toString().split('').reduce((a, b) => {
+        b |= 0;
+        return b === 0 ? a : a * b;
+      }, 1);
+    }
+  },
+
+  function*(){
+    const a = [1, 1];
+    let n = 2;
+
+    yield 1;
+    yield 1;
+
+    while(1){
+      const k = n + 1 >> 1;
+      let b = 1;
+
+      outerLoop: while(1){
+        for(let i = 1; i <= k; i++){
+          const c = a[n - i];
+          if(b - c === c - a[n - (i << 1)]){
+            b++;
+            continue outerLoop;
+          }
+        }
+        break;
+      }
+
+      yield b;
+      a.push(b);
+      n++;
+    }
+  },
 ];
 
 const gcd = (a, b) => {

@@ -8,7 +8,7 @@ g.fillStyle = '#000';
 
 const xOffset = g.measureText(formatTime(0)).width / 2;
 
-let t = parseTime('00:05:00');
+let t = parseTime(O.urlParam('time', '00:05:00'));
 let start = null;
 
 main();
