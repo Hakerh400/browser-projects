@@ -61,8 +61,7 @@ const sequences = [
 
       outerLoop: while(1){
         for(let i = 1; i <= k; i++){
-          const c = a[n - i];
-          if(b - c === c - a[n - (i << 1)]){
+          if(b + a[n - (i << 1)] === (a[n - i] << 1)){
             b++;
             continue outerLoop;
           }
