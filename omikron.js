@@ -164,7 +164,7 @@ class ImageData{
     d[(i | 0) + 2 | 0] = b | 0;
   }
 
-  iter(func, includeAlpha=false){
+  iter(func, includeAlpha=0){
     const {w, h, d} = this;
 
     if(includeAlpha){
