@@ -2600,6 +2600,11 @@ const O = {
     return arr[arr.length - 1];
   },
 
+  setLast(arr, val){
+    arr[arr.length - 1] = val;
+    return arr;
+  },
+
   fst(set, defaultVal){ return O.first(set, defaultVal); },
   isArr(val){ return Array.isArray(val); },
 
