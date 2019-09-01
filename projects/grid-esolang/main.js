@@ -154,7 +154,7 @@ function addEventListeners(){
           push([2, type, stat]);
         },
 
-        /[urdl<bwxi][\+\-\~]?/, (str, gs) => {
+        /[urdlbwxi][\+\-\~]?/, (str, gs) => {
           if(str.length === 1) str += '~';
 
           const type = 'urdlbwxi'.indexOf(str[0]);
