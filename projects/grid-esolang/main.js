@@ -143,18 +143,18 @@ function addEventListeners(){
       };
 
       O.tokenize(src, [
-        /[\^>v<]/, (str, gs) => { debugger;
+        /[\^>v<]/, (str, gs) => {
           push([0, '^>v<'.indexOf(str)]);
         },
 
-        /[urdlbwxi\.][\?\*\:]/, (str, gs) => { debugger;
+        /[urdlbwxi\.][\?\*\:]/, (str, gs) => {
           const type = 'urdlbwxi.'.indexOf(str[0]);
           const stat = '?*:'.indexOf(str[1]);
 
           push([2, type, stat]);
         },
 
-        /[urdl<bwxi][\+\-\~]?/, (str, gs) => { debugger;
+        /[urdl<bwxi][\+\-\~]?/, (str, gs) => {
           if(str.length === 1) str += '~';
 
           const type = 'urdlbwxi'.indexOf(str[0]);
@@ -163,15 +163,15 @@ function addEventListeners(){
           push([1, type, action]);
         },
 
-        /\(/, (str, gs) => { debugger;
+        /\(/, (str, gs) => {
           stack.push([1]);
         },
 
-        /\)/, (str, gs) => { debugger;
+        /\)/, (str, gs) => {
           pop();
         },
 
-        /a/, (str, gs) => { debugger;
+        /a/, (str, gs) => {
           push([4]);
         },
       ], 1, 1);
