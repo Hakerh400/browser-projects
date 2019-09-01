@@ -72,35 +72,46 @@ function main(){
 }
 
 function addEventListeners(){
-  const interval = 50;
+  const interval = 1;
 
   (() => {
     const src = `
-      R+D+L+^L+U+>
-
-      .*(
-        .?()()
-        D*(U+>)U+R+v
-        L*(R+v)R+D+<
-        U*(D+<)D+L+^
-        R*(L+^)L+U+>
+      aiaiai^
+      x:b?(
+        ^i-v>i-<vi-^<i->
+        iaia<iv
+      )(
+        vi?(
+          i^i
+          l?u?r?v>^<
+        )(^>i?(
+          i<i
+          d?l?u?>^<v
+        )(<^i?(
+          ivi
+          r?d?l?^<v>
+        )(
+          v<i>i
+          u?r?d?<v>^
+        )))
       )
-
-      a
     `;
 
-    const input = 'a';
+    const input = '';
 
     const parse = src => {
       src = src.toString().replace(/\s+/g, '').toLowerCase();
 
       const stack = [[1]];
 
-      const needsBlock = () => {
-        const block = O.last(stack);
-        const inst = O.last(block);
+      const needsBlock = (inst=null) => {
+        if(inst === null){
+          const block = O.last(stack);
+          if(block.length === 1) return 0;
+          inst = O.last(block);
+        }
 
-        return inst === null || inst[0] === 2 && (
+        return inst[0] === 2 && (
           inst[2] === 0 && inst.length !== 5 ||
           inst[2] !== 0 && inst.length !== 4
         );
@@ -108,50 +119,59 @@ function addEventListeners(){
 
       const push = inst => {
         const block = O.last(stack);
-        if(needsBlock()) O.last(block).push(inst);
-        else block.push(inst);
+
+        while(!needsBlock(inst) && needsBlock()){
+          O.last(block).push([1, inst]);
+          inst = block.pop();
+        }
+
+        block.push(inst);
       };
 
       const pop = () => {
         const block = stack.pop();
         const prev = O.last(stack);
 
-        if(needsBlock()) return O.last(prev).push(block);
+        if(needsBlock()){
+          const inst = prev.pop();
+          inst.push(block);
+          return push(inst);
+        }
 
         const len = block.length;
         for(let i = 1; i !== len; i++) prev.push(block[i]);
       };
 
       O.tokenize(src, [
-        /[\^>v<]/, (str, gs) => {
+        /[\^>v<]/, (str, gs) => { debugger;
           push([0, '^>v<'.indexOf(str)]);
         },
 
-        /[urdl1-4\.][\?\*\:]/, (str, gs) => {
-          const type = 'urdl1234.'.indexOf(str[0]);
+        /[urdlbwxi\.][\?\*\:]/, (str, gs) => { debugger;
+          const type = 'urdlbwxi.'.indexOf(str[0]);
           const stat = '?*:'.indexOf(str[1]);
 
           push([2, type, stat]);
         },
 
-        /[urdl<1-4][\+\-\~]?/, (str, gs) => {
+        /[urdl<bwxi][\+\-\~]?/, (str, gs) => { debugger;
           if(str.length === 1) str += '~';
 
-          const type = 'urdl1234'.indexOf(str[0]);
+          const type = 'urdlbwxi'.indexOf(str[0]);
           const action = '+-~'.indexOf(str[1]);
 
           push([1, type, action]);
         },
 
-        /\(/, (str, gs) => {
+        /\(/, (str, gs) => { debugger;
           stack.push([1]);
         },
 
-        /\)/, (str, gs) => {
+        /\)/, (str, gs) => { debugger;
           pop();
         },
 
-        /a/, (str, gs) => {
+        /a/, (str, gs) => { debugger;
           push([4]);
         },
       ], 1, 1);
