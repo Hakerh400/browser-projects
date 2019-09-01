@@ -76,14 +76,14 @@ function addEventListeners(){
 
   (() => {
     const src = `
-      >+v+<+^<+^+>
+      R+D+L+^L+U+>
 
       .*(
         .?()()
-        v*(^+>)^+>+v
-        <*(>+v)>+v+<
-        ^*(v+<)v+<+^
-        >*(<+^)<+^+>
+        D*(U+>)U+R+v
+        L*(R+v)R+D+<
+        U*(D+<)D+L+^
+        R*(L+^)L+U+>
       )
 
       a
@@ -123,24 +123,24 @@ function addEventListeners(){
       };
 
       O.tokenize(src, [
-        /[\^>v<1-4\.][\?\*\:]/, (str, gs) => {
-          const type = '^>v<1234.'.indexOf(str[0]);
+        /[\^>v<]/, (str, gs) => {
+          push([0, '^>v<'.indexOf(str)]);
+        },
+
+        /[urdl1-4\.][\?\*\:]/, (str, gs) => {
+          const type = 'urdl1234.'.indexOf(str[0]);
           const stat = '?*:'.indexOf(str[1]);
 
           push([2, type, stat]);
         },
 
-        /[\^>v<][\+\-\~]|[1-4][\+\-\~]?/, (str, gs) => {
+        /[urdl<1-4][\+\-\~]?/, (str, gs) => {
           if(str.length === 1) str += '~';
 
-          const type = '^>v<1234'.indexOf(str[0]);
+          const type = 'urdl1234'.indexOf(str[0]);
           const action = '+-~'.indexOf(str[1]);
 
           push([1, type, action]);
-        },
-
-        /[\^>v<]/, (str, gs) => {
-          push([0, '^>v<'.indexOf(str)]);
         },
 
         /\(/, (str, gs) => {
@@ -242,7 +242,7 @@ function addEventListeners(){
         }
       }
 
-      updateInternals();
+      drawGrid();
       time += interval;
     };
 
