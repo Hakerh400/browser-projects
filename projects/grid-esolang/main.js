@@ -18,8 +18,9 @@ var size = O.urlParam('size', 40);
 var diameter = .7;
 var radius = diameter / 2;
 
-var w = 1920 / size | 0;
-var h = 1080 / size | 0;
+let w = 3;
+let h = 3;
+let cur = new Vector(1, 1);
 
 var autoDraw = IS_BROWSER;
 
@@ -71,6 +72,183 @@ function main(){
 }
 
 function addEventListeners(){
+  const interval = 50;
+
+  (() => {
+    const src = `
+      >+v+<+^<+^+>
+
+      .*(
+        .?()()
+        v*(^+>)^+>+v
+        <*(>+v)>+v+<
+        ^*(v+<)v+<+^
+        >*(<+^)<+^+>
+      )
+
+      a
+    `;
+
+    const input = 'a';
+
+    const parse = src => {
+      src = src.toString().replace(/\s+/g, '').toLowerCase();
+
+      const stack = [[1]];
+
+      const needsBlock = () => {
+        const block = O.last(stack);
+        const inst = O.last(block);
+
+        return inst === null || inst[0] === 2 && (
+          inst[2] === 0 && inst.length !== 5 ||
+          inst[2] !== 0 && inst.length !== 4
+        );
+      };
+
+      const push = inst => {
+        const block = O.last(stack);
+        if(needsBlock()) O.last(block).push(inst);
+        else block.push(inst);
+      };
+
+      const pop = () => {
+        const block = stack.pop();
+        const prev = O.last(stack);
+
+        if(needsBlock()) return O.last(prev).push(block);
+
+        const len = block.length;
+        for(let i = 1; i !== len; i++) prev.push(block[i]);
+      };
+
+      O.tokenize(src, [
+        /[\^>v<1-4\.][\?\*\:]/, (str, gs) => {
+          const type = '^>v<1234.'.indexOf(str[0]);
+          const stat = '?*:'.indexOf(str[1]);
+
+          push([2, type, stat]);
+        },
+
+        /[\^>v<][\+\-\~]|[1-4][\+\-\~]?/, (str, gs) => {
+          if(str.length === 1) str += '~';
+
+          const type = '^>v<1234'.indexOf(str[0]);
+          const action = '+-~'.indexOf(str[1]);
+
+          push([1, type, action]);
+        },
+
+        /[\^>v<]/, (str, gs) => {
+          push([0, '^>v<'.indexOf(str)]);
+        },
+
+        /\(/, (str, gs) => {
+          stack.push([1]);
+        },
+
+        /\)/, (str, gs) => {
+          pop();
+        },
+
+        /a/, (str, gs) => {
+          push([4]);
+        },
+      ], 1, 1);
+
+      return stack[0];
+    };
+
+    const io = new O.IO(input, 0, 1);
+    const stack = [parse(src)];
+
+    let time = O.now;
+
+    const f = () => {
+      if(stack.length === 0) return;
+      O.raf(f)
+
+      const t = O.now;
+      if(t - time < interval) return;
+
+      const block = O.last(stack);
+      const index = block[0]++;
+      if(index === block.length) return stack.pop();
+
+      const inst = block[index];
+      const {x, y} = cur;
+      const d = grid.get(x, y);
+
+      switch(inst[0]){
+        case 0: {
+          move(-inst[1] & 3);
+          break;
+        }
+
+        case 1: {
+          const type = inst[1];
+          const action = inst[2];
+
+          if(type <= 3){
+            const dir = -type & 3;
+            (action === 2 ? gdir(x, y, dir, 1) : action) ?
+              cdir(x, y, dir) : sdir(x, y, dir);
+          }else if(type <= 5){
+            const circ = type - 3;
+            (action === 2 ? d.circ === circ : action) ?
+              ccirc(x, y, circ) : scirc(x, y, circ);
+          }else if(type === 6){
+            (action === 2 ? d.wall : action) ?
+              cwall(x, y) : swall(x, y);
+          }else{
+            (action === 2 ? d.void : action) ?
+              cvoid(x, y) : svoid(x, y);
+          }
+          break;
+        }
+
+        case 2: {
+          const type = inst[1];
+          const stat = inst[2];
+
+          const bool = type <= 3 ? gdir(x, y, -type & 3, 1) :
+            type <= 5 ? d.circ === type - 3 :
+            type === 6 ? d.wall :
+            type === 7 ? d.void : io.read();
+
+          if(stat === 0){
+            const newBlock = bool ? inst[3] : inst[4];
+            newBlock[0] = 1;
+            stack.push(newBlock);
+          }else if(stat === 2 ^ bool){
+            const newBlock = inst[3];
+            newBlock[0] = 1;
+            block[0]--;
+            stack.push(newBlock);
+          }
+          return;
+          break;
+        }
+
+        case 3: {
+          const len = inst.length;
+          for(let i = 1; i !== len; i++) io.write(inst[i]);
+          break;
+        }
+
+        case 4: {
+          applyAlgorithms();
+          break;
+        }
+      }
+
+      updateInternals();
+      time += interval;
+    };
+
+    O.raf(f);
+  })();
+
   var clientX = grid.iw >> 1;
   var clientY = grid.ih >> 1;
 
@@ -78,6 +256,9 @@ function addEventListeners(){
   var mouse = Object.create(null);
 
   ael('keydown', evt => {
+    const ctrl = evt.ctrlKey;
+    const shift = evt.shiftKey;
+
     keys[evt.code] = 1;
 
     switch(evt.code){
@@ -88,13 +269,14 @@ function addEventListeners(){
       case 'KeyC': closeGrid(); break;
       case 'KeyD': divideGrid(); break;
       case 'KeyI': updateInternals(); break;
+      case 'KeyA': crop(1, 1); break;
       case 'Escape': showTextArea(evt); break;
       case 'Digit1': drawGrid(1); break;
 
-      case 'ArrowUp': move(0); break;
-      case 'ArrowLeft': move(1); break;
-      case 'ArrowDown': move(2); break;
-      case 'ArrowRight': move(3); break;
+      case 'ArrowUp': ctrl ? expandUp(1) : shift ? collapseDown(1) : move(0); break;
+      case 'ArrowLeft': ctrl ? expandLeft(1) : shift ? collapseRight(1) : move(1); break;
+      case 'ArrowDown': ctrl ? expandDown(1) : shift ? collapseUp(1) : move(2); break;
+      case 'ArrowRight': ctrl ? expandRight(1) : shift ? collapseLeft(1) : move(3); break;
     }
   });
 
@@ -232,22 +414,21 @@ function addEventListeners(){
   }
 
   function move(dir){
-    var tiles = new Set();
+    grid.get(cur.x, cur.y).cur = 0;
 
-    iterate(1, (x, y, d) => {
-      if(d.circ !== 1) return;
-      if(gdir(x, y, dir, 1)) return;
-
-      var d1 = ndir(x, y, dir, 1).d;
-      if(d1 === null || d1.void) return;
-
-      d.circ = 0;
-      tiles.add(d1);
-    });
-
-    tiles.forEach(d => {
-      d.circ = 1;
-    });
+    if(dir === 0){
+      grid.get(cur.x, --cur.y).cur = 1;
+      if(cur.y === 0) expandUp(1);
+    }else if(dir === 1){
+      grid.get(--cur.x, cur.y).cur = 1;
+      if(cur.x === 0) expandLeft(1);
+    }else if(dir === 2){
+      grid.get(cur.x, ++cur.y).cur = 1;
+      if(cur.y === h - 1) expandDown(1);
+    }else if(dir === 3){
+      grid.get(++cur.x, cur.y).cur = 1;
+      if(cur.x === w - 1) expandRight(1);
+    }
 
     drawGrid();
   }
@@ -340,6 +521,8 @@ function createGrid(){
     return [0, 0, 0, 0];
   });
 
+  grid.get(1, 1).cur = 1;
+
   resetGrid();
 }
 
@@ -355,7 +538,7 @@ function resetGrid(draw=1){
     d.internal = 0;
   });
 
-  if(draw) drawGrid();
+  crop(1, draw);
 }
 
 function closeGrid(){
@@ -393,6 +576,118 @@ function updateInternals(){
   drawGrid();
 }
 
+function expandUp(draw=0){
+  h++;
+  cur.y++;
+  grid.expandUp(draw);
+  for(let x = 0; x !== w; x++)
+    if(gdir(x, 1, 0, 1)) sdir(x, 0, 2);
+  if(draw) drawGrid();
+}
+
+function expandLeft(draw=0){
+  w++;
+  cur.x++;
+  grid.expandLeft(draw);
+  for(let y = 0; y !== h; y++)
+    if(gdir(1, y, 1, 1)) sdir(0, y, 3);
+  if(draw) drawGrid();
+}
+
+function expandDown(draw=0){
+  h++;
+  grid.expandDown(draw);
+  for(let x = 0; x !== w; x++)
+    if(gdir(x, h - 2, 2, 1)) sdir(x, h - 1, 0);
+  if(draw) drawGrid();
+}
+
+function expandRight(draw=0){
+  w++;
+  grid.expandRight(draw);
+  for(let y = 0; y !== h; y++)
+    if(gdir(w - 2, y, 3, 1)) sdir(w - 1, y, 1);
+  if(draw) drawGrid();
+}
+
+function collapseUp(draw=0){
+  if(h === 1) return;
+  h--;
+  cur.y--;
+  grid.collapseUp(draw);
+  if(draw) drawGrid();
+}
+
+function collapseLeft(draw=0){
+  if(w === 1) return;
+  w--;
+  cur.x--;
+  grid.collapseLeft(draw);
+  if(draw) drawGrid();
+}
+
+function collapseDown(draw=0){
+  if(h === 1) return;
+  h--;
+  grid.collapseDown(draw);
+  if(draw) drawGrid();
+}
+
+function collapseRight(draw=0){
+  if(w === 1) return;
+  w--;
+  grid.collapseRight(draw);
+  if(draw) drawGrid();
+}
+
+function expandAll(draw){
+  expandUp(draw);
+  expandLeft(draw);
+  expandDown(draw);
+  expandRight(draw);
+}
+
+function crop(leaveSpace=0, draw=0){
+  if(leaveSpace) expandAll();
+
+  up: while(h !== 1){
+    for(let x = 0; x !== w; x++){
+      const d = grid.get(x, 0);
+      if(d.dir || d.circ || d.wall || d.void || d.cur) break up;
+    }
+    collapseUp();
+  }
+
+  left: while(w !== 1){
+    for(let y = 0; y !== h; y++){
+      const d = grid.get(0, y);
+      if(d.dir || d.circ || d.wall || d.void || d.cur) break left;
+    }
+    collapseLeft();
+  }
+
+  down: while(h !== 1){
+    for(let x = 0; x !== w; x++){
+      const d = grid.get(x, h - 1);
+      if(d.dir || d.circ || d.wall || d.void || d.cur) break down;
+    }
+    collapseDown();
+  }
+
+  right: while(w !== 1){
+    for(let y = 0; y !== h; y++){
+      const d = grid.get(w - 1, y);
+      if(d.dir || d.circ || d.wall || d.void || d.cur) break right;
+    }
+    collapseRight();
+  }
+
+  if(leaveSpace) expandAll();
+
+  grid.resize();
+  if(draw) drawGrid();
+}
+
 /*
   Drawing functions
 */
@@ -423,31 +718,43 @@ function drawGridLines(x, y, d, g){
 }
 
 function drawTile(x, y, d, g){
-  g.strokeStyle = 'black';
+  drawContent: {
+    g.strokeStyle = 'black';
 
-  if(d.void){
-    g.fillStyle = cols.void;
-    g.fillRect(x, y, 1, 1);
-    return;
+    if(d.void){
+      g.fillStyle = cols.void;
+      g.fillRect(x, y, 1, 1);
+      break drawContent;
+    }
+
+    if(d.wall){
+      g.fillStyle = cols.wall;
+      g.fillRect(x, y, 1, 1);
+      grid.drawFrame(x, y, drawWallFrame);
+      break drawContent;
+    }
+
+    if(d.internal){
+      g.fillStyle = RAINBOW_ENABLED ? d.col : cols.internal;
+      g.fillRect(x, y, 1, 1);
+    }
+
+    if(d.circ){
+      g.fillStyle = [cols.blackCirc, cols.whiteCirc][d.circ - 1];
+      g.beginPath();
+      g.arc(x + .5, y + .5, radius, 0, O.pi2);
+      g.fill();
+      g.stroke();
+    }
   }
 
-  if(d.wall){
-    g.fillStyle = cols.wall;
-    g.fillRect(x, y, 1, 1);
-    grid.drawFrame(x, y, drawWallFrame);
-    return;
-  }
-
-  if(d.internal){
-    g.fillStyle = RAINBOW_ENABLED ? d.col : cols.internal;
-    g.fillRect(x, y, 1, 1);
-  }
-
-  if(d.circ){
-    g.fillStyle = [cols.blackCirc, cols.whiteCirc][d.circ - 1];
+  if(d.cur){
+    g.strokeStyle = 'red';
     g.beginPath();
-    g.arc(x + .5, y + .5, radius, 0, O.pi2);
-    g.fill();
+    g.moveTo(x + .5, y + .25);
+    g.lineTo(x + .5, y + .75 + 1 / size);
+    g.moveTo(x + .25, y + .5);
+    g.lineTo(x + .75 + 1 / size, y + .5);
     g.stroke();
   }
 }
@@ -648,7 +955,15 @@ function adjacent(x, y, advanced, func=null){
 }
 
 function getFirstTile(){
-  return activeFragment.internalTiles[0];
+  let tile = null;
+
+  iterate((x, y, d) => {
+    if(tile !== null) return;
+    if(y === h - 1) return tile = [1, 1];
+    if(get(x, 1) === null) tile = [x, y];
+  });
+
+  return tile;
 }
 
 function get(x, y, advanced){
@@ -830,6 +1145,7 @@ function importGrid(str, draw=1){
 */
 
 function applyAlgorithms(){
+  crop(1, 1);
   findFragments();
 
   fragments.forEach(frag => {
@@ -840,6 +1156,7 @@ function applyAlgorithms(){
     checkSnapshot();
   });
 
+  crop(1, 1);
   calcCols();
   drawGrid();
 }
@@ -1317,7 +1634,7 @@ function checkSnapshot(){
   if(!CHECK_SNAPSHOT)
     return;
 
-  var needsChange = true;
+  var needsChange = 1;
   var freeTile = null;
 
   iterate((x, y, d) => {
@@ -1326,7 +1643,7 @@ function checkSnapshot(){
     var dirs = gdirs(x, y);
 
     if(dirs !== d.dirPrev || d.circ !== d.circPrev || d.wall !== d.wallPrev){
-      needsChange = false;
+      needsChange = 0;
       return;
     }
 
@@ -1340,7 +1657,7 @@ function checkSnapshot(){
   }
 }
 
-function calcCols(x = null, y = null){
+function calcCols(x=null, y=null){
   if(!RAINBOW_ENABLED)
     return;
 
