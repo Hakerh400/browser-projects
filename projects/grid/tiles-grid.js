@@ -59,11 +59,9 @@ class TilesGrid{
   }
 
   updateIWH(){
-    if(this.isNode)
-      return;
+    if(this.isNode) return;
 
-    var iw = window.innerWidth;
-    var ih = window.innerHeight;
+    const {iw, ih} = O;
     if(this.iw == iw && this.ih == ih) return;
 
     this.iw = iw;
@@ -71,8 +69,8 @@ class TilesGrid{
     this.iwh = iw / 2;
     this.ihh = ih / 2;
 
-    var g = this.g.g;
-    var canvas = g.canvas;
+    const g = this.g.g;
+    constcanvas = g.canvas;
 
     canvas.width = iw;
     canvas.height = ih;

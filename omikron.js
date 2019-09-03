@@ -2053,6 +2053,15 @@ const O = {
     return O.doc.getElementById(selector);
   },
 
+  qs(parent, selector=null){
+    if(selector === null){
+      selector = parent;
+      parent = O.doc;
+    }
+
+    return parent.querySelector(selector);
+  },
+
   qsa(parent, selector=null){
     if(selector === null){
       selector = parent;

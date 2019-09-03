@@ -18,6 +18,9 @@ var size = O.urlParam('size', 40);
 var diameter = .7;
 var radius = diameter / 2;
 
+const maxWidth = O.iw / size + 2 | 0;
+const maxHeight = O.ih / size + 2 | 0;
+
 let w = 3;
 let h = 3;
 let cur = new Vector(1, 1);
@@ -74,30 +77,75 @@ function main(){
 function addEventListeners(){
   const interval = 1;
 
-  (() => {
-    const src = `
-      aiaiai^
-      x:b?(
-        ^i-v>i-<vi-^<i->
-        iaia<iv
-      )(
-        vi?(
-          i^i
-          l?u?r?v>^<
-        )(^>i?(
-          i<i
-          d?l?u?>^<v
-        )(<^i?(
-          ivi
-          r?d?l?^<v>
-        )(
-          v<i>i
-          u?r?d?<v>^
-        )))
-      )
-    `;
+  const generateSrc = () => {
+    const rand = a => O.rand(a) + 1;
+    const pick = a => O.randElem(a);
 
+    let str = '';
+    let stack = [];
+
+    while(1){
+      if(O.last(stack, 0) === 0 && rand(20) <= stack.length + 1){
+        if(stack.length === 0) break;
+
+        str += ')';
+        stack.pop();
+
+        if(--stack[stack.length - 1] !== 0){
+          str += '(';
+          stack.push(0);
+        }
+
+        continue;
+      }
+
+      switch(rand(6)){
+        case 1: {
+          str += pick('^>v<');
+          break;
+        }
+
+        case 2: {
+          str += `${pick('URDLBWXI')}${pick(['+', '-', ''])}`;
+          break;
+        }
+
+        case 3: {
+          const type = pick('?*:');
+          str += `${pick('URDLBWXI')}${type}(`;
+          stack[stack.length - 1] = type === '?' ? 2 : 1;
+          stack.push(0);
+          break;
+        }
+
+        case 4: {
+          const type = pick('?*:');
+          str += `.${type}(`;
+          stack[stack.length - 1] = type === '?' ? 2 : 1;
+          stack.push(0);
+          break;
+        }
+
+        case 5: {
+          str += `.${O.ca(O.randInt(1, .5), () => O.rand(2)).join('')}`;
+          break;
+        }
+
+        case 6: {
+          str += 'a';
+          break;
+        }
+      }
+    }
+
+    return str;
+  };
+
+  (() => {
+    const src = generateSrc();
     const input = '';
+
+    log(src);
 
     const parse = src => {
       src = src.toString().replace(/\s+/g, '').toLowerCase();
@@ -163,6 +211,16 @@ function addEventListeners(){
           push([1, type, action]);
         },
 
+        /\.([01]+)/, (str, gs) => {
+          const inst = [3];
+          for(const bit of gs[0]) inst.push(bit | 0);
+          push(inst);
+        },
+
+        /a/, (str, gs) => {
+          push([4]);
+        },
+
         /\(/, (str, gs) => {
           stack.push([1]);
         },
@@ -171,8 +229,9 @@ function addEventListeners(){
           pop();
         },
 
-        /a/, (str, gs) => {
-          push([4]);
+        /,/, (str, gs) => {
+          stack.push([1]);
+          pop();
         },
       ], 1, 1);
 
@@ -186,84 +245,98 @@ function addEventListeners(){
 
     const f = () => {
       if(stack.length === 0) return;
-      O.raf(f)
 
-      const t = O.now;
-      if(t - time < interval) return;
+      let err = null;
 
-      const block = O.last(stack);
-      const index = block[0]++;
-      if(index === block.length) return stack.pop();
+      try{
+        const t = O.now;
+        if(t - time < interval) return;
 
-      const inst = block[index];
-      const {x, y} = cur;
-      const d = grid.get(x, y);
+        const block = O.last(stack);
+        const index = block[0]++;
+        if(index === block.length) return stack.pop();
 
-      switch(inst[0]){
-        case 0: {
-          move(-inst[1] & 3);
-          break;
-        }
+        const inst = block[index];
+        const {x, y} = cur;
+        const d = grid.get(x, y);
 
-        case 1: {
-          const type = inst[1];
-          const action = inst[2];
-
-          if(type <= 3){
-            const dir = -type & 3;
-            (action === 2 ? gdir(x, y, dir, 1) : action) ?
-              cdir(x, y, dir) : sdir(x, y, dir);
-          }else if(type <= 5){
-            const circ = type - 3;
-            (action === 2 ? d.circ === circ : action) ?
-              ccirc(x, y, circ) : scirc(x, y, circ);
-          }else if(type === 6){
-            (action === 2 ? d.wall : action) ?
-              cwall(x, y) : swall(x, y);
-          }else{
-            (action === 2 ? d.void : action) ?
-              cvoid(x, y) : svoid(x, y);
+        switch(inst[0]){
+          case 0: {
+            move(-inst[1] & 3);
+            break;
           }
-          break;
-        }
 
-        case 2: {
-          const type = inst[1];
-          const stat = inst[2];
+          case 1: {
+            const type = inst[1];
+            const action = inst[2];
 
-          const bool = type <= 3 ? gdir(x, y, -type & 3, 1) :
-            type <= 5 ? d.circ === type - 3 :
-            type === 6 ? d.wall :
-            type === 7 ? d.void : io.read();
-
-          if(stat === 0){
-            const newBlock = bool ? inst[3] : inst[4];
-            newBlock[0] = 1;
-            stack.push(newBlock);
-          }else if(stat === 2 ^ bool){
-            const newBlock = inst[3];
-            newBlock[0] = 1;
-            block[0]--;
-            stack.push(newBlock);
+            if(type <= 3){
+              const dir = -type & 3;
+              (action === 2 ? gdir(x, y, dir, 1) : action) ?
+                cdir(x, y, dir) : sdir(x, y, dir);
+            }else if(type <= 5){
+              const circ = type - 3;
+              (action === 2 ? d.circ === circ : action) ?
+                ccirc(x, y, circ) : scirc(x, y, circ);
+            }else if(type === 6){
+              (action === 2 ? d.wall : action) ?
+                cwall(x, y) : swall(x, y);
+            }else{
+              (action === 2 ? d.void : action) ?
+                cvoid(x, y) : svoid(x, y);
+            }
+            break;
           }
-          return;
-          break;
+
+          case 2: {
+            const type = inst[1];
+            const stat = inst[2];
+
+            const bool = type <= 3 ? gdir(x, y, -type & 3, 1) :
+              type <= 5 ? d.circ === type - 3 :
+              type === 6 ? d.wall :
+              type === 7 ? d.void : io.read();
+
+            if(stat === 0){
+              const newBlock = bool ? inst[3] : inst[4];
+              newBlock[0] = 1;
+              stack.push(newBlock);
+            }else if(stat === 2 ^ bool){
+              const newBlock = inst[3];
+              newBlock[0] = 1;
+              block[0]--;
+              stack.push(newBlock);
+            }
+            return;
+            break;
+          }
+
+          case 3: {
+            const len = inst.length;
+            // for(let i = 1; i !== len; i++) io.write(inst[i]);
+            break;
+          }
+
+          case 4: {
+            applyAlgorithms();
+            break;
+          }
         }
 
-        case 3: {
-          const len = inst.length;
-          for(let i = 1; i !== len; i++) io.write(inst[i]);
-          break;
-        }
+        drawGrid();
+        time += interval;
+      }catch(e){
+        err = e;
+      }finally{
+        if(err === null) return O.raf(f);
 
-        case 4: {
-          applyAlgorithms();
-          break;
-        }
+        // const {g} = grid;
+        // g.resetTransform();
+        // g.globalAlpha = .5;
+        // g.fillStyle = '#f00';
+        // g.fillRect(0, 0, canvas.width, canvas.height);
+        // g.globalAlpha = 1;
       }
-
-      drawGrid();
-      time += interval;
     };
 
     O.raf(f);
@@ -596,8 +669,12 @@ function updateInternals(){
   drawGrid();
 }
 
+function errTooLargeGrid(){
+  throw new RangeError('Too large grid');
+}
+
 function expandUp(draw=0){
-  h++;
+  if(h++ === maxHeight) errTooLargeGrid();
   cur.y++;
   grid.expandUp(draw);
   for(let x = 0; x !== w; x++)
@@ -606,7 +683,7 @@ function expandUp(draw=0){
 }
 
 function expandLeft(draw=0){
-  w++;
+  if(w++ === maxWidth) errTooLargeGrid();
   cur.x++;
   grid.expandLeft(draw);
   for(let y = 0; y !== h; y++)
@@ -615,7 +692,7 @@ function expandLeft(draw=0){
 }
 
 function expandDown(draw=0){
-  h++;
+  if(h++ === maxHeight) errTooLargeGrid();
   grid.expandDown(draw);
   for(let x = 0; x !== w; x++)
     if(gdir(x, h - 2, 2, 1)) sdir(x, h - 1, 0);
@@ -623,7 +700,7 @@ function expandDown(draw=0){
 }
 
 function expandRight(draw=0){
-  w++;
+  if(w++ === maxWidth) errTooLargeGrid();
   grid.expandRight(draw);
   for(let y = 0; y !== h; y++)
     if(gdir(w - 2, y, 3, 1)) sdir(w - 1, y, 1);
@@ -719,7 +796,7 @@ function clearGrid(){
   g.fillRect(0, 0, w, h);
 }
 
-function drawGrid(important=0){
+function drawGrid(important=1){
   if(!(autoDraw || important)) return;
 
   clearGrid();
