@@ -132,7 +132,7 @@ function addEventListeners(){
         }
 
         case 6: {
-          str += 'a';
+          str += 'A';
           break;
         }
       }
