@@ -5,7 +5,7 @@ O.enhanceRNG();
 const MAX_LENGTH = 150;
 const FONT_SIZE = 32;
 const TEXT_OFFSET = 8;
-const DICE = 1;
+const DICE = 0;
 
 const offset = DICE ? 1 : 0;
 
