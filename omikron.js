@@ -1741,6 +1741,7 @@ const O = {
   pi2: Math.PI * 2,
   pih: Math.PI / 2,
   pi3: Math.PI * 3,
+  pi4: Math.PI / 4,
   pi32: Math.PI * 3 / 2,
   pi34: Math.PI * 3 / 4,
 
@@ -2747,12 +2748,12 @@ const O = {
       yield [i, i / num, num];
   },
 
-  sleep(time){
+  sleep(time=0){
     const t = O.now;
     while(O.now - t < time);
   },
 
-  sleepa(time){
+  sleepa(time=0){
     return new Promise(res => {
       setTimeout(res, time);
     });
