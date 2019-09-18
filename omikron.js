@@ -2776,8 +2776,8 @@ const O = {
   },
 
   hsv(val, col=new Uint8Array(3)){
-    var v = Math.round(val * (256 * 6 - 1)) | 0;
-    var h = v & 255;
+    const v = Math.round((val % 1 + 1) % 1 * (256 * 6 - 1)) | 0;
+    const h = v & 255;
 
     if(v < 256) col[2] = 0, col[0] = 255, col[1] = h;
     else if(v < 256 * 2) col[2] = 0, col[1] = 255, col[0] = 255 - h;
