@@ -12,3 +12,4 @@ sequence-plot
 rug-generator
 grid
 grid-esolang
+tree

@@ -2168,8 +2168,12 @@ const O = {
     g.strokeStyle = 'black';
     g.fillRect(0, 0, w, h);
 
-    if(enhanced)
+    if(enhanced){
       g = new O.EnhancedRenderingContext(g);
+    }else{
+      g.textBaseline = 'middle';
+      g.textAlign = 'center';
+    }
 
     return {
       g, w, h,

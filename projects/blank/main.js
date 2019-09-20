@@ -1,5 +1,5 @@
 'use strict';
 
-main();
+const main = () => {};
 
-function main(){}
+main();
