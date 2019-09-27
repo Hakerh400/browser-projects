@@ -2474,10 +2474,33 @@ const O = {
     }
   },
 
+  buf2bits(buf, pad=0){
+    return Array.from(buf).map(byte => {
+      const s = O.rev(byte.toString(2).padStart(8, '0'));
+      return pad ? `${s}0` : s;
+    }).join('');
+  },
+
   str2bits(str, pad=0){
     return str.split('').map(char => {
-      const s = O.rev(O.cc(char).toString(2).padStart(8, '0'))
+      const s = O.rev(O.cc(char).toString(2).padStart(8, '0'));
       return pad ? `${s}0` : s;
+    }).join('');
+  },
+
+  bits2buf(bits, pad=0){
+    const reg = new RegExp(`[01]{${pad ? 16 : 8}}`, 'g');
+    return O.Buffer.from(O.match(bits.replace(/[^01]/g, ''), reg).map(bits => {
+      bits = pad ? O.match(bits, /[01]{2}/g).map(a => a[1]) : bits.split('');
+      return parseInt(bits.reverse().join(''), 2);
+    }));
+  },
+
+  bits2str(bits, pad=0){
+    const reg = new RegExp(`[01]{${pad ? 16 : 8}}`, 'g');
+    return O.match(bits.replace(/[^01]/g, ''), reg).map(bits => {
+      bits = pad ? O.match(bits, /[01]{2}/g).map(a => a[1]) : bits.split('');
+      return O.sfcc(parseInt(bits.reverse().join(''), 2));
     }).join('');
   },
 
@@ -2606,6 +2629,12 @@ const O = {
   arr2obj(arr, val=1){
     const obj = O.obj();
     for(const key of arr) obj[key] = val;
+    return obj;
+  },
+
+  str2obj(str, val=1){
+    const obj = O.obj();
+    for(const char of str) obj[char] = val;
     return obj;
   },
 
@@ -2749,7 +2778,7 @@ const O = {
 
   *repeatg(num, func){
     for(var i = 0; i !== num; i++)
-      yield [i, i / num, num];
+      yield i;
   },
 
   sleep(time=0){
@@ -2890,18 +2919,6 @@ const O = {
     const match = str.match(reg);
     if(match === null) return [];
     return match;
-  },
-
-  bits2buf(str){
-    str = str.replace(/[^01]/g, '');
-
-    const arr = [];
-    const ss = O.match(str, /.{8}|.+/g);
-
-    for(const s of ss)
-      arr.push(parseInt(O.rev(s), 2));
-
-    return O.Buffer.from(arr);
   },
 
   date(date=O.now){
