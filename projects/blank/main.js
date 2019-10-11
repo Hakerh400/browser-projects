@@ -1,5 +1,7 @@
 'use strict';
 
-const main = () => {};
+const main = () => {
+  document.title = 'about:blank';
+};
 
 main();

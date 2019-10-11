@@ -12,4 +12,5 @@ sequence-plot
 rug-generator
 grid
 grid-esolang
-tree
+tree-visualizer
+graph-visualizer

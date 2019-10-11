@@ -2453,11 +2453,12 @@ const O = {
 
   ftext(str){
     let lines = O.sanl(str);
-    lines = lines.slice(1, lines.length - 1);
+    if(lines.length !== 0 && /^\s*$/.test(lines[0])) lines.shift();
+    if(lines.length !== 0 && /^\s*$/.test(O.last(lines))) lines.pop();
 
     const pad = lines
       .filter(line => line.trim().length !== 0)
-      .reduce((pad, line, i) => Math.min(pad, line.match(/^\s+/)[0].length), Infinity);
+      .reduce((pad, line, i) => Math.min(pad, line.match(/^\s*/)[0].length), Infinity);
 
     return lines.map(line => line.slice(pad)).join('\n');
   },
