@@ -40,8 +40,6 @@ const render = root => {
     stack.push(node[1], node[0]);
   }
 
-  log(root[0] === ns[1]);
-
   const num = ns.length;
   const s = NODE_RADIUS;
   const r = min(wh, hh) * GRAPH_RADIUS_FACTOR / s;
@@ -77,8 +75,7 @@ const render = root => {
 
       g.beginPath();
       g.moveTo(x, y);
-      // O.arc(g, x, y, x1, y1, 1);
-      g.lineTo(x1, y1);
+      O.arc(g, x, y, x1, y1, .5);
       g.stroke();
 
       g.beginPath();

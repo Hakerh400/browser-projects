@@ -2933,13 +2933,17 @@ const O = {
   },
 
   arc(g, ax, ay, bx, by, k){
-    const cx = (ax + bx) / 2, cy = (ay + by) / 2;
-    const dx = cx + k * (ay - cy);
-    const dy = cy - k * (ax - cx);
+    if(k === 0){
+      g.lineTo(bx, by);
+      return;
+    }
 
+    const cx = (ax + bx) / 2, cy = (ay + by) / 2;
     let mx, my;
 
-    if(cx !== dx){
+    if(ay !== by){
+      const dx = cx + (ay - cy) / k;
+      const dy = cy - (ax - cx) / k;
       const kcd = (dy - cy) / (dx - cx);
       mx = (
         (ax * ax + ay * ay - dx * dx - dy * dy) / 2 -
@@ -2948,6 +2952,7 @@ const O = {
       my = kcd * (mx - cx) + cy;
     }else{
       const r = O.dist(ax, ay, cx, cy);
+      if(ax > bx) k = 1 / k;
       mx = cx;
       my = cy + (k * k + 1) * r * r / (2 * k * r) - k * r;
     }
