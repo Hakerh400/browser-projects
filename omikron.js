@@ -1,10 +1,122 @@
 'use strict';
 
+class Set2D{
+  static #sym = Symbol();
+  #d = Set2D.obj();
+
+  constructor(iterable=null){
+    if(iterable !== null)
+      for(const [x, y] of iterable)
+        this.add(x, y);
+  }
+
+  static obj(){
+    const obj = O.obj();
+    obj[this.#sym] = 0;
+    return obj;
+  }
+
+  add(x, y){
+    const d = this.#d;
+    
+    if(y in d){
+      if(x in d[y]) return this;
+      d[y][Set2D.#sym]++;
+    }else{
+      d[y] = Set2D.obj();
+    }
+    
+    d[y][x] = 1;
+    return this;
+  }
+
+  has(x, y){
+    const d = this.#d;
+    return y in d && x in d[y];
+  }
+
+  delete(x, y){
+    const d = this.#d;
+    const sym = Set2D.#sym;
+
+    if(!(y in d && x in d[y])) return 0;
+
+    if(--d[y][this.#sym] === 0) delete d[y];
+    else delete d[y][x];
+
+    return 1;
+  }
+}
+
 class Color extends Uint8ClampedArray{
+  static #g = null;
+
   constructor(r, g, b){
     super(3);
 
     this.set(r, g, b);
+  }
+
+  static getCtx(){
+    const ctx = this.#g;
+    if(ctx !== null) return ctx;
+
+    if(!(O.isBrowser || O.isElectron))
+      throw new TypeError('This functionality is available only in a browser or Electron');
+    
+    const g = document.createElement('canvas').getContext('2d');
+    this.#g = g;
+
+    return g;
+  }
+
+  static isColValid(col){
+    col = String(col);
+    const g = this.getCtx();
+
+    g.fillStyle = '#000000';
+    g.fillStyle = col;
+    const c1 = g.fillStyle;
+
+    g.fillStyle = '#000001';
+    g.fillStyle = col;
+    const c2 = g.fillStyle;
+
+    return c1 === c2;
+  }
+
+  static isColNorm(col){
+    col = String(col);
+    if(!this.isColValid(col)) return 0;
+    return this.colNorm(col) === col;
+  }
+
+  static col2rgb(col){
+    col = String(col);
+    if(!this.isColValid(col)) return null;
+    const g = this.getCtx();
+
+    const str = g.fillStyle;
+    const rgb = O.Buffer.alloc(3);
+
+    rgb[0] = parseInt(str.slice(1, 3), 16);
+    rgb[1] = parseInt(str.slice(3, 5), 16);
+    rgb[2] = parseInt(str.slice(5, 7), 16);
+
+    return rgb;
+  }
+
+  static rgb2col(rgb){
+    return `#${rgb[0].toString(16).padStart(2, '0')
+      }${rgb[1].toString(16).padStart(2, '0')
+      }${rgb[2].toString(16).padStart(2, '0')}`;
+  }
+
+  static colNorm(col){
+    col = String(col);
+    if(!this.isColValid(col)) return null;
+    const g = this.getCtx();
+    return g.fillStyle;
   }
 
   static from(rgb){
@@ -1790,6 +1902,7 @@ const O = {
 
   // Classes
 
+  Set2D,
   Color,
   ImageData,
   EventEmitter,
@@ -2763,9 +2876,89 @@ const O = {
     return buf;
   },
 
-  /*
-    Other functions
-  */
+  // Canvas functions
+
+  fill(g, x, y, col){
+    const {width: w, height: h} = g.canvas;
+    if(x < 0 || y < 0 || x >= w || y >= h) return;
+
+    const w1 = w - 1;
+    const h1 = h - 1;
+
+    const cNew = O.Color.col2rgb(col);
+    if(cNew === null) throw new TypeError('Invalid color');
+
+    const d = new O.ImageData(g);
+    const cOld = O.Buffer.alloc(3);
+
+    d.get(x, y, cOld);
+    if(cNew.equals(cOld)) return;
+
+    const cAux = O.Buffer.alloc(3);
+    const stack = [x, y];
+    const visited = new O.Set2D([stack]);
+
+    while(stack.length !== 0){
+      const y = stack.pop();
+      const x = stack.pop();
+
+      d.set(x, y, cNew);
+
+      if(y !== 0 && !visited.has(x, y - 1)){
+        visited.add(x, y - 1);
+        d.get(x, y - 1, cAux);
+        if(cAux.equals(cOld)) stack.push(x, y - 1);
+      }
+
+      if(x !== w1 && !visited.has(x + 1, y)){
+        visited.add(x + 1, y);
+        d.get(x + 1, y, cAux);
+        if(cAux.equals(cOld)) stack.push(x + 1, y);
+      }
+
+      if(y !== h && !visited.has(x, y + 1)){
+        visited.add(x, y + 1);
+        d.get(x, y + 1, cAux);
+        if(cAux.equals(cOld)) stack.push(x, y + 1);
+      }
+
+      if(x !== 0 && !visited.has(x - 1, y)){
+        visited.add(x - 1, y);
+        d.get(x - 1, y, cAux);
+        if(cAux.equals(cOld)) stack.push(x - 1, y);
+      }
+    }
+
+    d.put();
+  },
+
+  arc(g, ax, ay, bx, by, k){
+    const cx = (ax + bx) / 2, cy = (ay + by) / 2;
+    const dx = cx + k * (ay - cy);
+    const dy = cy - k * (ax - cx);
+
+    let mx, my;
+
+    if(cx !== dx){
+      const kcd = (dy - cy) / (dx - cx);
+      mx = (
+        (ax * ax + ay * ay - dx * dx - dy * dy) / 2 -
+        (ay - dy) * (cy - kcd * cx)
+      ) / (ax - dx + kcd * (ay - dy));
+      my = kcd * (mx - cx) + cy;
+    }else{
+      const r = O.dist(ax, ay, cx, cy);
+      mx = cx;
+      my = cy + (k * k + 1) * r * r / (2 * k * r) - k * r;
+    }
+
+    const a1 = Math.atan2(by - my, bx - mx);
+    const a2 = Math.atan2(ay - my, ax - mx);
+
+    g.arc(mx, my, O.dist(mx, my, ax, ay), a2, a1, k < 0);
+  },
+
+  // Other functions
 
   repeat(num, func){
     for(var i = 0; i !== num; i++)
