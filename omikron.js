@@ -46,6 +46,16 @@ class Set2D{
 
     return 1;
   }
+
+  *[Symbol.iterator](){
+    const d = this.#d;
+
+    for(const y in d){
+      const yn = y | 0;
+      const row = d[y];
+      for(const x in row) yield [x | 0, yn];
+    }
+  }
 }
 
 class Color extends Uint8ClampedArray{
@@ -1887,7 +1897,7 @@ const O = {
 
   // Global data
 
-  glob: null,
+  glob: Object.create(null),
 
   // Time simulation
 
@@ -2980,6 +2990,10 @@ const O = {
   *repeatg(num, func){
     for(var i = 0; i !== num; i++)
       yield i;
+  },
+
+  iteratify(func){
+    return {[Symbol.iterator]: func};
   },
 
   sleep(time=0){

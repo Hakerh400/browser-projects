@@ -1,31 +1,89 @@
 'use strict';
 
+const Node = require('./node');
+
 const {min, max, sqrt, sin, cos, atan2} = Math;
 
 const NODE_RADIUS = 16;
+const FINAL_RADIUS_FACTOR = 1.5;
 const GRAPH_RADIUS_FACTOR = .8;
 const ARROW_SIZE = 15;
+const ARROW_ANGLE = O.pi4;
 
 const {g, w, h, wh, hh} = O.ceCanvas();
 
 const main = () => {
-  const n = 10;
-  const ns = O.ca(n, () => []);
-  const root = ns[0];
+  const graph = getGraph();
+  render(graph);
+};
 
-  ns[0].push(ns[5], ns[5]);
+const getGraph = () => {
+  const {glob} = O;
+  if('graph' in glob) return glob.graph;
+  return generateGraph();
+};
+
+const generateGraph = () => {
+  const n = 10;
+  const map = new Map();
+
+  const ns = O.ca(n, i => {
+    const node = new Node();
+    map.set(node, i);
+    return node;
+  });
+
+  const root = ns[0].set(ns[5], ns[5]);
 
   for(let i = 1; i !== n; i++){
-    if((i & 2) === 0){
-      if((i & 1) === 0) ns[i].push(ns[(i + n - 1) % n], ns[(i + 1) % n]);
-      else ns[i].push(ns[(i + 1) % n], ns[(i + n - 1) % n]);
+    const node = ns[i];
+    const a = (i & 1) === 0;
+    const b = (i & 2) === 0;
+
+    if(b){
+      if(a) node.set(ns[(i + n - 1) % n], ns[(i + 1) % n]);
+      else node.set(ns[(i + 1) % n], ns[(i + n - 1) % n]);
     }else{
-      if((i & 1) === 0) ns[i].push(ns[i], ns[(i + 1) % n]);
-      else ns[i].push(ns[(i + 1) % n], ns[i]);
+      if(a) node.set(node, ns[(i + 1) % n]);
+      else ns[i].set(ns[(i + 1) % n], ns[i]);
     }
+
+    if(a) node.final = 1;
   }
 
-  render(root);
+  const getNodes = root => {
+    const visited = new Set();
+    const map = new Map();
+    const stack = [root];
+    const ns = [];
+
+    while(stack.length !== 0){
+      const node = stack.pop();
+      if(visited.has(node)) continue;
+
+      ns.push(node);
+      visited.add(node);
+      map.set(node, ns.length - 1);
+      
+      stack.push(node[1], node[0]);
+    }
+
+    return [ns, map];
+  };
+
+  const rename = root => {
+    const [ns, map] = getNodes(root);
+    const nsNew = ns.map((n, i) => new Node(O.sfcc(O.cc('A') + i)));
+
+    ns.forEach((node, i) => {
+      const nodeNew = nsNew[i];
+      nodeNew.set(nsNew[map.get(node[0])], nsNew[map.get(node[1])]);
+    });
+
+    return nsNew[0];
+  };
+
+  return rename(root);
 };
 
 const render = root => {
@@ -53,7 +111,7 @@ const render = root => {
   const s = NODE_RADIUS;
   const r = min(wh, hh) * GRAPH_RADIUS_FACTOR / s;
   const as = ARROW_SIZE / s;
-  const aa = O.pi / 4;
+  const aa = ARROW_ANGLE;
 
   g.translate(wh, hh);
   g.scale(s, s);
@@ -74,6 +132,7 @@ const render = root => {
       if(ptri && same) continue;
 
       const ptr = ptri ? ptr1 : ptr0;
+      const radius = ptr.final ? FINAL_RADIUS_FACTOR : 1;
       const j = map.get(ptr);
       const a1 = j / num * O.pi2 - O.pih;
       const x1 = cos(a1) * r;
@@ -94,12 +153,11 @@ const render = root => {
         const [mx, my] = O.arc(g, x, y, x1, y1, .5);
         g.stroke();
 
-        const r2 = 1;
         const R2 = O.dists(mx, my, x, y);
         const a = mx, b = my;
         const c = x1, d = y1;
         const P = 2 * (a - c);
-        const Q = R2 - a * a - b * b + c * c + d * d - r2;
+        const Q = R2 - a * a - b * b + c * c + d * d - radius * radius;
         const dbm = d - b;
         const db = dbm === 0 ? 1e-5 : dbm;
         const db2 = db * db;
@@ -124,7 +182,7 @@ const render = root => {
 
         dir1 = atan2(b - ay, a - ax) + O.pih;
       }else if(ptr === node){
-        const r = 2;
+        const r = radius * 2;
         const d = atan2(y1, x1);
         const xx = x1 + cos(d) * r;
         const yy = y1 + sin(d) * r;
@@ -138,8 +196,8 @@ const render = root => {
         g.lineTo(x1, y1);
         g.stroke();
 
-        ax = x1 + cos(dir);
-        ay = y1 + sin(dir);
+        ax = x1 + cos(dir) * radius;
+        ay = y1 + sin(dir) * radius;
         dir1 = dir;
       }
 
@@ -154,19 +212,28 @@ const render = root => {
   });
 
   O.repeat(num, (i, k) => {
+    const node = ns[i];
     const angle = k * O.pi2 - O.pih;
     const x = cos(angle) * r;
     const y = sin(angle) * r;
 
     g.fillStyle = 'white';
     g.strokeStyle = 'black';
+
+    if(node.final){
+      g.beginPath();
+      g.arc(x, y, FINAL_RADIUS_FACTOR, 0, O.pi2);
+      g.fill();
+      g.stroke();
+    }
+
     g.beginPath();
     g.arc(x, y, 1, 0, O.pi2);
     g.fill();
     g.stroke();
 
     g.fillStyle = 'black';
-    g.fillText(i + 1, x, y);
+    g.fillText(node.name, x, y);
   });
 };
 
