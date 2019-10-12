@@ -1,6 +1,6 @@
 'use strict';
 
-const {min, max, sin, cos, atan2} = Math;
+const {min, max, sqrt, sin, cos, atan2} = Math;
 
 const NODE_RADIUS = 16;
 const GRAPH_RADIUS_FACTOR = .8;
@@ -61,22 +61,67 @@ const render = root => {
     for(let ptri = 0; ptri !== 2; ptri++){
       const ptr = node[ptri];
 
-      const angle1 = map.get(ptr) / num * O.pi2 - O.pih;
-      const x1 = cos(angle1) * r;
-      const y1 = sin(angle1) * r;
+      const j = map.get(ptr);
+      const a1 = j / num * O.pi2 - O.pih;
+      const x1 = cos(a1) * r;
+      const y1 = sin(a1) * r;
 
       const dir = atan2(y - y1, x - x1);
-      const dir1 = dir;
-      const ax = x1 + cos(dir1);
-      const ay = y1 + sin(dir1);
 
       g.fillStyle = ptri === 0 ? '#00f' : '#f00';
-      g.strokeStyle = ptri === 0 ? '#00f' : '#f00';
+      g.strokeStyle = g.fillStyle;
 
-      g.beginPath();
-      g.moveTo(x, y);
-      O.arc(g, x, y, x1, y1, .5);
-      g.stroke();
+      let ax, ay, dir1;
+
+      if(i > j && (ptr[0] === node || ptr[1] === node)){
+        g.beginPath();
+        g.moveTo(x, y);
+        const [mx, my] = O.arc(g, x, y, x1, y1, .5);
+        g.stroke();
+
+        const r2 = 1;
+        const R2 = O.dists(mx, my, x, y);
+        const a = mx, b = my;
+        const c = x1, d = y1;
+        const P = 2 * (a - c);
+        const Q = R2 - a * a - b * b + c * c + d * d - r2;
+        const db = d - b;
+        const db2 = db * db;
+        const M = Q - 4 * db * b;
+        const A = 4 * db2 + P * P;
+        const B = P * (M + Q) - 8 * a * db2;
+        const C = Q * M - 4 * db2 * (R2 - a * a - b * b);
+        const D = B * B - 4 * A * C;
+
+        const p1 = -B / (2 * A);
+        const p2 = -sqrt(D) / (2 * A);
+        const ax1 = p1 + p2;
+        const ax2 = p1 - p2;
+        const ay1 = (P * ax1 + Q) / (2 * db);
+        const ay2 = (P * ax2 + Q) / (2 * db);
+
+        const d1 = O.dists(ax1, ay1, x, y);
+        const d2 = O.dists(ax2, ay2, x, y);
+
+        if(d1 < d2){
+          ax = ax1;
+          ay = ay1;
+          dir1 = atan2(b - ay, a - ax) + O.pih;
+        }else{
+          ax = ax2;
+          ay = ay2;
+          dir1 = atan2(b - ay, a - ax) + O.pih;
+        }
+      }else{
+        g.beginPath();
+        g.moveTo(x, y);
+        g.lineTo(x1, y1);
+        g.stroke();
+
+        ax = x1 + cos(dir);
+        ay = y1 + sin(dir);
+        dir1 = dir;
+      }
 
       g.beginPath();
       g.moveTo(ax, ay);
@@ -84,16 +129,6 @@ const render = root => {
       g.lineTo(ax + cos(dir1 + aa) * as, ay + sin(dir1 + aa) * as);
       g.fill();
     }
-
-    g.fillStyle = 'white';
-    g.strokeStyle = 'black';
-    g.beginPath();
-    g.arc(x, y, 1, 0, O.pi2);
-    g.fill();
-    g.stroke();
-
-    g.fillStyle = 'black';
-    g.fillText(i + 1, x, y);
   });
 
   O.repeat(num, (i, k) => {

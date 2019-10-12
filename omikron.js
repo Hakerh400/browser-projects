@@ -2935,7 +2935,7 @@ const O = {
   arc(g, ax, ay, bx, by, k){
     if(k === 0){
       g.lineTo(bx, by);
-      return;
+      return null;
     }
 
     const cx = (ax + bx) / 2, cy = (ay + by) / 2;
@@ -2961,6 +2961,8 @@ const O = {
     const a2 = Math.atan2(ay - my, ax - mx);
 
     g.arc(mx, my, O.dist(mx, my, ax, ay), a2, a1, k < 0);
+
+    return [mx, my];
   },
 
   // Other functions
@@ -3031,6 +3033,16 @@ const O = {
     const dx = x2 - x1;
     const dy = y2 - y1;
     return Math.sqrt(dx * dx + dy * dy);
+  },
+
+  dists(x1, y1, x2, y2){
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    return dx * dx + dy * dy;
+  },
+
+  distm(x1, y1, x2, y2){
+    return Math.abs(x2 - x1) + Math.abs(y2 - y1);
   },
 
   enum(arr){
@@ -3148,6 +3160,8 @@ const O = {
   sfcc(cc){ return String.fromCharCode(cc); },
   hex(val, bytesNum){ return val.toString(16).toUpperCase().padStart(bytesNum << 1, '0'); },
   hypot(x, y){ return Math.sqrt(x * x + y * y); },
+  hypots(x, y){ return x * x + y * y; },
+  hypotm(x, y){ return Math.abs(x) + Math.abs(y); },
   sf(val){ return JSON.stringify(val, null, 2); },
   rev(str){ return str.split('').reverse().join(''); },
   has(obj, key){ return Object.hasOwnProperty.call(obj, key); },
