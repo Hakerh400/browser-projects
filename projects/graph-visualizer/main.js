@@ -78,6 +78,7 @@ const generateGraph = () => {
     ns.forEach((node, i) => {
       const nodeNew = nsNew[i];
       nodeNew.set(nsNew[map.get(node[0])], nsNew[map.get(node[1])]);
+      if(node.final) nodeNew.final = 1;
     });
 
     return nsNew[0];
@@ -182,7 +183,7 @@ const render = root => {
 
         dir1 = atan2(b - ay, a - ax) + O.pih;
       }else if(ptr === node){
-        const r = radius * 2;
+        const r = radius * 1.5;
         const d = atan2(y1, x1);
         const xx = x1 + cos(d) * r;
         const yy = y1 + sin(d) * r;
