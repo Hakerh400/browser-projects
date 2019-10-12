@@ -14,7 +14,7 @@ const main = () => {
   const root = ns[0];
 
   for(let i = 0; i !== n; i++)
-    ns[i].push(ns[(i + 1) % n], ns[(i + 2) % n]);
+    ns[i].push(ns[(i + n - 1) % n], ns[(i + 1) % n]);
 
   render(root);
 };
@@ -103,15 +103,10 @@ const render = root => {
         const d1 = O.dists(ax1, ay1, x, y);
         const d2 = O.dists(ax2, ay2, x, y);
 
-        if(d1 < d2){
-          ax = ax1;
-          ay = ay1;
-          dir1 = atan2(b - ay, a - ax) + O.pih;
-        }else{
-          ax = ax2;
-          ay = ay2;
-          dir1 = atan2(b - ay, a - ax) + O.pih;
-        }
+        if(d1 < d2) ax = ax1, ay = ay1;
+        else ax = ax2, ay = ay2;
+
+        dir1 = atan2(b - ay, a - ax) + O.pih;
       }else{
         g.beginPath();
         g.moveTo(x, y);
