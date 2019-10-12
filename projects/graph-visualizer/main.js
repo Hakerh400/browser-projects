@@ -73,7 +73,7 @@ const generateGraph = () => {
 
   const rename = root => {
     const [ns, map] = getNodes(root);
-    const nsNew = ns.map((n, i) => new Node(O.sfcc(O.cc('A') + i)));
+    const nsNew = ns.map((n, i) => new Node().setName(O.sfcc(O.cc('A') + i)));
 
     ns.forEach((node, i) => {
       const nodeNew = nsNew[i];

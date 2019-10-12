@@ -2673,7 +2673,7 @@ const O = {
 
       if(match === null){
         const i = str.search(/[\r\n]/);
-        const s = i !== -i ? str.slice(0, i) : str;
+        const s = i !== -1 ? str.slice(0, i) : str;
 
         if(throwOnError) throw new SyntaxError(`Invalid syntax near ${O.sf(s)}`);
 
