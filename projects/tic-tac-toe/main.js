@@ -97,7 +97,7 @@ const getRoot = () => {
       }
 
       if(win !== 0){
-        frame.cost = (win === 1 ? 1 : -1) / level;
+        frame.cost = (win === 1 ? 1 : -1) / (level + 1);
         stack.pop();
         continue;
       }
