@@ -7,7 +7,7 @@ const FACTOR = .8;
 const {g, w, h, wh, hh} = O.ceCanvas();
 
 const main = () => {
-  const path = 'A B C E G H L N P Q S T R O M K J I F D';
+  const path = 'D F I J K M O R T S Q P N H G E A B C L';
 
   const orig = [
     [62.0, 58.4],
@@ -50,6 +50,8 @@ const main = () => {
     c[1] = y1 + (yMax - c[1]) * s;
   }
 
+  log(O.match(path.toLowerCase(), /[a-z]/g).map(a => O.cc(a) - O.cc('a') + 1).join(' '));
+
   g.lineWidth = 3;
   g.strokeStyle = 'red';
   g.beginPath();
@@ -68,11 +70,11 @@ const main = () => {
   });
   log(cost);
 
-  g.font = '72px arial';
+  g.font = '50px arial';
   g.fillStyle = 'black';
   for(let i = 0; i !== cs.length; i++){
     const [x, y] = cs[i];
-    g.fillText(O.sfcc(O.cc('A') + i), x, y);
+    g.fillText(i + 1, x, y);
   }
 
   g.stroke();
