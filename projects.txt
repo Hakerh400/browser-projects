@@ -16,3 +16,4 @@ tree-visualizer
 graph-visualizer
 tsp
 tic-tac-toe
+gradient

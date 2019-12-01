@@ -646,7 +646,7 @@ class Grid{
     const {w, h} = this;
 
     if(!this.includes(x, y)){
-      if(!wrap) return null;
+      if(!wrap) return;
       x = ((x % w) + w) % w;
       y = ((y % h) + h) % h;
     }
@@ -2300,10 +2300,12 @@ const O = {
 
     return {
       g, w, h,
-      wh : w / 2,
-      hh : h / 2,
       w1: w - 1,
       h1: h - 1,
+      wh: w / 2,
+      hh: h / 2,
+      whn: w >> 1,
+      hhn: h >> 1,
     };
   },
 
@@ -2864,6 +2866,15 @@ const O = {
 
       if(num >= min) return num;
     }
+  },
+
+  randDiam(diameter){
+    const radius = diameter / 2;
+    return O.randf(-radius, radius);
+  },
+
+  randRad(radius){
+    return O.randf(-radius, radius);
   },
 
   randElem(arr, splice=0, fast=0){
