@@ -17,3 +17,5 @@ graph-visualizer
 tsp
 tic-tac-toe
 gradient
+bit-spiral
+map-coloring

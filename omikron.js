@@ -187,7 +187,7 @@ class Color extends Uint8ClampedArray{
 }
 
 class ImageData{
-  constructor(g=null, clear=false){
+  constructor(g=null, clear=0){
     this.g = null;
 
     this.w = null;
@@ -207,7 +207,7 @@ class ImageData{
     this.h = g.canvas.height;
   }
 
-  fetch(g=this.g, clear=false){
+  fetch(g=this.g, clear=0){
     if(g !== this.g) this.setG(g);
 
     this.imgd = g.getImageData(0, 0, this.w, this.h);
@@ -387,7 +387,7 @@ class Grid{
     if(d === null){
       d = O.ca(h, y => {
         return O.ca(w, x =>{
-          if(func === null) return O.obj();
+          if(func === null) return null;
           return func(x, y);
         });
       });
@@ -2868,12 +2868,12 @@ const O = {
     }
   },
 
-  randDiam(diameter){
-    const radius = diameter / 2;
+  randRad(radius){
     return O.randf(-radius, radius);
   },
 
-  randRad(radius){
+  randDiam(diameter){
+    const radius = diameter / 2;
     return O.randf(-radius, radius);
   },
 

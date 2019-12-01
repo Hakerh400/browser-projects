@@ -2,7 +2,7 @@
 
 const FACTOR = 1 / 256;
 
-const {g, w, h, w1, h1, wh, hh} = O.ceCanvas(0);
+const {g, w, h, w1, h1, wh, hh} = O.ceCanvas();
 
 const main = () => {
   const d = new O.ImageData(g);
