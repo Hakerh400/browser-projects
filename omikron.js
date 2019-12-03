@@ -133,6 +133,10 @@ class Color extends Uint8ClampedArray{
     return new O.Color(rgb[0], rgb[1], rgb[2]);
   }
 
+  static hsv(k){
+    return O.Color.from(O.hsv(k));
+  }
+
   static rand(hsv=0){
     let rgb;
 
@@ -1867,8 +1871,8 @@ const O = {
   pi32: Math.PI * 3 / 2,
   pi34: Math.PI * 3 / 4,
 
-  iw: null,
-  ih: null,
+  get iw(){ return innerWidth},
+  get ih(){ return innerHeight},
 
   static: Symbol('static'),
   project: null,
@@ -1944,9 +1948,6 @@ const O = {
     if(isBrowser){
       if(CHROME_ONLY && global.navigator.vendor !== 'Google Inc.')
         return O.error('Please use Chrome.');
-
-      O.iw = window.innerWidth;
-      O.ih = window.innerHeight;
 
       if(!isElectron){
         global.global = global;
@@ -2307,6 +2308,17 @@ const O = {
       whn: w >> 1,
       hhn: h >> 1,
     };
+  },
+
+  addStyle(pth){
+    const style = O.ce(O.head, 'style');
+    
+    return new Promise(res => {
+      O.rfLocal(pth, (a, b) => {
+        style.innerHTML = b;
+        res();
+      });
+    });
   },
 
   /*

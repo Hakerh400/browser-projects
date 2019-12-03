@@ -19,3 +19,4 @@ tic-tac-toe
 gradient
 bit-spiral
 map-coloring
+draggable-canvas
