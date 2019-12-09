@@ -1871,8 +1871,8 @@ const O = {
   pi32: Math.PI * 3 / 2,
   pi34: Math.PI * 3 / 4,
 
-  get iw(){ return innerWidth},
-  get ih(){ return innerHeight},
+  get iw(){ return innerWidth },
+  get ih(){ return innerHeight },
 
   static: Symbol('static'),
   project: null,
@@ -3310,7 +3310,7 @@ const O = {
   },
 
   noimpl(name){
-    throw new TypeError(`Function ${O.sf(name)} is not implemented`);
+    throw new TypeError(`${O.sf(name)} is not implemented`);
   },
 
   /*
