@@ -20,3 +20,4 @@ gradient
 bit-spiral
 map-coloring
 draggable-canvas
+dots-and-boxes

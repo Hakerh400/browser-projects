@@ -1,7 +1,6 @@
 'use strict';
 
 const ZOOM_FACTOR = .9;
-const DEFAULT_SCALE = 1;
 
 class DraggableCanvas{
   left = 0;
@@ -13,42 +12,55 @@ class DraggableCanvas{
 
   tx = 0;
   ty = 0;
-  scale = DEFAULT_SCALE;
 
   cx = 0;
   cy = 0;
 
+  defaultScale = 1;
+  defaultLineWidth = 1;
+  scale = 1;
+  bgCol = '#fff';
+
   resizable = 0;
   boundOnResize = this.onResize.bind(this);
+
+  renderFunc = null;
+  onMouseDown = null;
+  onMouseUp = null;
+  onMouseMove = null;
 
   constructor(elem){
     this.elem = elem;
 
     const canvas = this.canvas = O.ce(elem, 'canvas');
     const g = this.g = this.canvas.getContext('2d');
-    this.renderFunc = O.nop;
 
-    this.abc();
-    this.resize();
+    this.aels();
+    this.update();
 
     const render = () => {
       const {w, h, wh, hh, tx, ty, scale} = this;
 
       g.resetTransform();
-      g.clearRect(0, 0, w, h);
+      g.fillStyle = this.bgCol;
+      g.fillRect(0, 0, w, h);
 
       g.translate(wh, hh);
       g.scale(scale, scale);
+      g.translate(-tx, -ty);
+
       const whs = wh / scale;
       const hhs = hh / scale;
-      this.renderFunc(tx - whs, ty - hhs, tx + whs, ty + hhs);
+
+      if(this.renderFunc !== null)
+        this.renderFunc(tx - whs, ty - hhs, tx + whs, ty + hhs);
 
       O.raf(render);
     };
     O.raf(render);
   }
 
-  abc(){
+  aels(){
     let clicked = 0;
 
     O.ael('mousemove', evt => {
@@ -63,24 +75,38 @@ class DraggableCanvas{
 
         this.tx -= dx / scale;
         this.ty -= dy / scale;
+        return;
       }
+
+      this.emitCursorEvt(this.onMouseMove, evt);
     });
 
     O.ael('mousedown', evt => {
       this.updateCursor(evt);
 
-      const btn = evt.button;
-      if(btn === 0) clicked = 1;
+      if(evt.shiftKey){
+        const btn = evt.button;
+        if(btn === 0) clicked = 1;
+        return;
+      }
+
+      this.emitCursorEvt(this.onMouseDown, evt);
     });
 
     O.ael('mouseup', evt => {
       this.updateCursor(evt);
 
-      const btn = evt.button;
-      if(btn === 0) clicked = 0;
+      if(clicked){
+        const btn = evt.button;
+        if(btn === 0) clicked = 0;
+        return;
+      }
+
+      this.emitCursorEvt(this.onMouseUp, evt);
     });
 
     O.ael('wheel', evt => {
+      O.pd(evt);
       this.updateCursor(evt);
 
       const {wh, hh, cx, cy, scale} = this;
@@ -101,8 +127,14 @@ class DraggableCanvas{
     });
   }
 
-  render(func){
-    this.renderFunc = func;
+  emitCursorEvt(func, evt){
+    if(func === null) return;
+
+    const {wh, hh, tx, ty, scale, cx, cy} = this;
+    const x = (cx - wh) / scale + tx;
+    const y = (cy - hh) / scale + ty;
+
+    func(evt, x, y);
   }
 
   updateCursor(evt){
@@ -113,7 +145,7 @@ class DraggableCanvas{
     this.cy = cy - top;
   }
 
-  resize(){
+  update(){
     const {elem, canvas, g} = this;
     const {x, y, width: w, height: h} = elem.getBoundingClientRect();
 
@@ -126,6 +158,8 @@ class DraggableCanvas{
     this.h = canvas.height = h;
     this.wh = this.w / 2;
     this.hh = this.h / 2;
+
+    g.lineWidth = this.defaultLineWidth;
   }
 
   setResizable(resizable){
@@ -138,7 +172,7 @@ class DraggableCanvas{
   }
 
   onResize(){
-    this.resize();
+    this.update();
   }
 
   dispose(){
