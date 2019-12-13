@@ -12,11 +12,11 @@ const main = () => {
 
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.font = '8px arial';
+  g.font = '16px arial';
 
   dc.setResizable(1);
 
-  dc.render((x1, y1, x2, y2) => {
+  dc.renderFunc = (x1, y1, x2, y2) => {
     x1 = floor(x1 / 40) * 40;
     y1 = floor(y1 / 40) * 40;
 
@@ -29,7 +29,7 @@ const main = () => {
         g.fillText(max(abs(x), abs(y)) / 40, floor(x / 40) * 40, floor(y / 40) * 40);
       }
     }
-  });
+  };
 };
 
 main();
