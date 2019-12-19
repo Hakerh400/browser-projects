@@ -879,7 +879,7 @@ class MultidimensionalMap{
     let {d} = this;
 
     for(const elem of arr){
-      if(!(elem in d)) return false;
+      if(!(elem in d)) return 0;
       d = d[elem];
     }
 
@@ -890,11 +890,11 @@ class MultidimensionalMap{
     let {d} = this;
 
     for(const elem of arr){
-      if(!(elem in d)) return undefined;
+      if(!(elem in d)) return null;
       d = d[elem];
     }
 
-    return d[this.end];
+    return this.end in d ? d[this.end] : null;
   }
 
   set(arr, val){
@@ -2615,14 +2615,14 @@ const O = {
   buf2bits(buf, pad=0){
     return Array.from(buf).map(byte => {
       const s = O.rev(byte.toString(2).padStart(8, '0'));
-      return pad ? `${s}0` : s;
+      return pad ? s.replace(/./g, a => `1${a}`) : s;
     }).join('');
   },
 
   str2bits(str, pad=0){
     return str.split('').map(char => {
       const s = O.rev(O.cc(char).toString(2).padStart(8, '0'));
-      return pad ? `${s}0` : s;
+      return pad ? s.replace(/./g, a => `1${a}`) : s;
     }).join('');
   },
 
