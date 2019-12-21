@@ -1820,7 +1820,7 @@ class Serializable{
   reser(){ return this.deser(new O.Serializer(this.ser().getOutput())); }
 }
 
-class Stringifyable{
+class Stringifiable{
   toStr(){ O.virtual('toStr'); }
 
   toString(){
@@ -1959,7 +1959,7 @@ const O = {
   IO,
   Serializer,
   Serializable,
-  Stringifyable,
+  Stringifiable,
   Semaphore,
 
   init(loadProject=1){

@@ -15,6 +15,7 @@ const main = () => {
   g.font = '16px arial';
 
   dc.setResizable(1);
+  dc.show();
 
   dc.renderFunc = (x1, y1, x2, y2) => {
     x1 = floor(x1 / 40) * 40;
