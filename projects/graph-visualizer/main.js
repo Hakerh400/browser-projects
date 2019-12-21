@@ -151,7 +151,7 @@ const render = root => {
       if(i > j && (ptr[0] === node || ptr[1] === node)){
         g.beginPath();
         g.moveTo(x, y);
-        const [mx, my] = O.arc(g, x, y, x1, y1, .5);
+        const [mx, my] = O.drawArc(g, x, y, x1, y1, .5);
         g.stroke();
 
         const R2 = O.dists(mx, my, x, y);

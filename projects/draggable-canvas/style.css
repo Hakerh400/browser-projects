@@ -1,0 +1,11 @@
+.draggable-canvas{
+  transition: opacity .5s;
+}
+
+.draggable-canvas.visible{
+  opacity: 1;
+}
+
+.draggable-canvas.hidden{
+  opacity: 0;
+}
