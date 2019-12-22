@@ -1,5 +1,6 @@
 .draggable-canvas{
-  transition: opacity .5s;
+  position: absolute;
+  transition: opacity 1s;
 }
 
 .draggable-canvas.visible{

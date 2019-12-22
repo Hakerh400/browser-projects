@@ -1,11 +1,14 @@
 {
   "menu": {
     "bg": [49, 131, 238],
+    "titleFill": [0, 0, 0],
+    "titleStroke": [255, 255, 255],
     "line": [215, 215, 215],
     "btn": [0, 90, 151],
     "btnText": [215, 215, 215],
     "btnSelected": [50, 150, 151],
-    "btnCursor": [0, 201, 246]
+    "btnCursor": [0, 201, 246],
+    "bgShape": [99, 156, 231]
   },
 
   "world": {

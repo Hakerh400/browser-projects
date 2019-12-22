@@ -3,11 +3,16 @@
 const {min, max} = Math;
 
 const ZOOM_FACTOR = .9;
+const FADE_OUT_TIME = 1e3;
+const FADE_OUT_DELAY = 1e3;
+const DEFAULT_FONT = 16;
 
 const ctxProps = [
   'fillStyle',
   'strokeStyle',
   'lineWidth',
+  'lineCap',
+  'lineJoin',
   'textBaseline',
   'textAlign',
   'font',
@@ -32,12 +37,19 @@ class DraggableCanvas{
   scale = 1;
   bg = '#fff';
 
-  resizable = 0;
+  #font = null;
+
   visible = 0;
+  paused = 1;
+  draggable = 1;
+  resizable = 1;
 
   locked = 0;
   clicked = 0;
   dragged = 0;
+
+  removed = 0;
+  removedElem = 0;
 
   listeners = new Map();
   boundRender = this.render.bind(this);
@@ -62,31 +74,63 @@ class DraggableCanvas{
     const canvas = this.canvas = O.ce(elem, 'canvas');
     const g = this.g = this.canvas.getContext('2d');
 
+    g.font = DEFAULT_FONT;
+
     canvas.classList.add('draggable-canvas', 'hidden');
+
+    this.update();
   }
 
-  show(){
+  show(cb=null){
+    if(this.removed)
+      throw new TypeError('Cannot show a removed canvas');
+
     const {canvas} = this;
     
     canvas.classList.remove('hidden');
     canvas.classList.add('visible');
     this.visible = 1;
 
+    this.resume();
     this.update();
-    this.aels();
 
     if(!this.renderScheduled)
       this.boundRender();
+
+    if(cb !== null)
+      setTimeout(cb, FADE_OUT_TIME + FADE_OUT_DELAY);
   }
 
-  hide(){
+  hide(cb=null){
     const {canvas} = this;
 
     canvas.classList.remove('visible');
     canvas.classList.add('hidden');
     this.visible = 0;
 
+    this.pause();
+
+    if(cb !== null)
+      setTimeout(cb, FADE_OUT_TIME + FADE_OUT_DELAY);
+  }
+
+  pause(){
     this.rels();
+    this.paused = 1;
+  }
+
+  resume(){
+    this.aels();
+    this.paused = 0;
+  }
+
+  get font(){
+    return this.#font;
+  }
+
+  set font(font){
+    this.#font = font;
+    this.g.font = `${font}px arial`;
   }
 
   render(){
@@ -119,6 +163,7 @@ class DraggableCanvas{
     this.ael('mousemove', evt => {
       const {cx, cy} = this;
       this.updateCursor(evt);
+      if(!this.draggable) return;
 
       if(this.clicked){
         const {scale} = this;
@@ -166,7 +211,7 @@ class DraggableCanvas{
       O.pd(evt);
       this.updateCursor(evt);
       this.emitEvt(this.onWheel, evt);
-      if(!this.resizable) return;
+      if(this.locked || !this.resizable) return;
 
       const {wh, hh, cx, cy, scale} = this;
       const k = evt.deltaY < 0 ? 1 / ZOOM_FACTOR : ZOOM_FACTOR;
@@ -258,12 +303,14 @@ class DraggableCanvas{
     this.locked = 1;
     this.clicked = 0;
     this.dragged = 0;
+    return this;
   }
 
   unlock(){
     this.locked = 0;
     this.clicked = 0;
     this.dragged = 0;
+    return this;
   }
 
   setRect(x1, y1, x2, y2){
@@ -312,6 +359,11 @@ class DraggableCanvas{
     Object.assign(g, ctxData);
   }
 
+  setDraggavle(draggable){
+    this.draggable = draggable;
+    return this;
+  }
+
   setResizable(resizable){
     this.resizable = resizable;
     return this;
@@ -325,8 +377,25 @@ class DraggableCanvas{
     this.homeBtn = null;
   }
 
-  dispose(){
-    this.canvas.remove();
+  replaceWith(dc, cb){
+    this.pause();
+
+    dc.show(() => {
+      this.remove(cb);
+    });
+  }
+
+  remove(cb=null){
+    this.removed = 1;
+
+    const removeElem = () => {
+      this.canvas.remove();
+      this.removedElem = 1;
+      if(cb !== null) cb();
+    };
+
+    if(this.visible) this.hide(removeElem);
+    else removeElem();
   }
 }
 

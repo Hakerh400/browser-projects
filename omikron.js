@@ -3047,16 +3047,29 @@ const O = {
     return [mx, my];
   },
 
-  drawStar(g, x, y, r1, r2, num, rot=0){
+  drawStar(g, x, y, r1, r2, spikes, rot=0){
     const {sin, cos} = Math;
     const {pi2} = O;
 
-    for(let i = 0; i !== num; i++){
-      const angle1 = rot + (i / num) * pi2;
-      const angle2 = rot + (i + .5) / num * pi2;
+    for(let i = 0; i !== spikes; i++){
+      const angle1 = rot + (i / spikes) * pi2;
+      const angle2 = rot + (i + .5) / spikes * pi2;
 
       g.lineTo(x + cos(angle1) * r2, y + sin(angle1) * r2);
       g.lineTo(x + cos(angle2) * r1, y + sin(angle2) * r1);
+    }
+
+    g.closePath();
+  },
+
+  drawPolygon(g, x, y, r, verts, rot=0){
+    const {sin, cos} = Math;
+    const {pi2} = O;
+
+    for(let i = 0; i !== verts; i++){
+      const angle = rot + i / verts * pi2;
+
+      g.lineTo(x + cos(angle) * r, y + sin(angle) * r);
     }
 
     g.closePath();
