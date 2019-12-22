@@ -10,7 +10,7 @@
       "info": "About the game",
       "humanVsHuman": "Human versus human",
       "humanVsComputer": "Human versus computer",
-      "homputerVsComputer": "Computer versus computer",
+      "computerVsComputer": "Computer versus computer",
       "newGame": "New game",
       "loadGame": "Load game"
     }

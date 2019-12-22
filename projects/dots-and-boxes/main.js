@@ -64,7 +64,7 @@ const main = () => {
       return menu.update(titles.gameMode, [
         btns.humanVsHuman,
         btns.humanVsComputer,
-        btns.homputerVsComputer,
+        btns.computerVsComputer,
       ]);
     }
 
