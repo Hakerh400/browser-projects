@@ -71,12 +71,13 @@ class DraggableCanvas{
   constructor(elem){
     this.elem = elem;
 
-    const canvas = this.canvas = O.ce(elem, 'canvas');
-    const g = this.g = this.canvas.getContext('2d');
-
-    g.font = DEFAULT_FONT;
+    const canvas = this.canvas = O.doc.createElement('canvas');
 
     canvas.classList.add('draggable-canvas', 'hidden');
+    elem.appendChild(canvas);
+    
+    const g = this.g = this.canvas.getContext('2d');
+    g.font = DEFAULT_FONT;
 
     this.update();
   }
@@ -86,7 +87,7 @@ class DraggableCanvas{
       throw new TypeError('Cannot show a removed canvas');
 
     const {canvas} = this;
-    
+  
     canvas.classList.remove('hidden');
     canvas.classList.add('visible');
     this.visible = 1;
@@ -115,11 +116,13 @@ class DraggableCanvas{
   }
 
   pause(){
+    if(this.paused) return;
     this.rels();
     this.paused = 1;
   }
 
   resume(){
+    if(!this.paused) return;
     this.aels();
     this.paused = 0;
   }
@@ -163,9 +166,8 @@ class DraggableCanvas{
     this.ael('mousemove', evt => {
       const {cx, cy} = this;
       this.updateCursor(evt);
-      if(!this.draggable) return;
 
-      if(this.clicked){
+      if(this.draggable && this.clicked){
         const {scale} = this;
 
         const dx = this.cx - cx;
@@ -349,6 +351,8 @@ class DraggableCanvas{
     for(const prop of ctxProps)
       ctxData[prop] = g[prop];
 
+    const lineDash = g.getLineDash();
+
     this.left = x;
     this.top = y;
     this.w = canvas.width = w;
@@ -357,9 +361,11 @@ class DraggableCanvas{
     this.hh = this.h / 2;
 
     Object.assign(g, ctxData);
+
+    g.setLineDash(lineDash);
   }
 
-  setDraggavle(draggable){
+  setDraggable(draggable){
     this.draggable = draggable;
     return this;
   }

@@ -14,8 +14,11 @@ const load = () => new Promise((res, rej) => {
 
     O.ael(reader, 'load', evt => {
       const {result} = reader;
-      const str = result.slice(result.indexOf(',') + 1);
 
+      const index = result.indexOf(',');
+      if(index === -1) return res(O.Buffer.alloc(0));
+
+      const str = result.slice(index + 1);
       res(O.Buffer.from(str, 'base64'));
     });
 
@@ -32,11 +35,8 @@ const load = () => new Promise((res, rej) => {
     const t = O.now;
 
     const check = () => {
-      const {files} = fileInput;
-
-      if(files.length !== 0) return onInput();
-      if(O.now - t > 1e3) return ret();
-
+      if(fileInput.files.length !== 0) return onInput();
+      if(O.now - t > 1e3) return res(null);
       O.raf(check);
     };
 

@@ -5,12 +5,23 @@ const LS = require('./local-strings');
 const Button = require('./button');
 const BGShape = require('./bg-shape');
 const fileLoader = require('./file-loader');
+const Grid = require('./grid');
+const Tile = require('./tile');
+const AI = require('./ai');
 const colors = require('./colors');
 const links = require('./links');
 
-const {min, max, floor, round, sin, cos} = Math;
+const {min, max, floor, ceil, round, sin, cos} = Math;
 const {pi, pi2, pih, pi4, pi32, pi34} = O;
 
+const AUTO_PLAY = 1;
+
+const SEARCH_DEPTH_BOUNDS = [1, 5];
+
+const TITLE_FONT = 50;
+const TITLE_OFFSET = 85;
+
+const BTN_FONT = 24;
 const BTN_WIDTH = 400;
 const BTN_HEIGHT = 50;
 const BTN_CORNER_RADIUS = 15;
@@ -22,6 +33,9 @@ const BG_SHAPES_NUM = 10;
 const BG_SHAPE_DIAM = [30, 80];
 const BG_SHAPE_SPEED = [1, 2];
 const BG_SHAPE_ROT_SPEED = [pi / 300, pi / 150];
+
+const ERR_FONT = 24;
+const ERR_OFFSET = 20;
 
 const TILE_SIZE = 40;
 const DOT_RADIUS = .15;
@@ -40,16 +54,89 @@ const main = () => {
     }
   }
 
-  const {titles, buttons: btns} = LS.menu;
+  createMenu().show();
+};
+
+const createMenu = () => {
+  const {
+    menu: {titles, buttons: btns},
+    errors: errs,
+  } = LS;
+
+  const sizeBtns = O.ca(8, i => String(i + 2));
 
   const opts = O.arr2obj([
     'play',
-    'gameMode',
-    'grid',
+    'player1',
+    'player2',
+    'gridInfo',
     'level',
     'depth',
     'stepByStep',
   ], null);
+
+  const getPlayerId = () => {
+    const p1 = opts.player1;
+    const p2 = opts.player2;
+    const p = p1 !== null && p1[0] === 1 && p1.length === 1 ? 1 :
+      p2 !== null && p2[0] === 1 && p2.length === 1 ? 2 : null;
+
+    return p;
+  };
+
+  const askForPlayerInfo = cb => {
+    const p = getPlayerId();
+    if(p === null) return cb();
+
+    const pstr = `player${p}`;
+    const forStr = ` ${titles.for} ${titles[pstr]}`;
+    const info = opts[pstr];
+
+    const getTitle = opt => {
+      return titles[opt] + forStr;
+    };
+
+    menu.update(getTitle('strength'), [
+      btns.beginner,
+      btns.advanced,
+      btns.pro,
+    ], opt => {
+      info.push(opt);
+
+      let depth = 3;
+
+      const inc = () => {
+        if(depth !== SEARCH_DEPTH_BOUNDS[1]) depth++;
+      };
+
+      const dec = () => {
+        if(depth !== SEARCH_DEPTH_BOUNDS[0]) depth--;
+      };
+
+      const depthStr = () => {
+        return `${getTitle('depth')}: ${depth}`;
+      };
+
+      const onUpdateDepth = opt => {
+        if(opt === 0) return finish();
+        else if(opt === 1) inc();
+        else if(opt === 2) dec();
+
+        menu.title = depthStr();
+      };
+
+      const finish = () => {
+        info.push(depth);
+        cb();
+      };
+
+      menu.update(depthStr(), [
+        btns.ok,
+        btns.increment,
+        btns.decrement,
+      ], onUpdateDepth);
+    });
+  };
 
   const onPickOpt = opt => {
     if(opts.play === null){
@@ -61,33 +148,137 @@ const main = () => {
 
       opts.play = 1;
 
-      return menu.update(titles.gameMode, [
-        btns.humanVsHuman,
-        btns.humanVsComputer,
-        btns.computerVsComputer,
+      return menu.update(titles.player1, [
+        btns.human,
+        btns.computer,
       ]);
     }
 
-    if(opts.gameMode === null){
-      opts.gameMode = opt;
+    if(opts.player1 === null){
+      opts.player1 = [opt];
 
-      return menu.update(titles.createGame, [
-        btns.newGame,
-        btns.loadGame,
-      ]);
+      return askForPlayerInfo(() => {
+        menu.update(titles.player2, [
+          btns.human,
+          btns.computer,
+        ], onPickOpt);
+      });
     }
 
-    if(opts.grid === null){
+    if(opts.player2 === null){
+      opts.player2 = [opt];
+
+      return askForPlayerInfo(() => {
+        menu.update(titles.createGame, [
+          btns.newGame,
+          btns.loadGame,
+        ], onPickOpt);
+      });
+    }
+
+    const gridInfo = opts.gridInfo;
+
+    if(gridInfo === null){
+      if(opt === 0){
+        opts.gridInfo = [0];
+        return menu.update(titles.gridWidth, sizeBtns);
+      }
+
       menu.pause();
 
       fileLoader.load().then(buf => {
-        log(buf.toString());
+        if(buf === null){
+          menu.resume();
+          return;
+        }
+
+        const str = buf.toString().trimRight();
+        if(str === '') return menu.err(errs.missingGridSize);
+
+        const lines = O.sanl(str);
+        const match = lines[0].match(/^([2-9]) ([2-9])$/);
+        if(match === null) return menu.err(errs.invalidSize);
+
+        const w = match[1] | 0;
+        const h = match[2] | 0;
+        const grid = new Grid(w, h);
+        const moves = [];
+
+        for(let i = 1; i !== lines.length; i++){
+          const err = msg => {
+            menu.err(`${errs.errAtLine} ${i + 1}: ${msg}`, 0);
+          };
+
+          const line = lines[i].toLowerCase();
+          if(line.length !== 2) return err(errs.expectedTwoChars);
+
+          const c1 = line[0];
+          const c2 = line[1];
+
+          const d1 = /[0-9]/.test(c1);
+          const d2 = /[0-9]/.test(c2);
+          const w1 = /[a-z]/.test(c1);
+          const w2 = /[a-z]/.test(c2);
+
+          if(d1 + d2 !== 1 || w1 + w2 !== 1 || d1 + w2 === 1 || w1 + d2 === 1)
+            return err(errs.invalidMove);
+
+          const cc1 = O.cc(c1);
+          const cc2 = O.cc(c2);
+
+          const type = d1 ? 0 : 1;
+          const x = cc2 - (type === 0 ? 97 : 48);
+          const y = cc1 - (type === 1 ? 97 : 48);
+
+          const tile = grid.get(x, y);
+          if(tile === null || (x === w && type === 0) || (y === h && type === 1)) return err(errs.outsideGrid);
+          if(tile.dirs & (1 << type)) return err(errs.duplicateLine);
+
+          tile.dirs |= 1 << type;
+          moves.push([x, y, type]);
+        }
+
+        opts.gridInfo = [1, grid, moves];
+        nextMenuOpts();
       }).catch(err => {
+        throw err;
+        menu.err(err.message, 0);
         menu.resume();
       });
 
       return;
     }
+
+    if(gridInfo[0] === 0 && gridInfo.length !== 4){
+      if(gridInfo.length === 1){
+        gridInfo.push(opt + 2);
+        return menu.update(titles.gridHeight, sizeBtns);
+      }
+
+      if(gridInfo.length === 2){
+        gridInfo.push(opt + 2);
+        gridInfo.push(new Grid(gridInfo[1], gridInfo[2]), []);
+        return nextMenuOpts();
+      }
+    }
+  };
+
+  const nextMenuOpts = () => {
+    const startGame = () => {
+      menu.replaceWith(createWorld(opts));
+    };
+
+    if(opts.player1[0] === 1 && opts.player2[0] === 1){
+      return menu.update(titles.simulationMode, [
+        btns.stepByStep,
+        btns.wholeGameplayAtOnce,
+      ], opt => {
+        opts.stepByStep = opt === 0;
+        startGame();
+      });
+    }
+
+    startGame();
   };
 
   const menu = new Menu(titles.intro, [
@@ -95,14 +286,15 @@ const main = () => {
     btns.info,
   ], onPickOpt);
 
-  menu.show();
+  return menu;
 };
 
 const createDc = () => {
   const dc = new DraggableCanvas(O.body);
   const {g} = dc;
 
-  dc.setHomeBtn('Home');
+  dc.setDraggable(0);
+  dc.setResizable(0);
 
   g.lineWidth = 1 / TILE_SIZE;
   g.lineCap = 'round';
@@ -112,16 +304,16 @@ const createDc = () => {
 
   return dc;
 };
+
 class Menu{
   constructor(title, btns, cb){
-    this.update(title, btns, cb);
-
     const dc = this.dc = createDc();
     const {g} = dc;
     const t = O.now;
 
-    const cols = colors.menu;
+    this.update(title, btns, cb);
 
+    const cols = colors.menu;
     const bw1 = this.bw1 = BTN_WIDTH;
     const bh1 = this.bh1 = BTN_HEIGHT;
     const bw2 = this.bw2 = bw1 * BTN_SELECTED_SCALE;
@@ -148,7 +340,6 @@ class Menu{
     });
 
     dc.setBg(cols.bg);
-    dc.lock();
 
     const select = index => {
       const {btns} = this;
@@ -175,7 +366,7 @@ class Menu{
     };
 
     dc.renderFunc = (x1, y1, x2, y2) => {
-      const {title, btns} = this;
+      const {title, btns, errMsg} = this;
       const {wh, hh} = dc;
       const t = O.now;
 
@@ -209,17 +400,22 @@ class Menu{
         g.stroke();
       }
 
-      dc.font = 50;
+      dc.font = TITLE_FONT;
       g.lineWidth = 7;
       g.fillStyle = cols.titleFill;
       g.strokeStyle = cols.titleStroke;
-      g.strokeText(title, 0, -hh + 85);
-      g.fillText(title, 0, -hh + 85);
-      dc.font = 24;
+      g.strokeText(title, 0, -hh + TITLE_OFFSET);
+      g.fillText(title, 0, -hh + TITLE_OFFSET);
+      dc.font = BTN_FONT;
 
       let y = (btns.length - 1) * BTN_SPACE;
       for(const btn of btns) y += btn.h;
       y = -y / 2;
+
+      if(errMsg !== null){
+        g.fillStyle = cols.err;
+        g.fillText(errMsg, 0, y - btns[0].h / 2 - ERR_OFFSET);
+      }
 
       for(const btn of btns){
         let {tr} = btn;
@@ -277,15 +473,15 @@ class Menu{
       const {btns, selectedIndex} = this;
 
       switch(evt.code){
-        case 'ArrowUp':
+        case 'ArrowUp': case 'ArrowLeft':
           select((selectedIndex + btns.length - 1) % btns.length);
           break;
 
-        case 'ArrowDown':
+        case 'ArrowDown': case 'ArrowRight':
           select((selectedIndex + 1) % btns.length);
           break;
 
-        case 'Enter':
+        case 'Enter': case 'Space':
           this.cb(selectedIndex);
           break;
       }
@@ -333,12 +529,21 @@ class Menu{
     this.title = title;
     this.cb = cb;
     this.selectedIndex = 0;
+    this.errMsg = null;
 
-    return this;
+    return this.resume();
+  }
+
+  err(msg, prependErrStr=1){
+    if(prependErrStr) msg = `${LS.error}: ${msg}`;
+    this.errMsg = msg;
+    this.resume();
   }
 };
 
-const createWorld = () => {
+const createWorld = opts => {
+  const {player1, player2, gridInfo} = opts;
+
   const dc = createDc();
   const {g} = dc;
 
@@ -346,11 +551,24 @@ const createWorld = () => {
 
   dc.setScale(TILE_SIZE);
   dc.setBg(cols.bg);
+  dc.setResizable(1);
 
-  const grid = new O.Map2D();
+  const grid = gridInfo[gridInfo.length - 2];
+  const gw = grid.w - 1;
+  const gh = grid.h - 1;
+
+  const playerTypes = [player1[0], player2[0]];
+  const ai = AI.create(grid, player1, player2);
+
+  grid.iter((x, y, tile) => {
+    tile.dirs = 0;
+  });
 
   let nextLine = null;
-  let currentPlayer = 0;
+
+  const centerDisplay = () => {
+    dc.setTranslate(gw / 2 - .5, gh / 2 - .5);
+  };
 
   const calcNextLine = (x, y) => {
     x += .5;
@@ -381,44 +599,42 @@ const createWorld = () => {
     nextLine = [xx, yy, type];
   };
 
-  const checkClosedSquares = (x, y, type) => {
-    const a = checkClosedSquare(x, y);
-    const b = type === 0 ?
-      checkClosedSquare(x, y - 1) :
-      checkClosedSquare(x - 1, y);
+  const setLine = line => {
+    const [x, y, type] = line;
+    const n = grid.setLine(x, y, type)
 
-    if(!(a || b)) currentPlayer ^= 1;
+    if(n === 0)grid.currentPlayer ^= 1;
+    return n;
   };
 
-  const checkClosedSquare = (x, y) => {
-    if(!(grid.has(x + 1, y) && grid.has(x, y + 1)))
-      return 0;
-
-    const a = grid.get(x, y);
-    const b = grid.get(x + 1, y);
-    const c = grid.get(x, y + 1);
-
-    if((a & 3) === 3 && (b & 2) && (c & 1)){
-      grid.set(x, y, a | (currentPlayer + 1 << 2));
-      return 1;
-    }
-
-    return 0;
+  const play = () => {
+    const n = ai[grid.currentPlayer].play();
+    
+    if(n === 0) grid.currentPlayer ^= 1;
+    return n;
   };
 
   dc.renderFunc = (x1, y1, x2, y2) => {
     x1 = floor(x1);
     y1 = floor(y1);
 
-    for(let y = y1 - 2; y < y2 + 2; y++){
-      for(let x = x1 - 2; x < x2 + 2; x++){
-        if(!grid.has(x, y)) continue;
+    g.setLineDash([.2, .3]);
+    g.lineWidth = 5 / TILE_SIZE;
+    g.strokeStyle = cols.gridBoundary;
+    g.strokeRect(-.5, -.5, gw, gh);
+    g.setLineDash([]);
 
-        const data = grid.get(x, y);
-        const ownedBy = data >> 2;
+    const xx1 = max(x1 - 2, 0);
+    const yy1 = max(y1 - 2, 0);
+    const xx2 = min(x2 + 2, gw + 1);
+    const yy2 = min(y2 + 2, gh + 1);
 
-        if(ownedBy !== 0){
-          g.fillStyle = ownedBy === 1 ? cols.firstPlayer : cols.secondPlayer;
+    for(let y = yy1; y < yy2; y++){
+      for(let x = xx1; x < xx2; x++){
+        const {player} = grid.get(x, y);
+
+        if(player !== null){
+          g.fillStyle = player === 0 ? cols.player1 : cols.player2;
           g.fillRect(x - .5, y - .5, 1, 1);
         }
       }
@@ -426,14 +642,12 @@ const createWorld = () => {
 
     g.fillStyle = cols.line;
 
-    for(let y = y1 - 2; y < y2 + 2; y++){
-      for(let x = x1 - 2; x < x2 + 2; x++){
-        if(!grid.has(x, y)) continue;
+    for(let y = yy1; y < yy2; y++){
+      for(let x = xx1; x < xx2; x++){
+        const {dirs} = grid.get(x, y);
+        if(dirs === 0) continue;
 
-        const data = grid.get(x, y);
-        if(data === 0) continue;
-
-        if(data & 1){
+        if(dirs & 1){
           g.beginPath();
           g.moveTo(x - .5, y - .5 - DOT_RADIUS);
           O.drawArc(g, x - .5, y - .5 - DOT_RADIUS, x + .5, y - .5 - DOT_RADIUS, -LINE_CURVATURE);
@@ -443,7 +657,7 @@ const createWorld = () => {
           g.fill();
         }
 
-        if(data & 2){
+        if(dirs & 2){
           g.beginPath();
           g.moveTo(x - .5 - DOT_RADIUS, y - .5);
           O.drawArc(g, x - .5 - DOT_RADIUS, y - .5, x - .5 - DOT_RADIUS, y + .5, LINE_CURVATURE);
@@ -457,10 +671,12 @@ const createWorld = () => {
 
     drawNextLine: if(nextLine !== null){
       const [x, y, type] = nextLine;
-      const data = grid.has(x, y) ? grid.get(x, y) : 0;
-      if(data & (1 << type)) break drawNextLine;
+      if(!grid.has(x, y) || (x === gw && type === 0) || (y === gh && type === 1)) break drawNextLine;
 
-      g.fillStyle = currentPlayer === 0 ? cols.firstPlayer : cols.secondPlayer;
+      const {dirs} = grid.get(x, y);
+      if(dirs & (1 << type)) break drawNextLine;
+
+      g.fillStyle = grid.currentPlayer === 0 ? cols.player1 : cols.player2;
       g.globalAlpha = .5;
       g.beginPath();
       if(type === 0){
@@ -494,34 +710,43 @@ const createWorld = () => {
   };
 
   dc.onMouseDown = (evt, x, y) => {
+    if(playerTypes[grid.currentPlayer] === 1) return;
+
     calcNextLine(x, y);
     if(nextLine === null) return;
 
-    putNextLine: {
-      const [x, y, type] = nextLine;
-      const bit = 1 << type;
-
-      if(!grid.has(x, y)){
-        grid.set(x, y, bit);
-        checkClosedSquares(x, y, type);
-        break putNextLine;
-      }
-
-      const data = grid.get(x, y);
-      if(data & bit) break putNextLine;
-
-      grid.set(x, y, data | bit);
-      checkClosedSquares(x, y, type);
-    }
+    if(setLine(nextLine) === 0 && AUTO_PLAY && playerTypes[grid.currentPlayer])
+      while(grid.availsNum !== 0 && play());
   };
 
   dc.onMouseMove = (evt, x, y) => {
+    if(playerTypes[grid.currentPlayer] === 1) return;
     calcNextLine(x, y);
   };
 
   dc.onMouseLeave = (evt, x, y) => {
     nextLine = null;
   };
+
+  dc.onKeyDown = evt => {
+    switch(evt.code){
+      case 'Enter': case 'Space':
+        if(AUTO_PLAY) break;
+        if(playerTypes[grid.currentPlayer] === 0) break;
+        if(grid.availsNum === 0) break;
+        play();
+        break;
+
+      case 'Home':
+        centerDisplay();
+        break;
+    }
+  };
+
+  for(const line of O.last(gridInfo))
+    setLine(line);
+
+  centerDisplay();
 
   return dc;
 };
