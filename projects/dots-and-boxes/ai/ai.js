@@ -1,10 +1,12 @@
 'use strict';
 
+const {min, max} = Math;
+
 class AI{
-  constructor(grid, player, depth){
+  constructor(grid, player, maxDepth){
     this.grid = grid;
     this.player = player;
-    this.depth = depth;
+    this.maxDepth = maxDepth;
   }
 
   static create(grid, player1, player2){
@@ -23,6 +25,10 @@ class AI{
       AI.AIAdvanced,
       AI.AIPro,
     ];
+  }
+
+  get depth(){
+    return min(this.maxDepth, this.grid.availsNum);
   }
 
   play(){ O.virtual('play'); }

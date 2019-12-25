@@ -1900,6 +1900,7 @@ const O = {
   pi4: Math.PI / 4,
   pi32: Math.PI * 3 / 2,
   pi34: Math.PI * 3 / 4,
+  N: Infinity,
 
   get iw(){ return innerWidth },
   get ih(){ return innerHeight },

@@ -1,19 +1,17 @@
 'use strict';
 
 const AI = require('./ai');
+const Node = require('./node');
 
 class AIBeginner extends AI{
   play(){
     const {grid, player, depth} = this;
 
-    const lines = grid.getAvailLines();
+    const lines4 = grid.getLines(4);
+    if(lines4.length !== 0) return grid.setLine(...O.randElem(lines4));
 
-    for(const [x, y, type] of lines)
-      if(grid.wouldCloseSquares(x, y, type))
-        return grid.setLine(x, y, type);
-
-    const [x, y, type] = O.randElem(lines);
-    return grid.setLine(x, y, type);
+    const lines = grid.getLines();
+    return grid.setLine(...O.randElem(lines));
   }
 }
 

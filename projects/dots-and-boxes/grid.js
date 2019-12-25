@@ -7,7 +7,7 @@ class Grid extends O.Grid{
 
   constructor(w, h){
     super(w + 1, h + 1, () => {
-      return new Tile(null, 0);
+      return new Tile();
     });
 
     this.availsNum = w * h * 2 + w + h;
@@ -15,31 +15,49 @@ class Grid extends O.Grid{
 
   setLine(x, y, type){
     const tile = this.get(x, y);
+    const tile1 = type === 0 ? this.get(x, y - 1) : this.get(x - 1, y);
 
-    tile.dirs |= 1 << type;
+    if(type) tile.dir2 = 1;
+    else tile.dir1 = 1;
+    tile.total++;
+    if(tile1 !== null) tile1.total++;
+
     this.availsNum--;
 
-    return this.checkClosedSquares(x, y, type);
+    let n = 0;
+
+    if(tile.total === 4){
+      tile.player = this.currentPlayer;
+      n++;
+    }
+
+    if(tile1 !== null && tile1.total === 4){
+      tile1.player = this.currentPlayer;
+      n++;
+    }
+
+    return n;
   }
 
   removeLine(x, y, type){
     const tile = this.get(x, y);
+    const tile1 = type === 0 ? this.get(x, y - 1) : this.get(x - 1, y);
 
-    tile.dirs &= ~(1 << type);
+    if(type) tile.dir2 = 0;
+    else tile.dir1 = 0;
+    tile.total--;
+    if(tile1 !== null) tile1.total--;
+
     this.availsNum++;
-
-    const tile1 = type === 0 ?
-      y !== 0 ? this.get(x, y - 1) : null :
-      x !== 0 ? this.get(x - 1, y) : null;
 
     let n = 0;
 
-    if(tile.player !== null){
+    if(tile.total === 3){
       tile.player = null;
       n++;
     }
 
-    if(tile1 !== null && tile1.player !== null){
+    if(tile1 !== null && tile1.total === 3){
       tile1.player = null;
       n++;
     }
@@ -47,41 +65,29 @@ class Grid extends O.Grid{
     return n;
   }
 
-  wouldCloseSquares(x, y, type){
-    const n = this.setLine(x, y, type);
-    this.removeLine(x, y, type);
-    return n;
+  calcTotal(x, y, type, total){
+    const tile = this.get(x, y);
+    const tile1 = type === 0 ? this.get(x, y - 1) : this.get(x - 1, y);
+
+    return (tile.total === total - 1) + (tile1 !== null && tile1.total === total - 1);
   }
 
-  checkClosedSquares(x, y, type){
-    const a = this.checkClosedSquare(x, y);
-    const b = type === 0 ?
-      y !== 0 && this.checkClosedSquare(x, y - 1) :
-      x !== 0 && this.checkClosedSquare(x - 1, y);
-
-    return a + b;
-  }
-
-  checkClosedSquare(x, y){
-    const a = this.get(x, y);
-    const b = this.get(x + 1, y);
-    const c = this.get(x, y + 1);
-
-    if(a.dirs === 3 && (b.dirs & 2) && (c.dirs & 1)){
-      a.player = this.currentPlayer;
-      return 1;
-    }
-
-    return 0;
-  }
-
-  getAvailLines(){
+  getLines(total=null, include=1){
     const {w, h} = this;
     const lines = [];
 
-    this.iter((x, y, {dirs}) => {
-      if((dirs & 1) === 0 && x !== w - 1) lines.push([x, y, 0]);
-      if((dirs & 2) === 0 && y !== h - 1) lines.push([x, y, 1]);
+    const addLine = (x, y, type) => {
+      if(total !== null){
+        const check = this.calcTotal(x, y, type, total) !== 0;
+        if(check ^ include) return;
+      }
+
+      lines.push([x, y, type]);
+    };
+
+    this.iter((x, y, tile) => {
+      if(!tile.dir1 && x !== w - 1) addLine(x, y, 0);
+      if(!tile.dir2 && y !== h - 1) addLine(x, y, 1);
     });
 
     return lines;

@@ -14,9 +14,7 @@ const links = require('./links');
 const {min, max, floor, ceil, round, sin, cos} = Math;
 const {pi, pi2, pih, pi4, pi32, pi34} = O;
 
-const AUTO_PLAY = 1;
-
-const SEARCH_DEPTH_BOUNDS = [1, 5];
+const SEARCH_DEPTH_BOUNDS = [1, 10];
 
 const TITLE_FONT = 50;
 const TITLE_OFFSET = 85;
@@ -37,7 +35,7 @@ const BG_SHAPE_ROT_SPEED = [pi / 300, pi / 150];
 const ERR_FONT = 24;
 const ERR_OFFSET = 20;
 
-const TILE_SIZE = 40;
+const TILE_SIZE = 80;
 const DOT_RADIUS = .15;
 const DOT_SHADOW_OFFSET = DOT_RADIUS / 5;
 const LINE_CURVATURE = .135;
@@ -53,6 +51,28 @@ const main = () => {
       cols[colName] = O.Color.from(col).toString();
     }
   }
+
+  // const s = 4;
+  // const grid = new Grid(s, s);
+  // createWorld({
+  //   "play": 1,
+  //   "player1": [
+  //     0
+  //   ],
+  //   "player2": [
+  //     1,
+  //     1,
+  //     8,
+  //   ],
+  //   "gridInfo": [
+  //     0,
+  //     0,
+  //     0,
+  //     grid,
+  //   ],
+  //   "autoPlay": true
+  // }).show();
+  // return;
 
   createMenu().show();
 };
@@ -70,9 +90,7 @@ const createMenu = () => {
     'player1',
     'player2',
     'gridInfo',
-    'level',
-    'depth',
-    'stepByStep',
+    'autoPlay',
   ], null);
 
   const getPlayerId = () => {
@@ -202,7 +220,6 @@ const createMenu = () => {
         const w = match[1] | 0;
         const h = match[2] | 0;
         const grid = new Grid(w, h);
-        const moves = [];
 
         for(let i = 1; i !== lines.length; i++){
           const err = msg => {
@@ -232,13 +249,13 @@ const createMenu = () => {
 
           const tile = grid.get(x, y);
           if(tile === null || (x === w && type === 0) || (y === h && type === 1)) return err(errs.outsideGrid);
-          if(tile.dirs & (1 << type)) return err(errs.duplicateLine);
+          if(type ? tile.dir2 : tile.dir1) return err(errs.duplicateLine);
 
-          tile.dirs |= 1 << type;
-          moves.push([x, y, type]);
+          if(grid.setLine(x, y, type) === 0)
+            grid.currentPlayer ^= 1;
         }
 
-        opts.gridInfo = [1, grid, moves];
+        opts.gridInfo = [1, grid];
         nextMenuOpts();
       }).catch(err => {
         throw err;
@@ -257,7 +274,7 @@ const createMenu = () => {
 
       if(gridInfo.length === 2){
         gridInfo.push(opt + 2);
-        gridInfo.push(new Grid(gridInfo[1], gridInfo[2]), []);
+        gridInfo.push(new Grid(gridInfo[1], gridInfo[2]));
         return nextMenuOpts();
       }
     }
@@ -268,12 +285,12 @@ const createMenu = () => {
       menu.replaceWith(createWorld(opts));
     };
 
-    if(opts.player1[0] === 1 && opts.player2[0] === 1){
+    if(opts.player1[0] === 1 || opts.player2[0] === 1){
       return menu.update(titles.simulationMode, [
+        btns.batchOfMoves,
         btns.stepByStep,
-        btns.wholeGameplayAtOnce,
       ], opt => {
-        opts.stepByStep = opt === 0;
+        opts.autoPlay = opt === 0;
         startGame();
       });
     }
@@ -553,16 +570,13 @@ const createWorld = opts => {
   dc.setBg(cols.bg);
   dc.setResizable(1);
 
-  const grid = gridInfo[gridInfo.length - 2];
+  const grid = O.last(gridInfo);
   const gw = grid.w - 1;
   const gh = grid.h - 1;
 
   const playerTypes = [player1[0], player2[0]];
   const ai = AI.create(grid, player1, player2);
-
-  grid.iter((x, y, tile) => {
-    tile.dirs = 0;
-  });
+  const {autoPlay} = opts;
 
   let nextLine = null;
 
@@ -571,6 +585,8 @@ const createWorld = opts => {
   };
 
   const calcNextLine = (x, y) => {
+    nextLine = null;
+
     x += .5;
     y += .5;
 
@@ -596,6 +612,7 @@ const createWorld = opts => {
       }
     }
 
+    if(!grid.has(xx, yy) || (xx === gw && type === 0) || (yy === gh && type === 1)) return;
     nextLine = [xx, yy, type];
   };
 
@@ -609,7 +626,7 @@ const createWorld = opts => {
 
   const play = () => {
     const n = ai[grid.currentPlayer].play();
-    
+
     if(n === 0) grid.currentPlayer ^= 1;
     return n;
   };
@@ -644,10 +661,9 @@ const createWorld = opts => {
 
     for(let y = yy1; y < yy2; y++){
       for(let x = xx1; x < xx2; x++){
-        const {dirs} = grid.get(x, y);
-        if(dirs === 0) continue;
+        const tile = grid.get(x, y);
 
-        if(dirs & 1){
+        if(tile.dir1){
           g.beginPath();
           g.moveTo(x - .5, y - .5 - DOT_RADIUS);
           O.drawArc(g, x - .5, y - .5 - DOT_RADIUS, x + .5, y - .5 - DOT_RADIUS, -LINE_CURVATURE);
@@ -657,7 +673,7 @@ const createWorld = opts => {
           g.fill();
         }
 
-        if(dirs & 2){
+        if(tile.dir2){
           g.beginPath();
           g.moveTo(x - .5 - DOT_RADIUS, y - .5);
           O.drawArc(g, x - .5 - DOT_RADIUS, y - .5, x - .5 - DOT_RADIUS, y + .5, LINE_CURVATURE);
@@ -671,10 +687,8 @@ const createWorld = opts => {
 
     drawNextLine: if(nextLine !== null){
       const [x, y, type] = nextLine;
-      if(!grid.has(x, y) || (x === gw && type === 0) || (y === gh && type === 1)) break drawNextLine;
-
-      const {dirs} = grid.get(x, y);
-      if(dirs & (1 << type)) break drawNextLine;
+      const tile = grid.get(x, y);
+      if(type ? tile.dir2 : tile.dir1) break drawNextLine;
 
       g.fillStyle = grid.currentPlayer === 0 ? cols.player1 : cols.player2;
       g.globalAlpha = .5;
@@ -715,7 +729,10 @@ const createWorld = opts => {
     calcNextLine(x, y);
     if(nextLine === null) return;
 
-    if(setLine(nextLine) === 0 && AUTO_PLAY && playerTypes[grid.currentPlayer])
+    const tile = grid.get(nextLine[0], nextLine[1]);
+    if(nextLine[2] ? tile.dir2 : tile.dir1) return;
+
+    if(setLine(nextLine) === 0 && autoPlay && playerTypes[grid.currentPlayer])
       while(grid.availsNum !== 0 && play());
   };
 
@@ -731,7 +748,7 @@ const createWorld = opts => {
   dc.onKeyDown = evt => {
     switch(evt.code){
       case 'Enter': case 'Space':
-        if(AUTO_PLAY) break;
+        if(autoPlay) break;
         if(playerTypes[grid.currentPlayer] === 0) break;
         if(grid.availsNum === 0) break;
         play();
@@ -743,10 +760,10 @@ const createWorld = opts => {
     }
   };
 
-  for(const line of O.last(gridInfo))
-    setLine(line);
-
   centerDisplay();
+
+  while(grid.availsNum !== 0 && autoPlay && playerTypes[grid.currentPlayer])
+    while(grid.availsNum !== 0 && play());
 
   return dc;
 };
