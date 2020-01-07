@@ -3,8 +3,9 @@
 const AI = require('./ai');
 const Node = require('./node');
 
-class AIAdvanced extends AI{
+class AIPro extends AI{
   play(){
+    O.error('Error');
     /*const {grid, player, depth} = this;
 
     const lines = O.shuffle(grid.getLines());
@@ -115,4 +116,4 @@ class AIAdvanced extends AI{
   }
 }
 
-module.exports = AIAdvanced;
+module.exports = AIPro;
