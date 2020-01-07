@@ -96,9 +96,9 @@ class AIAdvanced extends AI{
         continue;
       }
 
-      const typeNew = node.type ^ (scoreDif === 0);
-      const alphaNew = node.type === 1 ? -O.N : node.alpha;
-      const betaNew = node.type === 0 ? O.N : node.beta;
+      const typeNew = type ^ (scoreDif === 0);
+      const alphaNew = type === 1 ? -O.N : node.alpha;
+      const betaNew = type === 0 ? O.N : node.beta;
 
       stack.push(new Node(typeNew, alphaNew, betaNew, scoreNew, getLines()));
     }

@@ -83,7 +83,7 @@ const createMenu = () => {
     errors: errs,
   } = LS;
 
-  const sizeBtns = O.ca(8, i => String(i + 2));
+  const sizeBtns = O.ca(9, i => String(i + 1));
 
   const opts = O.arr2obj([
     'play',
@@ -214,7 +214,7 @@ const createMenu = () => {
         if(str === '') return menu.err(errs.missingGridSize);
 
         const lines = O.sanl(str);
-        const match = lines[0].match(/^([2-9]) ([2-9])$/);
+        const match = lines[0].match(/^([1-9]) ([1-9])$/);
         if(match === null) return menu.err(errs.invalidSize);
 
         const w = match[1] | 0;
@@ -268,12 +268,12 @@ const createMenu = () => {
 
     if(gridInfo[0] === 0 && gridInfo.length !== 4){
       if(gridInfo.length === 1){
-        gridInfo.push(opt + 2);
+        gridInfo.push(opt + 1);
         return menu.update(titles.gridHeight, sizeBtns);
       }
 
       if(gridInfo.length === 2){
-        gridInfo.push(opt + 2);
+        gridInfo.push(opt + 1);
         gridInfo.push(new Grid(gridInfo[1], gridInfo[2]));
         return nextMenuOpts();
       }

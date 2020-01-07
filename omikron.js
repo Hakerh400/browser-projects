@@ -1863,7 +1863,7 @@ class Semaphore{
   wait(){
     if(this.s > 0){
       this.s--;
-      return;
+      return Promise.resolve();
     }
 
     return new Promise(res => {
