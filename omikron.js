@@ -2168,6 +2168,7 @@ const O = {
     O.body.style.background = '#ffffff';
 
     O.title('Error Occured');
+    O.ceText(O.head, '');
     O.ceText(O.body, err);
     O.ceBr(O.body, 2);
     O.ceLink(O.body, 'Home Page', '/');
