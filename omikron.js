@@ -1851,7 +1851,7 @@ class Stringifiable{
 }
 
 class Semaphore{
-  constructor(s){
+  constructor(s=1){
     this.s = s;
     this.blocked = [];
   }
@@ -3283,6 +3283,7 @@ const O = {
   has(obj, key){ return Object.hasOwnProperty.call(obj, key); },
   desc(obj, key){ return Object.getOwnPropertyDescriptor(obj, key); },
   nproto(obj){ return Object.assign(O.obj(), obj); },
+  sem(s){ return new O.Semaphore(s); },
 
   proto(obj, n=1){
     while(n-- !== 0) obj = Object.getPrototypeOf(obj);
