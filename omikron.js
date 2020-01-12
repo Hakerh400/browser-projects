@@ -1695,7 +1695,7 @@ class Serializer extends IO{
     return num;
   }
 
-  writeInt(num, signed=1){
+  writeInt(num, signed=0){
     const snum = num;
     num = -~Math.abs(num);
 

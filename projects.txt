@@ -21,3 +21,4 @@ bit-spiral
 map-coloring
 draggable-canvas
 dots-and-boxes
+image-to-html
