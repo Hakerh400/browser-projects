@@ -79,4 +79,4 @@ const error = err => {
   O.error(err);
 };
 
-main();
+main().catch(error);
