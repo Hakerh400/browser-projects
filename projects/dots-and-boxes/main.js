@@ -631,6 +631,16 @@ const createWorld = opts => {
     return n;
   };
 
+  const exportGame = () => {
+    const link = O.doc.createElement('a');
+
+    link.target = '_blank';
+    link.download = 1;
+    link.href = `data:text/plain;base64,${O.base64.encode(grid.getExportStr())}`;
+
+    link.click();
+  };
+
   dc.renderFunc = (x1, y1, x2, y2) => {
     x1 = floor(x1);
     y1 = floor(y1);
@@ -756,6 +766,10 @@ const createWorld = opts => {
 
       case 'Home':
         centerDisplay();
+        break;
+
+      case 'KeyS':
+        exportGame();
         break;
     }
   };

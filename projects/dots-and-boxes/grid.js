@@ -4,6 +4,7 @@ const Tile = require('./tile');
 
 class Grid extends O.Grid{
   currentPlayer = 0;
+  #moves = [];
 
   constructor(w, h){
     super(w + 1, h + 1, () => {
@@ -36,6 +37,11 @@ class Grid extends O.Grid{
       n++;
     }
 
+    this.#moves.push(type === 0 ?
+      `${y}${O.sfcc(x + 65)}` :
+      `${O.sfcc(y + 65)}${x}`
+    );
+
     return n;
   }
 
@@ -61,6 +67,8 @@ class Grid extends O.Grid{
       tile1.player = null;
       n++;
     }
+
+    this.#moves.pop();
 
     return n;
   }
@@ -91,6 +99,15 @@ class Grid extends O.Grid{
     });
 
     return lines;
+  }
+
+  getExportStr(){
+    let str = `${this.w - 1} ${this.h - 1}`;
+
+    if(this.#moves.length !== 0)
+      str += `\n${this.#moves.join('\n')}`;
+
+    return str;
   }
 }
 

@@ -2160,6 +2160,16 @@ const O = {
   },
 
   error(err){
+    if(O.isNode || O.isElectron){
+      process.exitCode = 1;
+
+      if(typeof err === 'string')
+        err = `ERROR: ${err}`;
+      
+      O.exit(err);
+      return;
+    }
+
     if(err instanceof Error) err = err.message;
     console.error(err);
 

@@ -5,36 +5,9 @@ const Node = require('./node');
 
 class AIPro extends AI{
   play(){
-    O.error('Error');
-    /*const {grid, player, depth} = this;
+    const {grid, player, depth} = this;
 
     const lines = O.shuffle(grid.getLines());
-    const lines4 = [];
-    const lines21 = [];
-
-    for(const line of lines){
-      const [x, y, type] = line;
-
-      if(grid.calcTotal(x, y, type, 4) !== 0)
-        lines[4].push(line);
-    }
-
-    const getLines = () => {
-      const lines = grid.getLines();
-      const linesNew = [];
-
-      for(const line of lines){
-        const [x, y, type] = line;
-
-        if(grid.calcTotal(x, y, type, 4) !== 0 || grid.calcTotal(x, y, type, 3) === 0)
-          linesNew.push(line);
-      }
-
-      if(linesNew.length !== 0) return linesNew;
-      return lines;
-    };
-
-    const lines = O.shuffle(getLines());
     const stack = [new Node(0, -O.N, O.N, 0, lines)];
 
     let scoreBest = -O.N;
@@ -109,10 +82,10 @@ class AIPro extends AI{
       const alphaNew = type === 1 ? -O.N : node.alpha;
       const betaNew = type === 0 ? O.N : node.beta;
 
-      stack.push(new Node(typeNew, alphaNew, betaNew, scoreNew, getLines()));
+      stack.push(new Node(typeNew, alphaNew, betaNew, scoreNew, grid.getLines()));
     }
 
-    return grid.setLine(...lines[indexBest]);*/
+    return grid.setLine(...lines[indexBest]);
   }
 }
 
