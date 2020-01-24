@@ -635,7 +635,7 @@ const createWorld = opts => {
     const link = O.doc.createElement('a');
 
     link.target = '_blank';
-    link.download = 1;
+    link.download = 'game.txt';
     link.href = `data:text/plain;base64,${O.base64.encode(grid.getExportStr())}`;
 
     link.click();
