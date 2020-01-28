@@ -2160,7 +2160,7 @@ const O = {
   },
 
   error(err){
-    if(O.isNode || O.isElectron){
+    if(O.isNode){
       process.exitCode = 1;
 
       if(typeof err === 'string')
