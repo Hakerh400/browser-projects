@@ -11,7 +11,7 @@ const main = () => {
   const {g, w, h, wh, hh} = O.ceCanvas();
   const imgd = new O.ImageData(g);
 
-  const radius = min(wh, hh);
+  const radius = O.hypot(wh, hh) + 5;
   const tree = new Tree();
 
   const black = new Uint8ClampedArray([0, 0, 0]);
@@ -22,19 +22,10 @@ const main = () => {
     if(dist > radius) return black;
 
     const angle = atan2(hh - y, wh - x) + pi;
-    const depth = O.bound(floor(radius / (radius - dist) ** .95) - 1, 0, DEPTH_MAX);
+    const depth = O.bound(floor(radius / (radius - dist) ** .7) - 8, 0, DEPTH_MAX);
     const id = angle / pi2;
 
-    const k = depth / DEPTH_MAX;
-    O.hsv(k, col);
-
-    if(!tree.get(id, depth)){
-      col[0] /= 10;
-      col[1] /= 10;
-      col[2] /= 10;
-    }
-
-    return col;
+    return tree.get(id, depth);
   });
 
   imgd.put();
